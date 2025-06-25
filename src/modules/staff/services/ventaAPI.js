@@ -173,8 +173,7 @@ export const ventasAPI = {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
-      };      console.log('Token a enviar:', token);
-      console.log('URL a usar:', ENDPOINTS.ADD_SALE_DETAILS_BATCH);
+      };     
       
       const response = await axios.post(
         ENDPOINTS.ADD_SALE_DETAILS_BATCH,
@@ -182,7 +181,6 @@ export const ventasAPI = {
         getAuthConfig()
       );
       
-      console.log('Respuesta del servidor:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error al agregar detalles de venta:', error.response?.data || error);

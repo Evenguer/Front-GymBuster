@@ -11,7 +11,10 @@ import {
   TextInput,
   Title,
   Badge,
-  Flex
+  Flex,
+  TabGroup,
+  TabList,
+  Tab
 } from '@tremor/react';
 import { Edit, Trash2, Search, PlusCircle, RefreshCw } from 'react-feather';
 import { categoriaAPI } from '../services/CategoriaAPI';
@@ -21,7 +24,8 @@ const CategoriasPage = () => {
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');  
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     id: null,
     nombre: '',
@@ -29,12 +33,23 @@ const CategoriasPage = () => {
     estado: true
   });
   const [formErrors, setFormErrors] = useState({});
+  const [activeTab, setActiveTab] = useState('todas');
+  const [counters, setCounters] = useState({
+    total: 0,
+    activas: 0,
+    inactivas: 0
+  });
 
   const fetchCategorias = async () => {
     try {
       setLoading(true);
       const data = await categoriaAPI.listarCategorias();
       setCategorias(data);
+      setCounters({
+        total: data.length,
+        activas: data.filter(cat => cat.estado).length,
+        inactivas: data.filter(cat => !cat.estado).length
+      });
       setError(null);
       setLoading(false);
     } catch (err) {
@@ -52,12 +67,19 @@ const CategoriasPage = () => {
     try {
       const nuevoEstado = !estadoActual;
       const response = await categoriaAPI.cambiarEstadoCategoria(id, nuevoEstado);
-      
       if (response) {
-        // Actualiza el estado localmente con la respuesta del servidor
-        setCategorias(categorias.map(cat => 
-          cat.idCategoria === id ? {...cat, estado: response.estado} : cat
-        ));
+        setCategorias(prev => {
+          const nuevasCategorias = prev.map(cat =>
+            cat.idCategoria === id ? { ...cat, estado: response.estado } : cat
+          );
+          // Actualizar contadores después del cambio de estado
+          setCounters({
+            total: nuevasCategorias.length,
+            activas: nuevasCategorias.filter(cat => cat.estado).length,
+            inactivas: nuevasCategorias.filter(cat => !cat.estado).length
+          });
+          return nuevasCategorias;
+        });
       }
     } catch (err) {
       console.error('Error al cambiar el estado de la categoría:', err.message);
@@ -87,7 +109,8 @@ const CategoriasPage = () => {
       nombre: categoria.nombre,
       descripcion: categoria.descripcion,
       estado: categoria.estado
-    });    setIsModalOpen(true);
+    });    
+    setIsModalOpen(true);
   };
   
   const handleInputChange = (e) => {
@@ -179,10 +202,18 @@ const CategoriasPage = () => {
     setIsModalOpen(false);
   };
   
-  const filteredCategorias = categorias.filter(cat =>
-    cat.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cat.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCategorias = categorias.filter(cat => {
+    const matchSearch = cat.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cat.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
+    switch (activeTab) {
+      case 'activas':
+        return matchSearch && cat.estado === true;
+      case 'inactivas':
+        return matchSearch && cat.estado === false;
+      default:
+        return matchSearch;
+    }
+  });
 
   if (loading) {
     return (
@@ -211,36 +242,60 @@ const CategoriasPage = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Categorías</h1>
-          <p className="text-gray-500">Administra las categorías de productos del gimnasio</p>
-        </div>        <Button 
+          <h1 className="text-2xl font-bold text-gray-900">Categorías</h1>
+          <p className="text-gray-500">Gestiona las categorías de productos del gimnasio</p>
+        </div>
+        <Button 
           icon={PlusCircle} 
           variant="primary"
           onClick={() => setIsModalOpen(true)}
+          className="bg-red-600 hover:bg-red-700 text-white" // Igual que EspecialidadesPage
         >
           Nueva Categoría
         </Button>
       </div>
 
-      <CategoriaModal
-        isOpen={isModalOpen}
-        onClose={resetForm}
-        formData={formData}
-        formErrors={formErrors}
-        handleInputChange={handleInputChange}
-        handleSubmit={handleSubmit}
-      />
-      
       <Card>
-        <Flex justifyContent="between" className="mb-4">
+        <div className="flex justify-between items-center mb-6">
           <Title>Lista de Categorías</Title>
-          <TextInput
-            icon={Search}
-            placeholder="Buscar categorías..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </Flex>
+          <div className="w-64">
+            <TextInput
+              icon={Search}
+              placeholder="Buscar categorías..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <TabGroup
+          className="mb-6"
+          onIndexChange={(index) => {
+            const tabs = ['todas', 'activas', 'inactivas'];
+            setActiveTab(tabs[index]);
+          }}
+        >
+          <TabList variant="solid">
+            <Tab className={activeTab === 'todas' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}>
+              Todas <Badge size="xs" color="blue">{counters.total}</Badge>
+            </Tab>
+            <Tab className={activeTab === 'activas' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700'}>
+              Activas <Badge size="xs" color="green">{counters.activas}</Badge>
+            </Tab>
+            <Tab className={activeTab === 'inactivas' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700'}>
+              Inactivas <Badge size="xs" color="red">{counters.inactivas}</Badge>
+            </Tab>
+          </TabList>
+        </TabGroup>
+
+        <CategoriaModal
+          isOpen={isModalOpen}
+          onClose={resetForm}
+          formData={formData}
+          formErrors={formErrors}
+          handleInputChange={handleInputChange}
+          handleSubmit={handleSubmit}
+        />
         
         <Table>
           <TableHead>

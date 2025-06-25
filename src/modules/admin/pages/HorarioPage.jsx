@@ -12,6 +12,9 @@ import {
     Button,
     TextInput,
     Flex,
+    TabGroup,
+    TabList,
+    Tab
 } from '@tremor/react';
 import { Search, PlusCircle, Edit2, Trash2 } from 'react-feather';
 import horarioEmpleadoAPI from '../services/horarioEmpleadoAPI';
@@ -110,22 +113,26 @@ const HorarioPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [loadingId, setLoadingId] = useState(null);
+    const [activeTab, setActiveTab] = useState('todos');
+    const [tabCounters, setTabCounters] = useState({
+        todos: 0,
+        administrador: 0,
+        recepcionista: 0,
+        entrenador: 0
+    });
 
     const fetchHorarios = async () => {
         setIsLoading(true);
         try {
             const data = await horarioEmpleadoAPI.listarHorarios();
-            console.log('Horarios cargados (datos completos):', data);
-            // Verificar la estructura de cada horario
-            data.forEach((horario, index) => {
-                console.log(`Horario ${index}:`, {
-                    id: horario.idHorarioEmpleado,
-                    empleado: horario.empleado,
-                    dia: horario.dia,
-                    estado: horario.estado
-                });
-            });
             setHorarios(data);
+            // Contadores por rol
+            setTabCounters({
+                todos: data.length,
+                administrador: data.filter(h => h.empleado?.rol?.toUpperCase() === 'ADMIN').length,
+                recepcionista: data.filter(h => h.empleado?.rol?.toUpperCase() === 'RECEPCIONISTA').length,
+                entrenador: data.filter(h => h.empleado?.rol?.toUpperCase() === 'ENTRENADOR').length
+            });
         } catch (error) {
             console.error('Error al cargar horarios:', error);
             toast.error('Error al cargar los horarios');
@@ -155,25 +162,26 @@ const HorarioPage = () => {
             toast.error('Error: ID de horario no válido');
             return;
         }
-
         setLoadingId(id);
-        console.log('Intentando cambiar estado:', { id, estadoActual, nuevoEstado: !estadoActual });
-        
         try {
             await horarioEmpleadoAPI.cambiarEstadoHorario(id, !estadoActual);
-            setHorarios(prevHorarios => 
-                prevHorarios.map(h => 
-                    h.idHorarioEmpleado === id 
-                        ? { ...h, estado: !estadoActual } 
-                        : h
-                )
-            );
+            setHorarios(prevHorarios => {
+                const nuevos = prevHorarios.map(h =>
+                    h.idHorarioEmpleado === id ? { ...h, estado: !estadoActual } : h
+                );
+                setTabCounters({
+                    todos: nuevos.length,
+                    administrador: nuevos.filter(h => h.empleado?.rol?.toUpperCase() === 'ADMIN').length,
+                    recepcionista: nuevos.filter(h => h.empleado?.rol?.toUpperCase() === 'RECEPCIONISTA').length,
+                    entrenador: nuevos.filter(h => h.empleado?.rol?.toUpperCase() === 'ENTRENADOR').length
+                });
+                return nuevos;
+            });
             toast.success('Estado actualizado exitosamente');
         } catch (error) {
             console.error('Error al cambiar estado:', error);
             toast.error(error.message || 'Error al cambiar el estado');
         } finally {
-            // Simular un pequeño delay para mostrar el estado de carga
             setTimeout(() => {
                 setLoadingId(null);
             }, 500);
@@ -211,6 +219,12 @@ const HorarioPage = () => {
     };
 
     const filteredHorarios = horarios.filter(horario => {
+        if (activeTab !== 'todos') {
+            const rol = horario.empleado?.rol?.toUpperCase() || '';
+            if (activeTab === 'administrador' && rol !== 'ADMIN') return false;
+            if (activeTab === 'recepcionista' && rol !== 'RECEPCIONISTA') return false;
+            if (activeTab === 'entrenador' && rol !== 'ENTRENADOR') return false;
+        }
         if (!searchTerm) return true;
         const searchLower = searchTerm.toLowerCase();
         return (
@@ -223,31 +237,60 @@ const HorarioPage = () => {
     });
 
     return (
-        <div className="p-4 space-y-4">
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Horarios</h1>
+                    <p className="text-gray-500">Administra los horarios de los empleados del gimnasio</p>
+                </div>
+                <Button
+                    size="sm"
+                    variant="primary"
+                    icon={PlusCircle}
+                    onClick={() => {
+                        setSelectedHorario(null);
+                        setShowModal(true);
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                    Nuevo Horario
+                </Button>
+            </div>
             <Card>
-                <Flex justifyContent="between" className="mb-4">
-                    <Title>Gestión de Horarios</Title>
-                    <div className="flex space-x-2">
+                <Flex justifyContent="between" className="mb-6">
+                    <Title>Lista de Horarios</Title>
+                    <div className="w-64">
                         <TextInput
                             icon={Search}
                             placeholder="Buscar..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="max-w-xs"
-                        />                        <Button
-                            size="sm"
-                            variant="primary"
-                            icon={PlusCircle}
-                            onClick={() => {
-                                setSelectedHorario(null);
-                                setShowModal(true);
-                            }}
-                        >
-                            Nuevo Horario
-                        </Button>
+                        />
                     </div>
                 </Flex>
-
+                <TabGroup
+                    className="mb-6"
+                    onIndexChange={(index) => {
+                        const tabs = ['todos', 'administrador', 'recepcionista', 'entrenador'];
+                        setActiveTab(tabs[index]);
+                    }}
+                >
+                    <TabList variant="solid">
+                        <Tab className={activeTab === 'todos' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}>
+                            Todos <Badge size="xs" color="blue">{tabCounters.todos}</Badge>
+                        </Tab>
+                        <Tab className={activeTab === 'administrador' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700'}>
+                            Administrador <Badge size="xs" color="red">{tabCounters.administrador}</Badge>
+                        </Tab>
+                        <Tab className={activeTab === 'recepcionista' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700'}>
+                            Recepcionista <Badge size="xs" color="orange">{tabCounters.recepcionista}</Badge>
+                        </Tab>
+                        <Tab className={activeTab === 'entrenador' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'}>
+                            Entrenador <Badge size="xs" color="blue">{tabCounters.entrenador}</Badge>
+                        </Tab>
+                    </TabList>
+                </TabGroup>
                 <Table>                    <TableHead>
                         <TableRow>
                             <TableHeaderCell>

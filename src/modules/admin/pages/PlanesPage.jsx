@@ -121,15 +121,19 @@ const PlanesPage = () => {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <Title>Planes y Membresías</Title>
-        <Button variant="primary" icon={PlusCircle} onClick={handleCreatePlan}>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Planes</h1>
+          <p className="text-gray-500">Gestiona los planes del gimnasio</p>
+        </div>
+        <Button variant="primary" icon={PlusCircle} onClick={handleCreatePlan} className="bg-red-600 hover:bg-red-700 text-white">
           Nuevo Plan
         </Button>
       </div>
 
       <Card>
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <div className="flex justify-between items-center mb-6">
+          <Title>Lista de planes</Title>
+          <div className="w-64">
             <TextInput
               icon={Search}
               placeholder="Buscar planes..."

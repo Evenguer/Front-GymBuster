@@ -382,7 +382,7 @@ const VentaPage = () => {
         cantidad: detalle.cantidad
       }));
       
-      console.log('Detalles formateados:', detallesFormateados);
+
       
       // Enviar los detalles
       await ventasAPI.agregarDetallesVenta(ventaCreada.idVenta, detallesFormateados);

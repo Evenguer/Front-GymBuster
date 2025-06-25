@@ -44,6 +44,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
     cargarEspecialidades();
   }, []);
 
+  // handleInputChange original sin integración RENIEC
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prevData => ({
