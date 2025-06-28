@@ -3,10 +3,36 @@ export const BASE_URL = 'http://localhost:8080/api'; // Forzar URL específica p
 console.log("BASE_URL configurada como:", BASE_URL);
 
 export const ENDPOINTS = {  
+  BASE_URL,
+  
   // Ventas
   VENTAS: {
     LISTAR: `${BASE_URL}/venta/listar`,
     DETALLE: `${BASE_URL}/venta/detalle`,
+  },
+  
+  // Piezas
+  PIEZA: {
+    LISTAR: `${BASE_URL}/pieza/listar`,
+    GUARDAR: `${BASE_URL}/pieza/guardar`,
+    ACTUALIZAR: `${BASE_URL}/pieza/actualizar`,
+    CAMBIAR_ESTADO: (id) => `${BASE_URL}/pieza/${id}/estado`,
+    ELIMINAR: (id) => `${BASE_URL}/pieza/eliminar/${id}`
+  },
+
+  // Alquileres
+  ALQUILER: {
+    LISTAR: `${BASE_URL}/alquiler/listar`,
+    GUARDAR: `${BASE_URL}/alquiler/guardar`, 
+    CAMBIAR_ESTADO: (id) => `${BASE_URL}/alquiler/cambiar-estado/${id}`,
+    DETALLE: {
+      AGREGAR_LOTE: `${BASE_URL}/alquiler/detalle/agregar-lote`,
+      LISTAR: (id) => `${BASE_URL}/alquiler/detalle/listar/${id}`,
+      ELIMINAR: (id) => `${BASE_URL}/alquiler/detalle/eliminar/${id}`
+    },
+    PAGO: {
+      REGISTRAR: `${BASE_URL}/alquiler/pago/registrar`
+    }
   },
 
   // Auth

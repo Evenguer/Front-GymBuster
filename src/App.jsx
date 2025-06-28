@@ -48,6 +48,15 @@ const ReportesAsistenciaPage = PlaceholderPage;
 const ConfiguracionPage = PlaceholderPage;
 const ConfiguracionHorariosPage = PlaceholderPage;
 const ConfiguracionSistemaPage = PlaceholderPage;
+// Staff pages placeholders
+const ClientesStaffPage = PlaceholderPage;
+const NuevaInscripcionPage = PlaceholderPage;
+const GestionarInscripcionesPage = PlaceholderPage;
+const RegistrarAsistenciaPage = PlaceholderPage;
+const VerAsistenciasPage = PlaceholderPage;
+const ProductosStockPage = PlaceholderPage;
+const ProductosEquipamientoPage = PlaceholderPage;
+const PlanesStaffPage = PlaceholderPage;
 
 // Staff Pages
 import StaffDashboardPage from './modules/staff/pages/StaffDashboardPage';
@@ -55,6 +64,8 @@ import ProductoPage from './modules/staff/pages/receptionist/ProductoPage';
 import CategoriaPage from './modules/staff/pages/receptionist/CategoriaPage';
 import VentaPage from './modules/staff/pages/receptionist/VentaPage';
 import ListaPage from './modules/staff/pages/receptionist/ListaPage';
+import AlquilerPage from './modules/staff/pages/receptionist/AlquilerPage';
+import ListaAlquileresPage from './modules/staff/pages/receptionist/ListaAlquileresPage';
 import TrainerDashboardPage from './modules/staff/pages/trainer/TrainerDashboardPage';
 import ClientAttendancePage from './modules/staff/pages/trainer/ClientAttendancePage';
 import InscriptionPerformancePage from './modules/staff/pages/trainer/InscriptionPerformancePage';
@@ -131,8 +142,18 @@ function App() {
               <Route path="categorias" element={<CategoriaPage />} />
               <Route path="empleados" element={<EmployeesListPage />} />
               <Route path="productos" element={<ProductoPage />} />
+              <Route path="productos/stock" element={<ProductosStockPage />} />
+              <Route path="productos/equipamiento" element={<ProductosEquipamientoPage />} />
               <Route path="ventas" element={<VentaPage/>} />
               <Route path="listas" element={<ListaPage />} />
+              <Route path="alquileres/nuevo" element={<AlquilerPage />} />
+              <Route path="alquileres/historial" element={<ListaAlquileresPage />} />
+              <Route path="clientes" element={<ClientesStaffPage />} />
+              <Route path="inscripciones/nueva" element={<NuevaInscripcionPage />} />
+              <Route path="inscripciones/gestionar" element={<GestionarInscripcionesPage />} />
+              <Route path="asistencias/registrar" element={<RegistrarAsistenciaPage />} />
+              <Route path="asistencias/ver" element={<VerAsistenciasPage />} />
+              <Route path="planes" element={<PlanesStaffPage />} />
               {/* Rutas específicas para ENTRENADOR */}
               <Route path="clientes/asistencia" element={<ClientAttendancePage />} />
               <Route path="inscripciones/desempeno" element={<InscriptionPerformancePage />} />

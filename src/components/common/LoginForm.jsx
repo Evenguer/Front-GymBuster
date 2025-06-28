@@ -43,23 +43,30 @@ const LoginForm = () => {
     }
     
     try {
+      console.log('Iniciando login con:', formData);
       const user = await login(formData);
+      console.log('Login exitoso:', user);
       
       // Redirigir según el rol del usuario
       switch(user.role) {
         case 'ADMIN':
+          console.log('Redirigiendo a /admin/dashboard');
           navigate('/admin/dashboard');
           break;
         case 'RECEPCIONISTA':
+          console.log('Redirigiendo a /staff/dashboard');
           navigate('/staff/dashboard');
           break;
         case 'ENTRENADOR':
+          console.log('Redirigiendo a /staff/dashboard');
           navigate('/staff/dashboard');
           break;
         case 'CLIENTE':
+          console.log('Redirigiendo a /client/dashboard');
           navigate('/client/dashboard');
           break;
         default:
+          console.log('Rol desconocido, redirigiendo a /login');
           navigate('/login');
       }
     } catch (error) {
