@@ -58,6 +58,7 @@ const ProductosStockPage = PlaceholderPage;
 const ProductosEquipamientoPage = PlaceholderPage;
 const PlanesStaffPage = PlaceholderPage;
 
+
 // Staff Pages
 import StaffDashboardPage from './modules/staff/pages/StaffDashboardPage';
 import ProductoPage from './modules/staff/pages/receptionist/ProductoPage';
@@ -68,6 +69,8 @@ import AlquilerPage from './modules/staff/pages/receptionist/AlquilerPage';
 import ListaAlquileresPage from './modules/staff/pages/receptionist/ListaAlquileresPage';
 import  EspecialidadListaPage from './modules/staff/pages/receptionist/EspecialidadListaPage';
 import PlanesListaPage from './modules/staff/pages/receptionist/PlanesListaPage';
+import ClienteFormPage from './modules/staff/pages/receptionist/ClienteFormPage';
+
 import TrainerDashboardPage from './modules/staff/pages/trainer/TrainerDashboardPage';
 import ClientAttendancePage from './modules/staff/pages/trainer/ClientAttendancePage';
 import InscriptionPerformancePage from './modules/staff/pages/trainer/InscriptionPerformancePage';
@@ -144,6 +147,7 @@ function App() {
               <Route path="especialidades" element={<EspecialidadListaPage />} />
               <Route path="planes" element={<PlanesListaPage />} />
               <Route path="empleados" element={<EmployeesListPage />} />
+              <Route path="clientes" element={<ClientesListPage />} />
               <Route path="productos" element={<ProductoPage />} />
               <Route path="productos/stock" element={<ProductosStockPage />} />
               <Route path="productos/equipamiento" element={<ProductosEquipamientoPage />} />
@@ -152,6 +156,7 @@ function App() {
               <Route path="alquileres/nuevo" element={<AlquilerPage />} />
               <Route path="alquileres/historial" element={<ListaAlquileresPage />} />
               <Route path="clientes" element={<ClientesStaffPage />} />
+              <Route path="cliente/nuevo" element={<ClienteFormPage />} />
               <Route path="inscripciones/nueva" element={<NuevaInscripcionPage />} />
               <Route path="inscripciones/gestionar" element={<GestionarInscripcionesPage />} />
               <Route path="asistencias/registrar" element={<RegistrarAsistenciaPage />} />

@@ -1,3 +1,29 @@
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { Download } from 'react-feather';
+const handleExportPDF = (especialidades) => {
+  const doc = new jsPDF();
+  doc.setFontSize(18);
+  doc.text('Reporte de Especialidades', 14, 20);
+  doc.setFontSize(11);
+  // Fecha arriba a la derecha
+  const fecha = new Date().toLocaleString('es-PE', { hour12: true });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  doc.text(`Fecha de generación: ${fecha}`, pageWidth - 14, 14, { align: 'right' });
+  autoTable(doc, {
+    startY: 30,
+    head: [['Nombre', 'Descripción', 'Estado']],
+    body: especialidades.map(esp => [
+      esp.nombre,
+      esp.descripcion,
+      esp.estado ? 'Activa' : 'Inactiva'
+    ]),
+    styles: { fontSize: 10 },
+    headStyles: { fillColor: [153, 27, 27] }, // rojo oscuro
+    theme: 'striped',
+  });
+  doc.save(`especialidades_${new Date().toISOString().slice(0,10)}.pdf`);
+};
 
 
 import React, { useState, useEffect } from 'react';
@@ -83,9 +109,14 @@ const EspecialidadListaPage = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Especialidades</h1>
-        <p className="text-gray-500">Lista de especialidades</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Especialidades</h1>
+          <p className="text-gray-500">Lista de especialidades</p>
+        </div>
+        <Button icon={Download} variant="secondary" onClick={() => handleExportPDF(especialidades)} className="flex items-center gap-2">
+          Exportar PDF
+        </Button>
       </div>
       <Card>
         <Flex justifyContent="between" className="mb-6">

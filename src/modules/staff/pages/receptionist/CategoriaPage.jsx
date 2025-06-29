@@ -1,8 +1,38 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Card, TextInput, Title, Badge, Button, TabGroup, TabList, Tab, Grid, Flex } from '@tremor/react';
-import { Search, RefreshCw, Tag, Check, XOctagon } from 'react-feather';
+import { Search, RefreshCw, Tag, Check, XOctagon, Download } from 'react-feather';
 import { categoriaAPI } from '../../../admin/services/CategoriaAPI';
+
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+
+
+const handleExportPDF = (categorias) => {
+  const doc = new jsPDF();
+  doc.setFontSize(18);
+  doc.text('Reporte de Categorías', 14, 20);
+  doc.setFontSize(11);
+  // Fecha arriba a la derecha
+  const fecha = new Date().toLocaleString('es-PE', { hour12: true });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  doc.text(`Fecha de generación: ${fecha}`, pageWidth - 14, 14, { align: 'right' });
+  autoTable(doc, {
+    startY: 30,
+    head: [['Nombre', 'Descripción', 'Estado']],
+    body: categorias.map(cat => [
+      cat.nombre,
+      cat.descripcion,
+      cat.estado ? 'Activa' : 'Descontinuada'
+    ]),
+    styles: { fontSize: 10 },
+    headStyles: { fillColor: [153, 27, 27] }, // rojo oscuro
+    theme: 'striped',
+  });
+  doc.save(`categorias_${new Date().toISOString().slice(0,10)}.pdf`);
+};
 
 const CategoriaPage = () => {
   const [categorias, setCategorias] = useState([]);
@@ -78,9 +108,14 @@ const CategoriaPage = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Categorías</h1>
-        <p className="text-gray-500">Lista de categorías</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Categorías</h1>
+          <p className="text-gray-500">Lista de categorías</p>
+        </div>
+        <Button icon={Download} variant="secondary" onClick={() => handleExportPDF(categorias)} className="flex items-center gap-2">
+          Exportar PDF
+        </Button>
       </div>
       <Card>
         <Flex justifyContent="between" className="mb-6">

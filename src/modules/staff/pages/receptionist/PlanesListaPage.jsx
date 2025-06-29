@@ -1,3 +1,30 @@
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { Button } from '@tremor/react';
+import { Download } from 'react-feather';
+const handleExportPDF = (planes) => {
+  const doc = new jsPDF();
+  doc.setFontSize(18);
+  doc.text('Reporte de Planes', 14, 20);
+  doc.setFontSize(11);
+  // Fecha arriba a la derecha
+  const fecha = new Date().toLocaleString('es-PE', { hour12: true });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  doc.text(`Fecha de generación: ${fecha}`, pageWidth - 14, 14, { align: 'right' });
+  autoTable(doc, {
+    startY: 30,
+    head: [['Nombre', 'Descripción', 'Estado']],
+    body: planes.map(plan => [
+      plan.nombre,
+      plan.descripcion,
+      plan.estado ? 'Activo' : 'Inactivo'
+    ]),
+    styles: { fontSize: 10 },
+    headStyles: { fillColor: [153, 27, 27] }, // rojo oscuro
+    theme: 'striped',
+  });
+  doc.save(`planes_${new Date().toISOString().slice(0,10)}.pdf`);
+};
 
 
 import React, { useState, useEffect } from 'react';
@@ -83,9 +110,14 @@ const PlanesListaPage = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Planes</h1>
-        <p className="text-gray-500">Lista de planes</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Planes</h1>
+          <p className="text-gray-500">Lista de planes</p>
+        </div>
+        <Button icon={Download} variant="secondary" onClick={() => handleExportPDF(planes)} className="flex items-center gap-2">
+          Exportar PDF
+        </Button>
       </div>
       <Card>
         <Flex justifyContent="between" className="mb-6">
