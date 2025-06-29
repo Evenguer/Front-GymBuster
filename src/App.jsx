@@ -66,6 +66,8 @@ import VentaPage from './modules/staff/pages/receptionist/VentaPage';
 import ListaPage from './modules/staff/pages/receptionist/ListaPage';
 import AlquilerPage from './modules/staff/pages/receptionist/AlquilerPage';
 import ListaAlquileresPage from './modules/staff/pages/receptionist/ListaAlquileresPage';
+import  EspecialidadListaPage from './modules/staff/pages/receptionist/EspecialidadListaPage';
+import PlanesListaPage from './modules/staff/pages/receptionist/PlanesListaPage';
 import TrainerDashboardPage from './modules/staff/pages/trainer/TrainerDashboardPage';
 import ClientAttendancePage from './modules/staff/pages/trainer/ClientAttendancePage';
 import InscriptionPerformancePage from './modules/staff/pages/trainer/InscriptionPerformancePage';
@@ -112,8 +114,7 @@ function App() {
               {/* Servicios del Gimnasio */}
               <Route path="categorias" element={<CategoriasPage />} />
               <Route path="especialidades" element={<EspecialidadesPage />} />
-              <Route path="planes" element={<PlanesPage />} />
-              
+              <Route path="planes" element={<PlanesListaPage />} />
               {/* Asistencia y Monitoreo */}
               <Route path="asistencia/clientes" element={<AsistenciaClientesPage />} />
               <Route path="inscripciones" element={<InscripcionesPage />} />
@@ -140,6 +141,8 @@ function App() {
               {/* Dashboard: muestra el de recepcionista o entrenador según el rol */}
               <Route path="dashboard" element={<StaffDashboardPage />} />
               <Route path="categorias" element={<CategoriaPage />} />
+              <Route path="especialidades" element={<EspecialidadListaPage />} />
+              <Route path="planes" element={<PlanesListaPage />} />
               <Route path="empleados" element={<EmployeesListPage />} />
               <Route path="productos" element={<ProductoPage />} />
               <Route path="productos/stock" element={<ProductosStockPage />} />

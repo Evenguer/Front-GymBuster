@@ -1,11 +1,14 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Card, TextInput, Title, Badge, Button, TabGroup, TabList, Tab, Grid, Flex } from '@tremor/react';
 import { Search, RefreshCw, Tag, Check, XOctagon } from 'react-feather';
-import { categoriaAPI } from '../../../admin/services/CategoriaAPI';
+import { listEspecialidades } from '../../../../shared/services/especialidadAPI';
+import { useAuth } from '../../../../shared/hooks/useAuth';
 
-const CategoriaPage = () => {
-  const [categorias, setCategorias] = useState([]);
+const EspecialidadListaPage = () => {
+  const { token } = useAuth() || {};
+  const [especialidades, setEspecialidades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,19 +19,20 @@ const CategoriaPage = () => {
     inactivas: 0
   });
 
-  const fetchCategorias = async () => {
+  const fetchEspecialidades = async () => {
     try {
       setLoading(true);
-      const data = await categoriaAPI.listarCategorias();
-      setCategorias(data);
+      const authToken = token || localStorage.getItem('token');
+      const data = await listEspecialidades(authToken);
+      setEspecialidades(data);
       setCounters({
         total: data.length,
-        activas: data.filter(c => c.estado).length,
-        inactivas: data.filter(c => !c.estado).length
+        activas: data.filter(e => e.estado).length,
+        inactivas: data.filter(e => !e.estado).length
       });
       setError(null);
     } catch (err) {
-      setError('Error al cargar las categorías');
+      setError('Error al cargar las especialidades');
       console.error('Error:', err.message);
     } finally {
       setLoading(false);
@@ -36,18 +40,19 @@ const CategoriaPage = () => {
   };
 
   useEffect(() => {
-    fetchCategorias();
+    fetchEspecialidades();
+    // eslint-disable-next-line
   }, []);
 
-  const filteredCategorias = categorias.filter(cat => {
+  const filteredEspecialidades = especialidades.filter(esp => {
     const matchesSearch =
-      cat.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cat.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
+      esp.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      esp.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
     switch (activeTab) {
       case 'activas':
-        return matchesSearch && cat.estado;
+        return matchesSearch && esp.estado;
       case 'inactivas':
-        return matchesSearch && !cat.estado;
+        return matchesSearch && !esp.estado;
       default:
         return matchesSearch;
     }
@@ -60,14 +65,14 @@ const CategoriaPage = () => {
       </div>
     );
   }
-  
+
   if (error) {
     return (
       <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-4">
         <p className="font-medium">Error</p>
         <p>{error}</p>
         <button 
-          onClick={fetchCategorias}
+          onClick={fetchEspecialidades}
           className="mt-2 flex items-center text-sm bg-red-100 hover:bg-red-200 text-red-800 py-1 px-3 rounded"
         >
           <RefreshCw size={14} className="mr-1" /> Reintentar
@@ -79,15 +84,15 @@ const CategoriaPage = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Categorías</h1>
-        <p className="text-gray-500">Lista de categorías</p>
+        <h1 className="text-2xl font-bold text-gray-900">Especialidades</h1>
+        <p className="text-gray-500">Lista de especialidades</p>
       </div>
       <Card>
         <Flex justifyContent="between" className="mb-6">
-          <Title>Lista de Categorías</Title>
+          <Title>Lista de Especialidades</Title>
           <TextInput
             icon={Search}
-            placeholder="Buscar categorías..."
+            placeholder="Buscar especialidades..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -99,57 +104,57 @@ const CategoriaPage = () => {
             <Tab>Inactivos <Badge size="xs" color="red">{counters.inactivas}</Badge></Tab>
           </TabList>
         </TabGroup>
-        {filteredCategorias.length > 0 ? (
+        {filteredEspecialidades.length > 0 ? (
           <Grid numItems={1} numItemsSm={2} numItemsLg={3} className="gap-6 mt-6">
-            {filteredCategorias.map((categoria) => (
+            {filteredEspecialidades.map((especialidad) => (
               <Card 
-                key={categoria.idCategoria}
+                key={especialidad.id}
                 className={`transition-all duration-300 ${
-                  categoria.estado 
+                  especialidad.estado 
                     ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-200' 
                     : ''
                 }`}
-                style={!categoria.estado ? { backgroundColor: '#ededed', borderColor: '#ededed', color: '#888', opacity: 1 } : {}}
+                style={!especialidad.estado ? { backgroundColor: '#ededed', borderColor: '#ededed', color: '#888', opacity: 1 } : {}}
               >
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <div className={`p-2 rounded-lg ${
-                      categoria.estado 
+                      especialidad.estado 
                         ? 'bg-green-100' 
                         : 'bg-gray-100'
                     }`}>
                       <Tag size={20} className={`${
-                        categoria.estado 
+                        especialidad.estado 
                           ? 'text-green-600' 
                           : 'text-gray-600'
                       }`} />
                     </div>
                     <div className="flex-1">
                       <h3 className={`font-semibold text-lg ${
-                        categoria.estado ? 'text-green-900' : 'text-gray-700'
+                        especialidad.estado ? 'text-green-900' : 'text-gray-700'
                       }`}>
-                        {categoria.nombre}
+                        {especialidad.nombre}
                       </h3>
                       <p className={`text-sm mt-1 ${
-                        categoria.estado ? 'text-green-700' : 'text-gray-600'
+                        especialidad.estado ? 'text-green-700' : 'text-gray-600'
                       }`}>
-                        {categoria.descripcion}
+                        {especialidad.descripcion}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {categoria.estado ? (
+                    {especialidad.estado ? (
                       <>
                         <Check size={16} className="text-green-600" />
                         <span className="text-sm font-medium text-green-800 bg-green-100 px-2 py-1 rounded-full">
-                          Categoría Activa
+                          Especialidad Activa
                         </span>
                       </>
                     ) : (
                       <>
                         <XOctagon size={16} className="text-gray-600" />
                         <span className="text-sm font-medium text-gray-800 bg-gray-100 px-2 py-1 rounded-full">
-                          Categoría Descontinuada
+                          Especialidad Inactiva
                         </span>
                       </>
                     )}
@@ -161,7 +166,7 @@ const CategoriaPage = () => {
         ) : (
           <div className="text-center py-12">
             <p className="text-gray-500">
-              {searchTerm ? 'No se encontraron categorías' : 'No hay categorías disponibles'}
+              {searchTerm ? 'No se encontraron especialidades' : 'No hay especialidades disponibles'}
             </p>
           </div>
         )}
@@ -170,4 +175,4 @@ const CategoriaPage = () => {
   );
 };
 
-export default CategoriaPage;
+export default EspecialidadListaPage;

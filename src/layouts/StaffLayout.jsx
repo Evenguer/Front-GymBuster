@@ -91,11 +91,12 @@ const StaffLayout = () => {
       ],
     },
     {
-      title: 'Configuración',
+      title: 'Listas',
       icon: <Settings size={20} />,
       submenu: true,
       submenuItems: [
         { title: 'Categorías', path: '/staff/categorias' },
+        { title: 'Especialidades', path: '/staff/especialidades' },
         { title: 'Planes', path: '/staff/planes' },
       ],
     },
