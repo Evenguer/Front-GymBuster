@@ -24,6 +24,7 @@ export const ENDPOINTS = {
   ALQUILER: {
     LISTAR: `${BASE_URL}/alquiler/listar`,
     GUARDAR: `${BASE_URL}/alquiler/guardar`, 
+    CREAR_COMPLETO: `${BASE_URL}/alquiler/crear-completo`, 
     CAMBIAR_ESTADO: (id) => `${BASE_URL}/alquiler/cambiar-estado/${id}`,
     FINALIZAR: (id) => `${BASE_URL}/alquiler/finalizar/${id}`,
     CANCELAR: (id) => `${BASE_URL}/alquiler/cancelar/${id}`,

@@ -72,57 +72,6 @@ export const alquilerAPI = {
     }
   },
 
-  guardarAlquiler: async (alquiler) => {
-    try {
-      checkRole(['ADMIN', 'RECEPCIONISTA']);
-      console.log('Datos de alquiler a enviar:', alquiler);
-      
-      const response = await axios.post(
-        ENDPOINTS.ALQUILER.GUARDAR,
-        alquiler,
-        getAuthConfig()
-      );
-      
-      console.log('Respuesta completa del servidor:', response);
-      
-      let alquilerData = response.data;
-      
-      if (typeof alquilerData === 'string') {
-        const idMatch = alquilerData.match(/"idAlquiler":(\d+)/);
-        if (idMatch && idMatch[1]) {
-          alquilerData = {
-            idAlquiler: parseInt(idMatch[1]),
-            estado: true,
-            fechaInicio: new Date().toISOString().split('T')[0],
-            fechaFin: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0]
-          };
-          console.log('ID de alquiler extraído correctamente:', alquilerData.idAlquiler);
-        } else {
-          console.error('No se pudo extraer el ID de alquiler de la respuesta');
-          throw new Error('No se pudo procesar la respuesta del servidor');
-        }
-      }
-
-      if (!alquilerData || typeof alquilerData.idAlquiler !== 'number') {
-        console.error('Datos de alquiler inválidos:', alquilerData);
-        throw new Error('La respuesta del servidor no tiene el formato esperado');
-      }
-
-      const alquilerFormateado = {
-        idAlquiler: alquilerData.idAlquiler,
-        estado: alquilerData.estado || true,
-        fechaInicio: alquilerData.fechaInicio || new Date().toISOString().split('T')[0],
-        fechaFin: alquilerData.fechaFin || new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0]
-      };
-      
-      console.log('Alquiler formateado:', alquilerFormateado);
-      return alquilerFormateado;
-    } catch (error) {
-      console.error('Error detallado al guardar el alquiler:', error);
-      throw new Error(error.message || 'Error al guardar el alquiler');
-    }
-  },
-
   cambiarEstadoAlquiler: async (id, estado) => {
     try {
       checkRole(['ADMIN', 'RECEPCIONISTA']);
@@ -190,51 +139,6 @@ export const alquilerAPI = {
     }
   },
 
-  // Servicios de Detalle de Alquiler
-  agregarDetallesAlquiler: async (alquilerId, detalles) => {
-    try {
-      checkRole(['ADMIN', 'RECEPCIONISTA']);
-      
-      if (!alquilerId) {
-        throw new Error('ID de alquiler no proporcionado');
-      }
-
-      if (!Array.isArray(detalles)) {
-        throw new Error('Los detalles deben ser un array');
-      }
-
-      const requestBody = {
-        alquilerId: parseInt(alquilerId),
-        detalles: detalles.map(detalle => ({
-          piezaId: parseInt(detalle.piezaId),
-          cantidad: parseInt(detalle.cantidad)
-        }))
-      };
-
-      console.log('Enviando detalles al servidor:', requestBody);
-      
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No hay token disponible');
-      }
-
-      
-      const response = await axios.post(
-        ENDPOINTS.ALQUILER.DETALLE.AGREGAR_LOTE,
-        requestBody,
-        getAuthConfig()
-      );
-      
-      return response.data;
-    } catch (error) {
-      console.error('Error al agregar detalles de alquiler:', error.response?.data || error);
-      if (error.response?.status === 403) {
-        throw new Error('No tienes permiso para agregar detalles al alquiler');
-      }
-      throw new Error(error.response?.data?.message || error.message);
-    }
-  },
-
   eliminarDetalleAlquiler: async (detalleId) => {
     try {
       checkRole(['ADMIN', 'RECEPCIONISTA']);
@@ -245,26 +149,6 @@ export const alquilerAPI = {
       return response.data;
     } catch (error) {
       console.error('Error al eliminar detalle de alquiler:', error);
-      throw error;
-    }
-  },
-
-  // Servicios de Pago
-  registrarPago: async (alquilerId, montoPagado, metodoPago) => {
-    try {
-      checkRole(['ADMIN', 'RECEPCIONISTA']);
-      const response = await axios.post(
-        ENDPOINTS.ALQUILER.PAGO.REGISTRAR,
-        {
-          alquiler: { idAlquiler: alquilerId },
-          montoPagado,
-          metodoPago
-        },
-        getAuthConfig()
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error al registrar pago:', error);
       throw error;
     }
   },
@@ -335,6 +219,25 @@ export const alquilerAPI = {
     } catch (error) {
       console.error('Error al registrar devolución del alquiler:', error);
       throw new Error(error.response?.data?.message || error.message);
+    }
+  },
+
+  crearAlquilerCompleto: async (alquilerCompleto) => {
+    try {
+      checkRole(['ADMIN', 'RECEPCIONISTA']);
+      console.log('Datos de alquiler completo a enviar:', alquilerCompleto);
+      
+      const response = await axios.post(
+        ENDPOINTS.ALQUILER.CREAR_COMPLETO,
+        alquilerCompleto,
+        getAuthConfig()
+      );
+      
+      console.log('Respuesta completa del servidor al crear alquiler completo:', response);
+      return response.data;
+    } catch (error) {
+      console.error('Error detallado al crear el alquiler completo:', error);
+      throw new Error(error.response?.data || error.message || 'Error al crear el alquiler completo');
     }
   },
 };

@@ -168,12 +168,6 @@ export const ventasAPI = {
         throw new Error('No hay token disponible');
       }
 
-      const config = {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      };     
       
       const response = await axios.post(
         ENDPOINTS.ADD_SALE_DETAILS_BATCH,

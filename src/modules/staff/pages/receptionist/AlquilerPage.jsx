@@ -43,11 +43,11 @@ const AlquilerPage = () => {
   const [dni, setDni] = useState('');
   const [clienteEncontrado, setClienteEncontrado] = useState(null);
   const [formData, setFormData] = useState({
-    empleadoId: '',
     clienteId: '',
     fechaFin: new Date(new Date().setDate(new Date().getDate() + 7)) // Fecha por defecto: 7 días
   });
-  const [empleados, setEmpleados] = useState([]);
+  // Ya no necesitamos el estado de empleados
+  // const [empleados, setEmpleados] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState({});
@@ -66,30 +66,17 @@ const AlquilerPage = () => {
   const [mostrarPago, setMostrarPago] = useState(false);
   const [totalAlquiler, setTotalAlquiler] = useState(0);
   const [botonCrearBloqueado, setBotonCrearBloqueado] = useState(false);
+  const [pasoActual, setPasoActual] = useState(1); // 1: Datos básicos, 2: Detalles, 3: Pago, 4: Confirmación
 
   // Cargar empleados y clientes al montar el componente
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [empleadosData, clientesData] = await Promise.all([
-          alquilerAPI.obtenerEmpleados(),
-          alquilerAPI.obtenerClientes()
-        ]);
+        // Ya no necesitamos obtener la lista de empleados
+        const clientesData = await alquilerAPI.obtenerClientes();
 
-        console.log('Datos de empleados recibidos:', empleadosData);
         console.log('Datos de clientes recibidos:', clientesData);
-
-        // Procesar empleados
-        const recepcionistas = empleadosData
-          .filter(emp => emp && emp.estado && emp.idEmpleado)
-          .map(emp => ({
-            id: `emp-${emp.idEmpleado}`,
-            idEmpleado: emp.idEmpleado,
-            nombre: emp.nombre || '',
-            apellidos: emp.apellidos || '',
-            nombreCompleto: `${emp.nombre || ''} ${emp.apellidos || ''}`.trim()
-          }));
 
         // Procesar clientes
         const clientesFormateados = clientesData
@@ -103,17 +90,7 @@ const AlquilerPage = () => {
             dni: cliente.dni || ''
           }));
 
-        console.log('Recepcionistas formateados:', recepcionistas);
         console.log('Clientes formateados:', clientesFormateados);
-
-        setEmpleados(recepcionistas);
-        // Asignar el primer empleado por defecto
-        if (recepcionistas.length > 0) {
-          setFormData(prev => ({
-            ...prev,
-            empleadoId: recepcionistas[0].id
-          }));
-        }
         setClientes(clientesFormateados);
       } catch (err) {
         console.error('Error al cargar datos:', err);
@@ -135,13 +112,7 @@ const AlquilerPage = () => {
     const safeValue = value || '';
     
     // Validar el formato del ID
-    if (field === 'empleadoId' && !safeValue.startsWith('emp-')) {
-      const formattedValue = `emp-${safeValue}`;
-      setFormData(prev => ({
-        ...prev,
-        [field]: formattedValue
-      }));
-    } else if (field === 'clienteId' && !safeValue.startsWith('cli-')) {
+    if (field === 'clienteId' && !safeValue.startsWith('cli-')) {
       const formattedValue = `cli-${safeValue}`;
       setFormData(prev => ({
         ...prev,
@@ -199,66 +170,47 @@ const AlquilerPage = () => {
     }
 
     try {
-      setLoading(true);
       setFormErrors({});
       
-      // Formatear la fecha para enviarla al backend (YYYY-MM-DD)
+      // Formatear la fecha para usarla posteriormente (YYYY-MM-DD)
       const formattedFechaFin = formData.fechaFin instanceof Date 
         ? formData.fechaFin.toISOString().split('T')[0]
         : formData.fechaFin;
 
-      // Preparar datos del alquiler
-      const alquilerData = {
-        cliente: {
-          idCliente: parseInt(formData.clienteId.replace('cli-', ''))
-        },
-        empleado: {
-          idEmpleado: parseInt(formData.empleadoId.replace('emp-', ''))
-        },
+      // Preparar datos del alquiler temporales
+      const clienteId = parseInt(formData.clienteId.replace('cli-', ''));
+      
+      // Validar que los IDs sean números válidos
+      if (isNaN(clienteId)) {
+        throw new Error('ID de cliente inválido');
+      }
+      
+      // Estructura temporal del alquiler (sin enviar a backend todavía)
+      const alquilerTemp = {
+        idAlquiler: Date.now(), // ID temporal para identificar el alquiler
+        clienteId: clienteId,
         fechaFin: formattedFechaFin
       };
       
-      // Validar que los IDs sean números válidos
-      if (isNaN(alquilerData.cliente.idCliente) || isNaN(alquilerData.empleado.idEmpleado)) {
-        throw new Error('IDs de cliente o empleado inválidos');
-      }
+      console.log('Datos de alquiler preparados (no guardados aún):', alquilerTemp);
       
-      console.log('Enviando datos de alquiler:', alquilerData);
+      // Guardar temporalmente el alquiler creado en el estado
+      setAlquilerCreado(alquilerTemp);
       
-      const response = await alquilerAPI.guardarAlquiler(alquilerData);
-      console.log('Respuesta completa al crear alquiler:', response);
-      
-      if (!response || typeof response !== 'object') {
-        throw new Error('Respuesta inválida del servidor');
-      }
-      
-      if (!response.idAlquiler) {
-        console.error('Respuesta sin ID de alquiler:', response);
-        throw new Error('No se recibió un ID de alquiler válido del servidor');
-      }
-      
-      // Guardar el alquiler en el estado
-      const alquilerCreado = {
-        ...response,
-        idAlquiler: response.idAlquiler
-      };
-      
-      console.log('Alquiler guardado en estado:', alquilerCreado);
-      setAlquilerCreado(alquilerCreado);
+      // Solo avanzamos al siguiente paso, sin guardar todavía en el backend
       setSuccess(true);
       setMostrarDetalles(true);
-      setBotonCrearBloqueado(true); // Bloquear el botón después de crear el alquiler
+      setBotonCrearBloqueado(true); 
+      setPasoActual(2); // Avanzar a la selección de detalles/piezas
       
-      // Cargar piezas inmediatamente después de crear el alquiler
+      // Cargar piezas para el siguiente paso
       await cargarPiezas();
       
-      showNotification('Alquiler creado exitosamente', 'success');
+      showNotification('Datos registrados. Continúe agregando los elementos del alquiler', 'success');
     } catch (err) {
-      console.error('Error detallado al crear alquiler:', err);
-      setFormErrors({ submit: `Error al crear el alquiler: ${err.message}` });
-      showNotification(`Error al crear el alquiler: ${err.message}`, 'error');
-    } finally {
-      setLoading(false);
+      console.error('Error en la validación de datos:', err);
+      setFormErrors({ submit: `Error: ${err.message}` });
+      showNotification(`Error: ${err.message}`, 'error');
     }
   };
 
@@ -391,38 +343,14 @@ const AlquilerPage = () => {
     ));
   };
 
-  // Guardar todos los detalles del alquiler
-  const guardarDetalles = async () => {
-    if (!alquilerCreado || !alquilerCreado.idAlquiler) {
-      showNotification('Error: No se encontró el ID del alquiler', 'error');
-      return;
-    }
-
+  // Preparar para avanzar al paso de pago
+  const guardarDetalles = () => {
     if (detallesAlquiler.length === 0) {
-      showNotification('Error: No hay detalles para guardar', 'error');
+      showNotification('Error: No hay elementos seleccionados para el alquiler', 'error');
       return;
     }
-
-    setLoading(true);
 
     try {
-      console.log('Guardando detalles para alquiler ID:', alquilerCreado.idAlquiler);
-      
-      // Formatear los detalles en el formato esperado por el backend
-      const detallesFormateados = detallesAlquiler.map(detalle => ({
-        piezaId: detalle.piezaId,
-        cantidad: detalle.cantidad
-      }));
-
-      console.log('Detalles formateados para enviar:', detallesFormateados);
-      
-      const response = await alquilerAPI.agregarDetallesAlquiler(
-        alquilerCreado.idAlquiler,
-        detallesFormateados
-      );
-      
-      console.log('Respuesta del servidor al guardar detalles:', response);
-      
       // Calcular el total del alquiler
       const total = detallesAlquiler.reduce((sum, detalle) => {
         return sum + (detalle.cantidad * detalle.pieza.precioAlquiler);
@@ -430,17 +358,16 @@ const AlquilerPage = () => {
       
       setTotalAlquiler(total);
       setMostrarPago(true);
-      showNotification('Detalles guardados correctamente', 'success');
+      setPasoActual(3); // Avanzar al paso de pago
       
+      showNotification('Elementos agregados. Continúe con el registro del pago', 'success');
     } catch (error) {
-      console.error('Error al guardar detalles:', error);
-      showNotification(`Error al guardar detalles: ${error.message}`, 'error');
-    } finally {
-      setLoading(false);
+      console.error('Error al procesar los detalles:', error);
+      showNotification(`Error: ${error.message}`, 'error');
     }
   };
 
-  // Registrar el pago del alquiler
+  // Finalizar todo el proceso de alquiler (guardar todo a la vez)
   const registrarPago = async () => {
     if (!montoPagado || parseFloat(montoPagado) <= 0) {
       showNotification('Debe ingresar un monto válido', 'error');
@@ -455,14 +382,36 @@ const AlquilerPage = () => {
     setLoading(true);
 
     try {
-      const response = await alquilerAPI.registrarPago(
-        alquilerCreado.idAlquiler,
-        parseFloat(montoPagado),
-        metodoPago
-      );
+      // Formatear la fecha para enviarla al backend (YYYY-MM-DD)
+      const formattedFechaFin = formData.fechaFin instanceof Date 
+        ? formData.fechaFin.toISOString().split('T')[0]
+        : formData.fechaFin;
+
+      // Formatear los detalles en el formato esperado por el backend
+      const detallesFormateados = detallesAlquiler.map(detalle => ({
+        piezaId: detalle.piezaId,
+        cantidad: detalle.cantidad
+      }));
       
-      console.log('Pago registrado:', response);
-      showNotification('Pago registrado exitosamente', 'success');
+      // Preparar la estructura completa del alquiler para enviarla en una sola llamada
+      const alquilerCompleto = {
+        clienteId: parseInt(formData.clienteId.replace('cli-', '')),
+        fechaFin: formattedFechaFin,
+        detalles: detallesFormateados,
+        montoPagado: parseFloat(montoPagado),
+        metodoPago: metodoPago
+      };
+      
+      console.log('Enviando alquiler completo al backend:', alquilerCompleto);
+      
+      // Llamar al nuevo endpoint que procesa todo en una sola transacción
+      const response = await alquilerAPI.crearAlquilerCompleto(alquilerCompleto);
+      
+      console.log('Alquiler completado:', response);
+      setAlquilerCreado(response); // Guardamos la respuesta que incluye el ID y todos los detalles
+      setPasoActual(4); // Avanzar al paso de confirmación
+      
+      showNotification('Alquiler registrado exitosamente', 'success');
       
       // Mostrar detalle del vuelto
       const vuelto = parseFloat(montoPagado) - totalAlquiler;
@@ -473,7 +422,7 @@ const AlquilerPage = () => {
       // Mostrar un mensaje de éxito temporal
       showNotification('Alquiler completado con éxito. Preparando formulario para nuevo alquiler...', 'success');
 
-      // Resetear el formulario para un nuevo alquiler
+      // Resetear el formulario para un nuevo alquiler después de 3 segundos
       setTimeout(() => {
         // Desbloquear el botón "Crear alquiler y continuar"
         setBotonCrearBloqueado(false);
@@ -487,7 +436,6 @@ const AlquilerPage = () => {
         setPiezaSeleccionada('');
         setCantidad(1);
         setFormData({
-          empleadoId: empleados.length > 0 ? empleados[0].id : '',
           clienteId: '',
           fechaFin: new Date(new Date().setDate(new Date().getDate() + 7))
         });
@@ -496,6 +444,7 @@ const AlquilerPage = () => {
         setTotalAlquiler(0);
         setMontoPagado('');
         setFormErrors({});
+        setPasoActual(1);
         
         // Notificar que el formulario está listo para un nuevo alquiler
         showNotification('Listo para registrar un nuevo alquiler', 'info');
@@ -568,7 +517,7 @@ const AlquilerPage = () => {
       setPiezaSeleccionada('');
       setCantidad(1);
       setFormData({
-        empleadoId: empleados.length > 0 ? empleados[0].id : '',
+
         clienteId: '',
         fechaFin: new Date(new Date().setDate(new Date().getDate() + 7))
       });
@@ -577,9 +526,54 @@ const AlquilerPage = () => {
       setTotalAlquiler(0);
       setMontoPagado('');
       setFormErrors({});
+      setPasoActual(1); // Volver al primer paso
       
       showNotification('Formulario reiniciado correctamente', 'info');
     }
+  };
+
+  // Componente para mostrar el paso actual en el proceso
+  const ProgresoAlquiler = ({ pasoActual }) => {
+    const pasos = [
+      { numero: 1, nombre: 'Datos cliente' },
+      { numero: 2, nombre: 'Elementos' },
+      { numero: 3, nombre: 'Pago' },
+      { numero: 4, nombre: 'Confirmación' }
+    ];
+
+    return (
+      <div className="mb-8 bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+        <div className="flex justify-between">
+          {pasos.map(paso => (
+            <div 
+              key={paso.numero} 
+              className={`flex flex-col items-center ${paso.numero <= pasoActual ? 'text-blue-600' : 'text-gray-400'}`}
+            >
+              <div 
+                className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
+                  paso.numero === pasoActual ? 'border-blue-600 bg-blue-50 font-bold' : 
+                  paso.numero < pasoActual ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300'
+                }`}
+              >
+                {paso.numero < pasoActual ? (
+                  <CheckCircle size={18} />
+                ) : (
+                  paso.numero
+                )}
+              </div>
+              <div className="mt-2 text-sm font-medium">{paso.nombre}</div>
+            </div>
+          ))}
+        </div>
+        <div className="relative mt-4">
+          <div className="absolute top-0 h-2 bg-gray-200 w-full rounded-full"></div>
+          <div 
+            className="absolute top-0 h-2 bg-blue-500 rounded-full transition-all duration-500" 
+            style={{ width: `${((pasoActual - 1) / (pasos.length - 1)) * 100}%` }}
+          ></div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -598,6 +592,8 @@ const AlquilerPage = () => {
         )}
       </div>
       
+      <ProgresoAlquiler pasoActual={pasoActual} />
+      
       {formErrors.fetch && (
         <Alert severity="error" className="mb-4">
           {formErrors.fetch}
@@ -605,8 +601,11 @@ const AlquilerPage = () => {
       )}
       
       {/* Formulario para crear alquiler */}
-      <Card className="mb-4">
-        <Title className="mb-4">Datos del alquiler</Title>
+      <Card className="mb-6 shadow-sm">
+        <Title className="mb-4 flex items-center">
+          <User size={20} className="mr-2 text-blue-600" />
+          <span>Datos del alquiler</span>
+        </Title>
         
         {botonCrearBloqueado && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
@@ -619,8 +618,8 @@ const AlquilerPage = () => {
           </div>
         )}
         
-        <div className="mb-4">
-          <Text className="mb-2">Buscar cliente por DNI</Text>
+        <div className="mb-5 p-4 bg-gray-50 rounded-lg">
+          <Text className="mb-2 font-medium">Buscar cliente por DNI</Text>
           <div className="flex gap-2">
             <TextInput
               placeholder="Ingrese DNI del cliente"
@@ -629,13 +628,14 @@ const AlquilerPage = () => {
               error={!!formErrors.dni}
               errorMessage={formErrors.dni}
               icon={User}
-              className="flex-1"
+              className="flex-1 bg-white"
               disabled={botonCrearBloqueado}
             />
             <Button 
               onClick={buscarClientePorDNI} 
               disabled={loading || botonCrearBloqueado}
               icon={Search}
+              color="blue"
             >
               Buscar
             </Button>
@@ -660,39 +660,19 @@ const AlquilerPage = () => {
           </div>
         )}
         
-        <div className="mb-4">
-          <Text className="mb-2">Seleccionar empleado</Text>
-          <SearchSelect 
-            value={formData.empleadoId}
-            onValueChange={(value) => handleInputChange('empleadoId', value)}
-            disabled={loading || botonCrearBloqueado}
-            placeholder="Seleccione un empleado"
-            icon={User}
-            error={!!formErrors.empleadoId}
-            errorMessage={formErrors.empleadoId}
-          >
-            {empleados.map(empleado => (
-              <SearchSelectItem 
-                key={empleado.id} 
-                value={empleado.id}
-                icon={User}
-              >
-                {empleado.nombreCompleto}
-              </SearchSelectItem>
-            ))}
-          </SearchSelect>
-        </div>
-        
         <div className="mb-6">
-          <Text className="mb-2">Fecha de fin del alquiler</Text>
-          <DatePicker
-            value={formData.fechaFin}
-            onValueChange={(value) => handleInputChange('fechaFin', value)}
-            enableClear={false}
-            minDate={new Date(new Date().setDate(new Date().getDate() + 1))}
-            icon={Calendar}
-            disabled={botonCrearBloqueado}
-          />
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <Text className="mb-2 font-medium">Fecha de fin del alquiler</Text>
+            <DatePicker
+              value={formData.fechaFin}
+              onValueChange={(value) => handleInputChange('fechaFin', value)}
+              enableClear={false}
+              minDate={new Date(new Date().setDate(new Date().getDate() + 1))}
+              icon={Calendar}
+              disabled={botonCrearBloqueado}
+              className="bg-white"
+            />
+          </div>
         </div>
         
         {formErrors.submit && (
@@ -708,27 +688,43 @@ const AlquilerPage = () => {
           disabled={loading || !clienteEncontrado || botonCrearBloqueado}
           loading={loading}
           loadingText="Procesando..."
-          className="w-full"
+          className="w-full mt-4"
+          icon={ShoppingCart}
+          size="lg"
+          color="blue"
         >
           Crear alquiler y continuar
         </Button>
       </Card>
 
-      {/* Sección de detalles del alquiler - aparece solo cuando se ha creado un alquiler */}
-      {alquilerCreado && (
-        <Card className="mb-4">
-          <Title className="mb-2">Agregar piezas al alquiler</Title>
-          <Text className="mb-4">Alquiler #{alquilerCreado.idAlquiler} - {new Date().toLocaleDateString()}</Text>
+      {/* Sección de detalles del alquiler - aparece cuando mostrarDetalles es true */}
+      {mostrarDetalles && (
+        <Card className="mb-6 shadow-sm">
+          <Title className="mb-2 flex items-center">
+            <Package size={20} className="mr-2 text-blue-600" />
+            <span>Agregar piezas al alquiler</span>
+          </Title>
+          {alquilerCreado && (
+            <div className="mb-4 p-2 bg-gray-50 border border-gray-200 rounded-md">
+              <Text className="flex items-center text-gray-700">
+                <ShoppingCart size={16} className="mr-2" />
+                {alquilerCreado.idAlquiler ? 
+                  `Alquiler #${alquilerCreado.idAlquiler} - ${new Date().toLocaleDateString()}` : 
+                  `Nuevo alquiler - ${new Date().toLocaleDateString()}`}
+              </Text>
+            </div>
+          )}
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6 p-4 bg-gray-50 rounded-lg">
             <div>
-              <Text className="mb-1">Seleccionar pieza</Text>
+              <Text className="mb-2 font-medium">Seleccionar pieza</Text>
               <SearchSelect
                 value={piezaSeleccionada}
                 onValueChange={setPiezaSeleccionada}
                 disabled={loading || mostrarPago}
                 placeholder="Seleccione una pieza"
                 icon={Package}
+                className="bg-white"
               >
                 {piezas.map(pieza => (
                   <SearchSelectItem 
@@ -742,13 +738,14 @@ const AlquilerPage = () => {
               </SearchSelect>
             </div>
             <div>
-              <Text className="mb-1">Cantidad</Text>
+              <Text className="mb-2 font-medium">Cantidad</Text>
               <NumberInput
                 value={cantidad}
                 onValueChange={setCantidad}
                 min={1}
                 enableStepper
                 disabled={loading || mostrarPago}
+                className="bg-white"
               />
             </div>
             <div className="flex items-end">
@@ -757,6 +754,7 @@ const AlquilerPage = () => {
                 disabled={loading || !piezaSeleccionada || mostrarPago}
                 icon={Plus}
                 className="w-full"
+                color="blue"
               >
                 Agregar pieza
               </Button>
@@ -827,8 +825,8 @@ const AlquilerPage = () => {
                 </TableBody>
               </Table>
               
-              <div className="flex justify-between items-center mb-4">
-                <Text className="text-lg font-semibold">
+              <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg border border-blue-100 mb-4">
+                <Text className="text-lg font-semibold text-blue-800">
                   Total: S/ {detallesAlquiler.reduce((sum, detalle) => sum + (detalle.cantidad * detalle.pieza.precioAlquiler), 0).toFixed(2)}
                 </Text>
                 {!mostrarPago && (
@@ -836,7 +834,9 @@ const AlquilerPage = () => {
                     onClick={guardarDetalles} 
                     disabled={loading || detallesAlquiler.length === 0}
                     loading={loading}
-                    icon={CheckCircle}
+                    icon={CreditCard}
+                    color="blue"
+                    size="lg"
                   >
                     Guardar y continuar al pago
                   </Button>
@@ -853,17 +853,21 @@ const AlquilerPage = () => {
       
       {/* Panel de registro de pago */}
       {mostrarPago && (
-        <Card>
-          <Title className="mb-4">Registrar pago</Title>
+        <Card className="mb-6 shadow-sm">
+          <Title className="mb-4 flex items-center">
+            <CreditCard size={20} className="mr-2 text-blue-600" />
+            <span>Registrar pago</span>
+          </Title>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <Text className="mb-1">Método de pago</Text>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <Text className="mb-2 font-medium">Método de pago</Text>
               <SearchSelect
                 value={metodoPago}
                 onValueChange={setMetodoPago}
                 disabled={loading}
                 icon={CreditCard}
+                className="bg-white"
               >
                 <SearchSelectItem value="EFECTIVO">Efectivo</SearchSelectItem>
                 <SearchSelectItem value="TARJETA">Tarjeta</SearchSelectItem>
@@ -871,8 +875,8 @@ const AlquilerPage = () => {
                 <SearchSelectItem value="PLIN">Plin</SearchSelectItem>
               </SearchSelect>
             </div>
-            <div>
-              <Text className="mb-1">Monto recibido (S/)</Text>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <Text className="mb-2 font-medium">Monto recibido (S/)</Text>
               <TextInput
                 value={montoPagado}
                 onChange={(e) => setMontoPagado(e.target.value)}
@@ -881,17 +885,18 @@ const AlquilerPage = () => {
                 step="0.01"
                 min={totalAlquiler}
                 placeholder={`Mínimo: S/ ${totalAlquiler.toFixed(2)}`}
+                className="bg-white"
               />
             </div>
           </div>
           
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg border border-blue-100">
             <div>
-              <Text className="text-lg font-semibold">
+              <Text className="text-lg font-semibold text-blue-800">
                 Total a pagar: S/ {totalAlquiler.toFixed(2)}
               </Text>
               {montoPagado && parseFloat(montoPagado) > totalAlquiler && (
-                <Text>
+                <Text className="text-green-600 font-medium">
                   Vuelto: S/ {(parseFloat(montoPagado) - totalAlquiler).toFixed(2)}
                 </Text>
               )}
@@ -901,6 +906,8 @@ const AlquilerPage = () => {
               disabled={loading || !montoPagado || parseFloat(montoPagado) < totalAlquiler}
               loading={loading}
               icon={CheckCircle}
+              color="blue"
+              size="lg"
             >
               Finalizar alquiler
             </Button>
