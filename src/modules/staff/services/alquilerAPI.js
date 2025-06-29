@@ -141,6 +141,54 @@ export const alquilerAPI = {
       throw error;
     }
   },
+  
+  finalizarAlquiler: async (id) => {
+    try {
+      checkRole(['ADMIN', 'RECEPCIONISTA']);
+      
+      const response = await axios.put(
+        ENDPOINTS.ALQUILER.FINALIZAR(id),
+        null,
+        getAuthConfig()
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error al finalizar el alquiler:', error);
+      throw error;
+    }
+  },
+  
+  cancelarAlquiler: async (id) => {
+    try {
+      checkRole(['ADMIN', 'RECEPCIONISTA']);
+      
+      const response = await axios.put(
+        ENDPOINTS.ALQUILER.CANCELAR(id),
+        null,
+        getAuthConfig()
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error al cancelar el alquiler:', error);
+      throw error;
+    }
+  },
+  
+  marcarVencido: async (id) => {
+    try {
+      checkRole(['ADMIN', 'RECEPCIONISTA']);
+      
+      const response = await axios.put(
+        ENDPOINTS.ALQUILER.VENCIDO(id),
+        null,
+        getAuthConfig()
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error al marcar como vencido el alquiler:', error);
+      throw error;
+    }
+  },
 
   // Servicios de Detalle de Alquiler
   agregarDetallesAlquiler: async (alquilerId, detalles) => {
@@ -271,5 +319,22 @@ export const alquilerAPI = {
       throw new Error('Alquiler no encontrado');
     }
     return alquiler;
-  }
+  },
+
+  registrarDevolucion: async (id) => {
+    try {
+      checkRole(['ADMIN', 'RECEPCIONISTA']);
+      
+      const response = await axios.put(
+        ENDPOINTS.ALQUILER.REGISTRAR_DEVOLUCION(id),
+        null,
+        getAuthConfig()
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error al registrar devolución del alquiler:', error);
+      throw new Error(error.response?.data?.message || error.message);
+    }
+  },
 };

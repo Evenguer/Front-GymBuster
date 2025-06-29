@@ -25,6 +25,10 @@ export const ENDPOINTS = {
     LISTAR: `${BASE_URL}/alquiler/listar`,
     GUARDAR: `${BASE_URL}/alquiler/guardar`, 
     CAMBIAR_ESTADO: (id) => `${BASE_URL}/alquiler/cambiar-estado/${id}`,
+    FINALIZAR: (id) => `${BASE_URL}/alquiler/finalizar/${id}`,
+    CANCELAR: (id) => `${BASE_URL}/alquiler/cancelar/${id}`,
+    VENCIDO: (id) => `${BASE_URL}/alquiler/vencido/${id}`,
+    REGISTRAR_DEVOLUCION: (id) => `${BASE_URL}/alquiler/registrar-devolucion/${id}`,
     DETALLE: {
       AGREGAR_LOTE: `${BASE_URL}/alquiler/detalle/agregar-lote`,
       LISTAR: (id) => `${BASE_URL}/alquiler/detalle/listar/${id}`,

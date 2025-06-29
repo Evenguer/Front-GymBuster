@@ -65,6 +65,7 @@ const AlquilerPage = () => {
   const [metodoPago, setMetodoPago] = useState('EFECTIVO');
   const [mostrarPago, setMostrarPago] = useState(false);
   const [totalAlquiler, setTotalAlquiler] = useState(0);
+  const [botonCrearBloqueado, setBotonCrearBloqueado] = useState(false);
 
   // Cargar empleados y clientes al montar el componente
   useEffect(() => {
@@ -246,6 +247,11 @@ const AlquilerPage = () => {
       setAlquilerCreado(alquilerCreado);
       setSuccess(true);
       setMostrarDetalles(true);
+      setBotonCrearBloqueado(true); // Bloquear el botón después de crear el alquiler
+      
+      // Cargar piezas inmediatamente después de crear el alquiler
+      await cargarPiezas();
+      
       showNotification('Alquiler creado exitosamente', 'success');
     } catch (err) {
       console.error('Error detallado al crear alquiler:', err);
@@ -256,51 +262,52 @@ const AlquilerPage = () => {
     }
   };
 
+  // Función para cargar piezas disponibles
+  const cargarPiezas = async () => {
+    try {
+      setLoading(true);
+      const piezasData = await alquilerAPI.listarPiezas();
+      console.log('Piezas disponibles:', piezasData);
+      
+      // Verificar que piezasData es un array
+      if (!Array.isArray(piezasData)) {
+        console.error('Error: piezasData no es un array', piezasData);
+        throw new Error('La respuesta de piezas no es un array');
+      }
+      
+      // Filtrar piezas con stock disponible
+      const piezasDisponibles = piezasData
+        .filter(pieza => pieza && typeof pieza === 'object' && pieza.estado && pieza.stock > 0)
+        .map(pieza => ({
+          id: pieza.idPieza,
+          nombre: pieza.nombre,
+          precioAlquiler: pieza.precioAlquiler,
+          stock: pieza.stock
+        }));
+      
+      console.log('Piezas filtradas y formateadas:', piezasDisponibles);
+      setPiezas(piezasDisponibles);
+    } catch (error) {
+      console.error('Error al cargar piezas:', error);
+      setFormErrors(prev => ({ ...prev, piezas: 'Error al cargar las piezas: ' + error.message }));
+      
+      // En caso de error, establecer un array vacío para evitar errores en la interfaz
+      setPiezas([]);
+      
+      // Mostrar snackbar de error
+      setSnackbarMessage('Error al cargar las piezas disponibles. Por favor, intenta de nuevo.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Cargar piezas cuando se muestre el panel de detalles
   useEffect(() => {
-    const cargarPiezas = async () => {
-      if (mostrarDetalles) {
-        try {
-          setLoading(true);
-          const piezasData = await alquilerAPI.listarPiezas();
-          console.log('Piezas disponibles:', piezasData);
-          
-          // Verificar que piezasData es un array
-          if (!Array.isArray(piezasData)) {
-            console.error('Error: piezasData no es un array', piezasData);
-            throw new Error('La respuesta de piezas no es un array');
-          }
-          
-          // Filtrar piezas con stock disponible
-          const piezasDisponibles = piezasData
-            .filter(pieza => pieza && typeof pieza === 'object' && pieza.estado && pieza.stock > 0)
-            .map(pieza => ({
-              id: pieza.idPieza,
-              nombre: pieza.nombre,
-              precioAlquiler: pieza.precioAlquiler,
-              stock: pieza.stock
-            }));
-          
-          console.log('Piezas filtradas y formateadas:', piezasDisponibles);
-          setPiezas(piezasDisponibles);
-        } catch (error) {
-          console.error('Error al cargar piezas:', error);
-          setFormErrors(prev => ({ ...prev, piezas: 'Error al cargar las piezas: ' + error.message }));
-          
-          // En caso de error, establecer un array vacío para evitar errores en la interfaz
-          setPiezas([]);
-          
-          // Mostrar snackbar de error
-          setSnackbarMessage('Error al cargar las piezas disponibles. Por favor, intenta de nuevo.');
-          setSnackbarSeverity('error');
-          setOpenSnackbar(true);
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-
-    cargarPiezas();
+    if (mostrarDetalles) {
+      cargarPiezas();
+    }
   }, [mostrarDetalles]);
 
   // Función para agregar detalle
@@ -463,13 +470,22 @@ const AlquilerPage = () => {
         showNotification(`Vuelto: S/ ${vuelto.toFixed(2)}`, 'info');
       }
       
+      // Mostrar un mensaje de éxito temporal
+      showNotification('Alquiler completado con éxito. Preparando formulario para nuevo alquiler...', 'success');
+
       // Resetear el formulario para un nuevo alquiler
       setTimeout(() => {
+        // Desbloquear el botón "Crear alquiler y continuar"
+        setBotonCrearBloqueado(false);
+        
+        // Resetear todos los estados para un nuevo alquiler
         setDetallesAlquiler([]);
         setMostrarDetalles(false);
         setMostrarPago(false);
         setAlquilerCreado(null);
         setSuccess(false);
+        setPiezaSeleccionada('');
+        setCantidad(1);
         setFormData({
           empleadoId: empleados.length > 0 ? empleados[0].id : '',
           clienteId: '',
@@ -479,6 +495,10 @@ const AlquilerPage = () => {
         setClienteEncontrado(null);
         setTotalAlquiler(0);
         setMontoPagado('');
+        setFormErrors({});
+        
+        // Notificar que el formulario está listo para un nuevo alquiler
+        showNotification('Listo para registrar un nuevo alquiler', 'info');
       }, 2000);
       
     } catch (error) {
@@ -532,11 +552,51 @@ const AlquilerPage = () => {
     setOpenSnackbar(false);
   };
 
+  // Función para reiniciar completamente el formulario
+  const reiniciarFormulario = () => {
+    // Mostrar confirmación antes de reiniciar
+    if (botonCrearBloqueado && (!mostrarPago || confirm('¿Está seguro que desea cancelar este alquiler y empezar uno nuevo?'))) {
+      // Desbloquear el botón "Crear alquiler y continuar"
+      setBotonCrearBloqueado(false);
+      
+      // Resetear todos los estados para un nuevo alquiler
+      setDetallesAlquiler([]);
+      setMostrarDetalles(false);
+      setMostrarPago(false);
+      setAlquilerCreado(null);
+      setSuccess(false);
+      setPiezaSeleccionada('');
+      setCantidad(1);
+      setFormData({
+        empleadoId: empleados.length > 0 ? empleados[0].id : '',
+        clienteId: '',
+        fechaFin: new Date(new Date().setDate(new Date().getDate() + 7))
+      });
+      setDni('');
+      setClienteEncontrado(null);
+      setTotalAlquiler(0);
+      setMontoPagado('');
+      setFormErrors({});
+      
+      showNotification('Formulario reiniciado correctamente', 'info');
+    }
+  };
+
   return (
     <div className="p-4">
-      <Title className="mb-4">
-        {mostrarDetalles ? 'Agregar piezas al alquiler' : 'Registrar nuevo alquiler'}
-      </Title>
+      <div className="flex justify-between items-center mb-4">
+        <Title>Registro de Alquiler</Title>
+        {botonCrearBloqueado && (
+          <Button 
+            onClick={reiniciarFormulario} 
+            variant="secondary"
+            color="gray"
+            size="sm"
+          >
+            Nuevo Alquiler
+          </Button>
+        )}
+      </div>
       
       {formErrors.fetch && (
         <Alert severity="error" className="mb-4">
@@ -545,307 +605,307 @@ const AlquilerPage = () => {
       )}
       
       {/* Formulario para crear alquiler */}
-      {!mostrarDetalles ? (
-        <Card className="mb-4">
-          <Title className="mb-4">Datos del alquiler</Title>
-          
-          <div className="mb-4">
-            <Text className="mb-2">Buscar cliente por DNI</Text>
-            <div className="flex gap-2">
-              <TextInput
-                placeholder="Ingrese DNI del cliente"
-                value={dni}
-                onChange={(e) => setDni(e.target.value)}
-                error={!!formErrors.dni}
-                errorMessage={formErrors.dni}
+      <Card className="mb-4">
+        <Title className="mb-4">Datos del alquiler</Title>
+        
+        {botonCrearBloqueado && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <Text className="text-blue-700 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              Hay un alquiler en proceso. Para registrar uno nuevo, haga clic en "Nuevo Alquiler" o termine el proceso actual.
+            </Text>
+          </div>
+        )}
+        
+        <div className="mb-4">
+          <Text className="mb-2">Buscar cliente por DNI</Text>
+          <div className="flex gap-2">
+            <TextInput
+              placeholder="Ingrese DNI del cliente"
+              value={dni}
+              onChange={(e) => setDni(e.target.value)}
+              error={!!formErrors.dni}
+              errorMessage={formErrors.dni}
+              icon={User}
+              className="flex-1"
+              disabled={botonCrearBloqueado}
+            />
+            <Button 
+              onClick={buscarClientePorDNI} 
+              disabled={loading || botonCrearBloqueado}
+              icon={Search}
+            >
+              Buscar
+            </Button>
+          </div>
+        </div>
+        
+        {clienteEncontrado && (
+          <div className="mb-4 p-2 border border-green-200 bg-green-50 rounded">
+            <Text>
+              <CheckCircle className="inline-block mr-2 text-green-600" size={16} /> 
+              Cliente encontrado: <strong>{clienteEncontrado.nombreCompleto}</strong> (DNI: {clienteEncontrado.dni})
+            </Text>
+          </div>
+        )}
+        
+        {formErrors.cliente && !clienteEncontrado && (
+          <div className="mb-4 p-2 border border-red-200 bg-red-50 rounded">
+            <Text className="text-red-600">
+              <AlertCircle className="inline-block mr-2" size={16} /> 
+              {formErrors.cliente}
+            </Text>
+          </div>
+        )}
+        
+        <div className="mb-4">
+          <Text className="mb-2">Seleccionar empleado</Text>
+          <SearchSelect 
+            value={formData.empleadoId}
+            onValueChange={(value) => handleInputChange('empleadoId', value)}
+            disabled={loading || botonCrearBloqueado}
+            placeholder="Seleccione un empleado"
+            icon={User}
+            error={!!formErrors.empleadoId}
+            errorMessage={formErrors.empleadoId}
+          >
+            {empleados.map(empleado => (
+              <SearchSelectItem 
+                key={empleado.id} 
+                value={empleado.id}
                 icon={User}
-                className="flex-1"
-              />
-              <Button 
-                onClick={buscarClientePorDNI} 
-                disabled={loading}
-                icon={Search}
               >
-                Buscar
+                {empleado.nombreCompleto}
+              </SearchSelectItem>
+            ))}
+          </SearchSelect>
+        </div>
+        
+        <div className="mb-6">
+          <Text className="mb-2">Fecha de fin del alquiler</Text>
+          <DatePicker
+            value={formData.fechaFin}
+            onValueChange={(value) => handleInputChange('fechaFin', value)}
+            enableClear={false}
+            minDate={new Date(new Date().setDate(new Date().getDate() + 1))}
+            icon={Calendar}
+            disabled={botonCrearBloqueado}
+          />
+        </div>
+        
+        {formErrors.submit && (
+          <div className="mb-4 p-2 border border-red-200 bg-red-50 rounded">
+            <Text className="text-red-600">
+              {formErrors.submit}
+            </Text>
+          </div>
+        )}
+        
+        <Button 
+          onClick={handleSubmit}
+          disabled={loading || !clienteEncontrado || botonCrearBloqueado}
+          loading={loading}
+          loadingText="Procesando..."
+          className="w-full"
+        >
+          Crear alquiler y continuar
+        </Button>
+      </Card>
+
+      {/* Sección de detalles del alquiler - aparece solo cuando se ha creado un alquiler */}
+      {alquilerCreado && (
+        <Card className="mb-4">
+          <Title className="mb-2">Agregar piezas al alquiler</Title>
+          <Text className="mb-4">Alquiler #{alquilerCreado.idAlquiler} - {new Date().toLocaleDateString()}</Text>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <Text className="mb-1">Seleccionar pieza</Text>
+              <SearchSelect
+                value={piezaSeleccionada}
+                onValueChange={setPiezaSeleccionada}
+                disabled={loading || mostrarPago}
+                placeholder="Seleccione una pieza"
+                icon={Package}
+              >
+                {piezas.map(pieza => (
+                  <SearchSelectItem 
+                    key={pieza.id} 
+                    value={pieza.id.toString()}
+                    icon={Package}
+                  >
+                    {pieza.nombre} - S/ {pieza.precioAlquiler} (Stock: {pieza.stock})
+                  </SearchSelectItem>
+                ))}
+              </SearchSelect>
+            </div>
+            <div>
+              <Text className="mb-1">Cantidad</Text>
+              <NumberInput
+                value={cantidad}
+                onValueChange={setCantidad}
+                min={1}
+                enableStepper
+                disabled={loading || mostrarPago}
+              />
+            </div>
+            <div className="flex items-end">
+              <Button 
+                onClick={agregarDetalle} 
+                disabled={loading || !piezaSeleccionada || mostrarPago}
+                icon={Plus}
+                className="w-full"
+              >
+                Agregar pieza
               </Button>
             </div>
           </div>
           
-          {clienteEncontrado && (
-            <div className="mb-4 p-2 border border-green-200 bg-green-50 rounded">
-              <Text>
-                <CheckCircle className="inline-block mr-2 text-green-600" size={16} /> 
-                Cliente encontrado: <strong>{clienteEncontrado.nombreCompleto}</strong> (DNI: {clienteEncontrado.dni})
-              </Text>
-            </div>
-          )}
-          
-          {formErrors.cliente && !clienteEncontrado && (
+          {formErrors.detalles && (
             <div className="mb-4 p-2 border border-red-200 bg-red-50 rounded">
               <Text className="text-red-600">
                 <AlertCircle className="inline-block mr-2" size={16} /> 
-                {formErrors.cliente}
+                {formErrors.detalles}
               </Text>
             </div>
           )}
           
-          <div className="mb-4">
-            <Text className="mb-2">Seleccionar empleado</Text>
-            <SearchSelect 
-              value={formData.empleadoId}
-              onValueChange={(value) => handleInputChange('empleadoId', value)}
-              disabled={loading}
-              placeholder="Seleccione un empleado"
-              icon={User}
-              error={!!formErrors.empleadoId}
-              errorMessage={formErrors.empleadoId}
-            >
-              {empleados.map(empleado => (
-                <SearchSelectItem 
-                  key={empleado.id} 
-                  value={empleado.id}
-                  icon={User}
-                >
-                  {empleado.nombreCompleto}
-                </SearchSelectItem>
-              ))}
-            </SearchSelect>
-          </div>
-          
-          <div className="mb-6">
-            <Text className="mb-2">Fecha de fin del alquiler</Text>
-            <DatePicker
-              value={formData.fechaFin}
-              onValueChange={(value) => handleInputChange('fechaFin', value)}
-              enableClear={false}
-              minDate={new Date(new Date().setDate(new Date().getDate() + 1))}
-              icon={Calendar}
-            />
-          </div>
-          
-          {formErrors.submit && (
-            <div className="mb-4 p-2 border border-red-200 bg-red-50 rounded">
-              <Text className="text-red-600">
-                {formErrors.submit}
-              </Text>
-            </div>
-          )}
-          
-          <Button 
-            onClick={handleSubmit}
-            disabled={loading || !clienteEncontrado}
-            loading={loading}
-            loadingText="Procesando..."
-            className="w-full"
-          >
-            Crear alquiler y continuar
-          </Button>
-        </Card>
-      ) : (
-        <>
-          {/* Panel de detalles del alquiler */}
-          <div className="mb-4">
-            <Button 
-              onClick={() => setMostrarDetalles(false)} 
-              size="xs"
-              variant="secondary"
-              icon={ArrowLeft}
-            >
-              Volver
-            </Button>
-          </div>
-          
-          <Card className="mb-4">
-            <Title className="mb-2">Agregar piezas al alquiler</Title>
-            <Text className="mb-4">Alquiler #{alquilerCreado?.idAlquiler} - {new Date().toLocaleDateString()}</Text>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div>
-                <Text className="mb-1">Seleccionar pieza</Text>
-                <SearchSelect
-                  value={piezaSeleccionada}
-                  onValueChange={setPiezaSeleccionada}
-                  disabled={loading || mostrarPago}
-                  placeholder="Seleccione una pieza"
-                  icon={Package}
-                >
-                  {piezas.map(pieza => (
-                    <SearchSelectItem 
-                      key={pieza.id} 
-                      value={pieza.id.toString()}
-                      icon={Package}
-                    >
-                      {pieza.nombre} - S/ {pieza.precioAlquiler} (Stock: {pieza.stock})
-                    </SearchSelectItem>
-                  ))}
-                </SearchSelect>
-              </div>
-              <div>
-                <Text className="mb-1">Cantidad</Text>
-                <NumberInput
-                  value={cantidad}
-                  onValueChange={setCantidad}
-                  min={1}
-                  enableStepper
-                  disabled={loading || mostrarPago}
-                />
-              </div>
-              <div className="flex items-end">
-                <Button 
-                  onClick={agregarDetalle} 
-                  disabled={loading || !piezaSeleccionada || mostrarPago}
-                  icon={Plus}
-                  className="w-full"
-                >
-                  Agregar pieza
-                </Button>
-              </div>
-            </div>
-            
-            {formErrors.detalles && (
-              <div className="mb-4 p-2 border border-red-200 bg-red-50 rounded">
-                <Text className="text-red-600">
-                  <AlertCircle className="inline-block mr-2" size={16} /> 
-                  {formErrors.detalles}
-                </Text>
-              </div>
-            )}
-            
-            {detallesAlquiler.length > 0 ? (
-              <>
-                <Title className="text-lg mb-2">Piezas seleccionadas</Title>
-                <Table className="mb-4">
-                  <TableHead>
-                    <TableRow>
-                      <TableHeaderCell>Pieza</TableHeaderCell>
-                      <TableHeaderCell>Precio</TableHeaderCell>
-                      <TableHeaderCell>Cantidad</TableHeaderCell>
-                      <TableHeaderCell>Subtotal</TableHeaderCell>
-                      <TableHeaderCell>Opciones</TableHeaderCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {detallesAlquiler.map((detalle) => {
-                      const subtotal = detalle.cantidad * detalle.pieza.precioAlquiler;
-                      return (
-                        <TableRow key={detalle.piezaId}>
-                          <TableCell>{detalle.pieza.nombre}</TableCell>
-                          <TableCell>S/ {detalle.pieza.precioAlquiler}</TableCell>
-                          <TableCell>
-                            {!mostrarPago ? (
-                              <NumberInput
-                                value={detalle.cantidad}
-                                onValueChange={(value) => actualizarCantidad(detalle.piezaId, value)}
-                                min={1}
-                                enableStepper
-                                disabled={loading}
-                                className="w-20"
-                              />
-                            ) : (
-                              detalle.cantidad
-                            )}
-                          </TableCell>
-                          <TableCell>S/ {subtotal.toFixed(2)}</TableCell>
-                          <TableCell>
-                            {!mostrarPago && (
-                              <Button 
-                                onClick={() => eliminarDetalle(detalle.piezaId)}
-                                size="xs"
-                                variant="light"
-                                color="red"
-                                icon={Trash2}
-                                disabled={loading}
-                              >
-                                Eliminar
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-                
-                <div className="flex justify-between items-center mb-4">
-                  <Text className="text-lg font-semibold">
-                    Total: S/ {detallesAlquiler.reduce((sum, detalle) => sum + (detalle.cantidad * detalle.pieza.precioAlquiler), 0).toFixed(2)}
-                  </Text>
-                  {!mostrarPago && (
-                    <Button 
-                      onClick={guardarDetalles} 
-                      disabled={loading || detallesAlquiler.length === 0}
-                      loading={loading}
-                      icon={CheckCircle}
-                    >
-                      Guardar y continuar al pago
-                    </Button>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="p-4 text-center border border-gray-200 rounded">
-                <Text>No hay piezas agregadas al alquiler</Text>
-              </div>
-            )}
-          </Card>
-          
-          {/* Panel de registro de pago */}
-          {mostrarPago && (
-            <Card>
-              <Title className="mb-4">Registrar pago</Title>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <Text className="mb-1">Método de pago</Text>
-                  <SearchSelect
-                    value={metodoPago}
-                    onValueChange={setMetodoPago}
-                    disabled={loading}
-                    icon={CreditCard}
-                  >
-                    <SearchSelectItem value="EFECTIVO">Efectivo</SearchSelectItem>
-                    <SearchSelectItem value="TARJETA">Tarjeta</SearchSelectItem>
-                    <SearchSelectItem value="YAPE">Yape</SearchSelectItem>
-                    <SearchSelectItem value="PLIN">Plin</SearchSelectItem>
-                  </SearchSelect>
-                </div>
-                <div>
-                  <Text className="mb-1">Monto recibido (S/)</Text>
-                  <TextInput
-                    value={montoPagado}
-                    onChange={(e) => setMontoPagado(e.target.value)}
-                    disabled={loading}
-                    type="number"
-                    step="0.01"
-                    min={totalAlquiler}
-                    placeholder={`Mínimo: S/ ${totalAlquiler.toFixed(2)}`}
-                  />
-                </div>
-              </div>
+          {detallesAlquiler.length > 0 ? (
+            <>
+              <Title className="text-lg mb-2">Piezas seleccionadas</Title>
+              <Table className="mb-4">
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>Pieza</TableHeaderCell>
+                    <TableHeaderCell>Precio</TableHeaderCell>
+                    <TableHeaderCell>Cantidad</TableHeaderCell>
+                    <TableHeaderCell>Subtotal</TableHeaderCell>
+                    <TableHeaderCell>Opciones</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {detallesAlquiler.map((detalle) => {
+                    const subtotal = detalle.cantidad * detalle.pieza.precioAlquiler;
+                    return (
+                      <TableRow key={detalle.piezaId}>
+                        <TableCell>{detalle.pieza.nombre}</TableCell>
+                        <TableCell>S/ {detalle.pieza.precioAlquiler}</TableCell>
+                        <TableCell>
+                          {!mostrarPago ? (
+                            <NumberInput
+                              value={detalle.cantidad}
+                              onValueChange={(value) => actualizarCantidad(detalle.piezaId, value)}
+                              min={1}
+                              enableStepper
+                              disabled={loading}
+                              className="w-20"
+                            />
+                          ) : (
+                            detalle.cantidad
+                          )}
+                        </TableCell>
+                        <TableCell>S/ {subtotal.toFixed(2)}</TableCell>
+                        <TableCell>
+                          {!mostrarPago && (
+                            <Button 
+                              onClick={() => eliminarDetalle(detalle.piezaId)}
+                              size="xs"
+                              variant="light"
+                              color="red"
+                              icon={Trash2}
+                              disabled={loading}
+                            >
+                              Eliminar
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
               
               <div className="flex justify-between items-center mb-4">
-                <div>
-                  <Text className="text-lg font-semibold">
-                    Total a pagar: S/ {totalAlquiler.toFixed(2)}
-                  </Text>
-                  {montoPagado && parseFloat(montoPagado) > totalAlquiler && (
-                    <Text>
-                      Vuelto: S/ {(parseFloat(montoPagado) - totalAlquiler).toFixed(2)}
-                    </Text>
-                  )}
-                </div>
-                <Button 
-                  onClick={registrarPago} 
-                  disabled={loading || !montoPagado || parseFloat(montoPagado) < totalAlquiler}
-                  loading={loading}
-                  icon={CheckCircle}
-                >
-                  Finalizar alquiler
-                </Button>
+                <Text className="text-lg font-semibold">
+                  Total: S/ {detallesAlquiler.reduce((sum, detalle) => sum + (detalle.cantidad * detalle.pieza.precioAlquiler), 0).toFixed(2)}
+                </Text>
+                {!mostrarPago && (
+                  <Button 
+                    onClick={guardarDetalles} 
+                    disabled={loading || detallesAlquiler.length === 0}
+                    loading={loading}
+                    icon={CheckCircle}
+                  >
+                    Guardar y continuar al pago
+                  </Button>
+                )}
               </div>
-            </Card>
+            </>
+          ) : (
+            <div className="p-4 text-center border border-gray-200 rounded">
+              <Text>No hay piezas agregadas al alquiler</Text>
+            </div>
           )}
-        </>
+        </Card>
+      )}
+      
+      {/* Panel de registro de pago */}
+      {mostrarPago && (
+        <Card>
+          <Title className="mb-4">Registrar pago</Title>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <Text className="mb-1">Método de pago</Text>
+              <SearchSelect
+                value={metodoPago}
+                onValueChange={setMetodoPago}
+                disabled={loading}
+                icon={CreditCard}
+              >
+                <SearchSelectItem value="EFECTIVO">Efectivo</SearchSelectItem>
+                <SearchSelectItem value="TARJETA">Tarjeta</SearchSelectItem>
+                <SearchSelectItem value="YAPE">Yape</SearchSelectItem>
+                <SearchSelectItem value="PLIN">Plin</SearchSelectItem>
+              </SearchSelect>
+            </div>
+            <div>
+              <Text className="mb-1">Monto recibido (S/)</Text>
+              <TextInput
+                value={montoPagado}
+                onChange={(e) => setMontoPagado(e.target.value)}
+                disabled={loading}
+                type="number"
+                step="0.01"
+                min={totalAlquiler}
+                placeholder={`Mínimo: S/ ${totalAlquiler.toFixed(2)}`}
+              />
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <Text className="text-lg font-semibold">
+                Total a pagar: S/ {totalAlquiler.toFixed(2)}
+              </Text>
+              {montoPagado && parseFloat(montoPagado) > totalAlquiler && (
+                <Text>
+                  Vuelto: S/ {(parseFloat(montoPagado) - totalAlquiler).toFixed(2)}
+                </Text>
+              )}
+            </div>
+            <Button 
+              onClick={registrarPago} 
+              disabled={loading || !montoPagado || parseFloat(montoPagado) < totalAlquiler}
+              loading={loading}
+              icon={CheckCircle}
+            >
+              Finalizar alquiler
+            </Button>
+          </div>
+        </Card>
       )}
       
       <Snackbar 
