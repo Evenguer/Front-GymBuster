@@ -181,17 +181,7 @@ const ListaPage = () => {
       return 'Hora inválida';
     }
   };
-
-  const getEstadoVenta = (estado) => {
-    if (estado === null || estado === undefined) return { texto: 'DESCONOCIDO', color: 'gray' };
-    return estado ? { texto: 'COMPLETADA', color: 'green' } : { texto: 'PENDIENTE', color: 'yellow' };
-  };
-
-  const getBadgeColor = (estado) => {
-    const { color } = getEstadoVenta(estado);
-    return color;
-  };
-
+  
   const convertirNumeroALetras = (numero) => {
     const unidades = ['', 'UNO', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
     const decenas = ['', 'DIEZ', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];

@@ -8,6 +8,12 @@ const ProtectedRoute = ({
   const { user, isLoading, isAuthenticated } = useAuth();
   const location = useLocation();
 
+  // Log de debug para ver qué está sucediendo
+  console.log('ProtectedRoute - Path:', location.pathname);
+  console.log('ProtectedRoute - User:', user);
+  console.log('ProtectedRoute - isAuthenticated:', isAuthenticated);
+  console.log('ProtectedRoute - allowedRoles:', allowedRoles);
+  
   // Si está cargando, muestra un spinner o loading
   if (isLoading) {
     return <div className="flex items-center justify-center h-screen">
@@ -17,15 +23,18 @@ const ProtectedRoute = ({
   
   // Si no está autenticado, redirigir al login
   if (!isAuthenticated) {
+    console.log('ProtectedRoute - No autenticado, redirigiendo a:', redirectPath);
     return <Navigate to={redirectPath} state={{ from: location }} replace />;
   }
 
   // Si se especifican roles permitidos y el usuario no tiene el rol adecuado
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+    console.log('ProtectedRoute - Rol no permitido, redirigiendo a /unauthorized');
     return <Navigate to="/unauthorized" replace />;
   }
 
   // Si todo está bien, renderiza los componentes hijos
+  console.log('ProtectedRoute - Acceso permitido');
   return <Outlet />;
 };
 
