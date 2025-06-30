@@ -555,12 +555,12 @@ const AlquilerPage = () => {
           {pasos.map(paso => (
             <div 
               key={paso.numero} 
-              className={`flex flex-col items-center ${paso.numero <= pasoActual ? 'text-blue-600' : 'text-gray-400'}`}
+              className={`flex flex-col items-center ${paso.numero <= pasoActual ? 'text-red-600' : 'text-gray-400'}`}
             >
               <div 
                 className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
-                  paso.numero === pasoActual ? 'border-blue-600 bg-blue-50 font-bold' : 
-                  paso.numero < pasoActual ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300'
+                  paso.numero === pasoActual ? 'border-red-600 bg-red-50 font-bold' : 
+                  paso.numero < pasoActual ? 'border-red-500 bg-red-500 text-white' : 'border-gray-300'
                 }`}
               >
                 {paso.numero < pasoActual ? (
@@ -576,7 +576,7 @@ const AlquilerPage = () => {
         <div className="relative mt-4">
           <div className="absolute top-0 h-2 bg-gray-200 w-full rounded-full"></div>
           <div 
-            className="absolute top-0 h-2 bg-blue-500 rounded-full transition-all duration-500" 
+            className="absolute top-0 h-2 bg-red-500 rounded-full transition-all duration-500" 
             style={{ width: `${((pasoActual - 1) / (pasos.length - 1)) * 100}%` }}
           ></div>
         </div>
@@ -656,7 +656,7 @@ const AlquilerPage = () => {
               onClick={buscarClientePorDNI} 
               disabled={loading || botonCrearBloqueado}
               icon={Search}
-              color="blue"
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               Buscar
             </Button>
@@ -709,10 +709,9 @@ const AlquilerPage = () => {
           disabled={loading || !clienteEncontrado || botonCrearBloqueado}
           loading={loading}
           loadingText="Procesando..."
-          className="w-full mt-4"
+          className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white"
           icon={ShoppingCart}
           size="lg"
-          color="blue"
         >
           Crear alquiler y continuar
         </Button>
@@ -774,8 +773,7 @@ const AlquilerPage = () => {
                 onClick={agregarDetalle} 
                 disabled={loading || !piezaSeleccionada || mostrarPago}
                 icon={Plus}
-                className="w-full"
-                color="blue"
+                className="w-full bg-red-600 hover:bg-red-700 text-white"
               >
                 Agregar pieza
               </Button>
@@ -856,7 +854,7 @@ const AlquilerPage = () => {
                     disabled={loading || detallesAlquiler.length === 0}
                     loading={loading}
                     icon={CreditCard}
-                    color="blue"
+                    className="bg-red-600 hover:bg-red-700 text-white"
                     size="lg"
                   >
                     Guardar y continuar al pago
@@ -927,7 +925,7 @@ const AlquilerPage = () => {
               disabled={loading || !montoPagado || parseFloat(montoPagado) < totalAlquiler}
               loading={loading}
               icon={CheckCircle}
-              color="blue"
+              className="bg-red-600 hover:bg-red-700 text-white"
               size="lg"
             >
               Finalizar alquiler

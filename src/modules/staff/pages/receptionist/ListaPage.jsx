@@ -139,7 +139,10 @@ const ListaPage = () => {
   const formatearFecha = (fecha) => {
     try {
       if (!fecha) return 'Sin fecha';
-      return format(new Date(fecha), 'dd/MM/yyyy', { locale: es });
+      const date = new Date(fecha);
+      // Sumar 1 día
+      date.setDate(date.getDate() + 1);
+      return format(date, 'dd/MM/yyyy', { locale: es });
     } catch (error) {
       console.error('Error al formatear fecha:', error);
       return 'Fecha inválida';

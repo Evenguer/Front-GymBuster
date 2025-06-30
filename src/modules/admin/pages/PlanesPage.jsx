@@ -18,8 +18,8 @@ import {
   TabList,
   Tab,
 } from '@tremor/react';
-import { ActionButtons } from '../components/common/ActionButtons';
-import { PlusCircle, Search, CreditCard } from 'react-feather';
+
+import { PlusCircle, Search, CreditCard, Edit, Trash2 } from 'react-feather';
 import { useAuth } from '../../../shared/hooks/useAuth';
 import { listPlanes, cambiarEstadoPlan, eliminarPlan } from '../../../shared/services/planAPI';
 import PlanModal from '../components/Planes/PlanModal';
@@ -211,9 +211,22 @@ const PlanesPage = () => {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2 items-center">
-                    <ActionButtons
-                      onEdit={() => handleEditPlan(plan)}
-                      onDelete={async () => {
+
+                    <Button
+                      size="xs"
+                      variant="secondary"
+                      icon={Edit}
+                      onClick={() => handleEditPlan(plan)}
+                      className="p-2"
+                      aria-label="Editar"
+                    />
+                    <Button
+                      size="xs"
+                      variant="secondary"
+                      color="red"
+                      icon={Trash2}
+                      onClick={async () => {
+
                         if (!window.confirm('¿Estás seguro de que quieres eliminar este plan?')) return;
                         try {
                           const token = localStorage.getItem('token');
@@ -224,7 +237,10 @@ const PlanesPage = () => {
                           notify.error(error.message || 'Error al eliminar el plan');
                         }
                       }}
-                      showView={false}
+
+                      className="p-2"
+                      aria-label="Eliminar"
+
                     />
                   </div>
                 </TableCell>

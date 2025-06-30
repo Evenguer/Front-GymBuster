@@ -61,6 +61,7 @@ const PlanesStaffPage = PlaceholderPage;
 
 
 // Staff Pages
+import DashBoardRecepcion from './modules/staff/pages/receptionist/DashboardRecepcion';
 import StaffDashboardPage from './modules/staff/pages/StaffDashboardPage';
 import ProductoPage from './modules/staff/pages/receptionist/ProductoPage';
 import CategoriaPage from './modules/staff/pages/receptionist/CategoriaPage';
@@ -145,7 +146,7 @@ function App() {
             <Route element={<StaffLayout />}>
               <Route index element={<Navigate to="/staff/dashboard" replace />} />
               {/* Dashboard: muestra el de recepcionista o entrenador según el rol */}
-              <Route path="dashboard" element={<StaffDashboardPage />} />
+              <Route path="dashboard" element={<DashBoardRecepcion/>} />
               <Route path="categorias" element={<CategoriaPage />} />
               <Route path="especialidades" element={<EspecialidadListaPage />} />
               <Route path="planes" element={<PlanesListaPage />} />
@@ -162,8 +163,8 @@ function App() {
               <Route path="cliente/nuevo" element={<ClienteFormPage />} />
               <Route path="inscripciones/nueva" element={<NuevaInscripcionPage />} />
               <Route path="inscripciones/gestionar" element={<GestionarInscripcionesPage />} />
-              <Route path="asistencias/registrar" element={<RegistrarAsistenciaPage />} />
-              <Route path="asistencias/ver" element={<VerAsistenciasPage />} />
+              <Route path="asistencias/registrar" element={<AsistenciaEmpleadoPage />} />
+              <Route path="asistencias/ver" element={<ListaAsistenciaPage />} />
               <Route path="planes" element={<PlanesStaffPage />} />
               {/* Rutas específicas para ENTRENADOR */}
               <Route path="clientes/asistencia" element={<ClientAttendancePage />} />
