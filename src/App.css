@@ -40,3 +40,15 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Mantener color de fondo y texto en autofill para inputs */
+input:-webkit-autofill,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px rgba(38,38,38,0.7) inset !important; /* bg-neutral-700/70 */
+  box-shadow: 0 0 0 1000px rgba(38,38,38,0.7) inset !important; /* Para otros navegadores */
+  -webkit-text-fill-color: #fff !important; /* text-white */
+  caret-color: #fff !important;
+  transition: background-color 5000s ease-in-out 0s, color 5000s ease-in-out 0s;
+}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../shared/hooks/useAuth';
+import { User, Lock } from "react-feather";
 
 const LoginForm = () => {
   const [formData, setFormData] = useState({
@@ -43,30 +44,23 @@ const LoginForm = () => {
     }
     
     try {
-      console.log('Iniciando login con:', formData);
       const user = await login(formData);
-      console.log('Login exitoso:', user);
       
       // Redirigir según el rol del usuario
       switch(user.role) {
         case 'ADMIN':
-          console.log('Redirigiendo a /admin/dashboard');
           navigate('/admin/dashboard');
           break;
         case 'RECEPCIONISTA':
-          console.log('Redirigiendo a /staff/dashboard');
           navigate('/staff/dashboard');
           break;
         case 'ENTRENADOR':
-          console.log('Redirigiendo a /staff/dashboard');
           navigate('/staff/dashboard');
           break;
         case 'CLIENTE':
-          console.log('Redirigiendo a /client/dashboard');
           navigate('/client/dashboard');
           break;
         default:
-          console.log('Rol desconocido, redirigiendo a /login');
           navigate('/login');
       }
     } catch (error) {
@@ -76,83 +70,62 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-8 border-t-4 border-red-800">
-      {/* Mensaje para desarrollo - quitar en producción */}
-      <div className="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded" role="alert">
-        <p className="font-medium">Conectado al backend en:</p>
-        <p className="text-xs break-all">http://localhost:8080/api/auth/login</p>
-      </div>
-      
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded" role="alert">
-          <p className="font-medium">Error</p>
-          <p>{error}</p>
-        </div>
-      )}
-      
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label htmlFor="nombreUsuario" className="block text-sm font-medium text-gray-700 mb-1">
-            Usuario
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-              </svg>
-            </div>
+    <form onSubmit={handleSubmit} className="flex flex-col w-full">
+      {/* Usuario */}
+      <div className="mb-6 relative">
             <input
               type="text"
               id="nombreUsuario"
               name="nombreUsuario"
               value={formData.nombreUsuario}
               onChange={handleChange}
-              className={`pl-10 w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-800 focus:border-red-800 ${
-                formErrors.nombreUsuario ? 'border-red-500' : 'border-gray-300'
-              }`}
-              placeholder="Nombre de usuario"
-            />
-          </div>
+          placeholder="Usuario"
+          autoComplete="username"
+          className={`w-full pl-12 pr-4 py-3 rounded-lg bg-neutral-700/70 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-700 transition text-base ${formErrors.nombreUsuario ? "ring-2 ring-red-500" : ""}`}
+        />
+        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-red-700" size={20} />
           {formErrors.nombreUsuario && (
-            <p className="mt-1 text-sm text-red-600">{formErrors.nombreUsuario}</p>
+          <span className="text-xs text-red-500 absolute left-0 -bottom-5">{formErrors.nombreUsuario}</span>
           )}
         </div>
-        
-        <div>
-          <label htmlFor="contrasena" className="block text-sm font-medium text-gray-700 mb-1">
-            Contraseña
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-              </svg>
-            </div>
+      {/* Contraseña */}
+      <div className="mb-8 relative">
             <input
               type="password"
               id="contrasena"
               name="contrasena"
               value={formData.contrasena}
               onChange={handleChange}
-              className={`pl-10 w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-800 focus:border-red-800 ${
-                formErrors.contrasena ? 'border-red-500' : 'border-gray-300'
-              }`}
-              placeholder="********"
-            />
-          </div>
+          placeholder="Contraseña"
+          autoComplete="current-password"
+          className={`w-full pl-12 pr-4 py-3 rounded-lg bg-neutral-700/70 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-700 transition text-base ${formErrors.nombreUsuario ? "ring-2 ring-red-500" : ""}`}
+        />
+        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-red-700" size={20} />
           {formErrors.contrasena && (
-            <p className="mt-1 text-sm text-red-600">{formErrors.contrasena}</p>
+          <span className="text-xs text-red-500 absolute left-0 -bottom-5">{formErrors.contrasena}</span>
           )}
         </div>
-        
+      {/* Error de login */}
+      {error && (
+        <div className="text-center text-sm text-red-500 mb-2">{error}</div>
+      )}
+      {/* Botón */}
         <button
           type="submit"
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-red-800 hover:bg-red-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-800 transition duration-300"
+        className="w-full bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 text-white font-semibold py-3 rounded-lg text-base shadow-md transition tracking-wide"
+      >
+        Entrar
+      </button>
+      {/* Olvidaste tu contraseña */}
+      <div className="mt-6 text-center">
+        <a
+          href="#"
+          className="text-red-700 hover:underline text-sm font-medium tracking-wide"
         >
-          Iniciar sesión
-        </button>
-      </form>
+          ¿Olvidaste tu contraseña?
+        </a>
     </div>
+    </form>
   );
 };
 

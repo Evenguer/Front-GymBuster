@@ -262,9 +262,11 @@ const ListaAlquileresPage = () => {
   const formatearFecha = (fechaStr) => {
     try {
       if (!fechaStr) return 'Sin fecha';
+
       const date = new Date(fechaStr);
       date.setDate(date.getDate() + 1);
       return format(date, 'dd/MM/yyyy', { locale: es });
+
     } catch (error) {
       console.error('Error al formatear fecha:', error);
       return fechaStr || 'Fecha inválida';
@@ -727,22 +729,8 @@ const ListaAlquileresPage = () => {
                         </Button>
                       )}
                       
-                      {/* Botón marcar como vencido - Solo en ACTIVO y fecha de fin pasada */}
-                      {detalleAlquiler.estado === ESTADO_ALQUILER.ACTIVO && 
-                       detalleAlquiler.fechaFinObj && new Date() > detalleAlquiler.fechaFinObj && (
-                        <Button
-                          variant="secondary"
-                          color="amber"
-                          onClick={() => cambiarEstadoAlquiler(detalleAlquiler.idAlquiler, ESTADO_ALQUILER.VENCIDO)}
-                          disabled={loading}
-                          className="justify-start"
-                        >
-                          <span className="flex items-center">
-                            <AlertTriangle className="mr-2" size={16} />
-                            Marcar como vencido
-                          </span>
-                        </Button>
-                      )}
+                      {/* El botón 'Marcar como Vencido' se ha eliminado porque ahora el proceso es automático */}
+                      {/* Un sistema automático ahora marca los alquileres como vencidos cuando pasa su fecha de fin */}
                       
                     </div>
                     
