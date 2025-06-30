@@ -40,7 +40,7 @@ const StaffLayout = () => {
       icon: <Users size={20} />,
       submenu: true,
       submenuItems: [
-        { title: 'Empleados', path: '/staff/empleados' },
+        { title: 'Nuevo Cliente', path: '/staff/cliente/nuevo' },
         { title: 'Clientes', path: '/staff/clientes' },
       ],
     },
@@ -96,7 +96,7 @@ const StaffLayout = () => {
       submenuItems: [
         { title: 'Categorías', path: '/staff/categorias' },
         { title: 'Especialidades', path: '/staff/especialidades' },
-        { title: 'Planes', path: '/staff/planes' },
+        { title: 'Planes', path: '/staff/planes' },
       ],
     },
   ];

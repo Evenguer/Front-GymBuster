@@ -20,9 +20,10 @@ import {
   SelectItem,
   Icon
 } from '@tremor/react';
-import { PlusCircle, Search, Edit, Key, Clock } from 'react-feather';
+import { PlusCircle, Search, Edit, Key, Clock, Eye } from 'react-feather';
 import CreateUserModal from '../components/UserManagement/CreateUserModal';
 import EditUserModal from '../components/UserManagement/EditUserModal';
+import ViewUserDetailsModal from '../components/UserManagement/ViewUserDetailsModal';
 import { listUsers, toggleUserStatus, getUsersSecurityDetails } from '../../../shared/services/authAPI.js';
 import { useAuth } from '../../../shared/hooks/useAuth';
 
@@ -33,6 +34,7 @@ const UsersListPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isViewDetailsModalOpen, setIsViewDetailsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [activeTab, setActiveTab] = useState('todos');
   const [rolFiltro, setRolFiltro] = useState('todos');
@@ -336,6 +338,12 @@ const UsersListPage = () => {
     });
   };
 
+  // Función para abrir el modal de detalles de usuario
+  const handleViewUserDetails = (user) => {
+    setSelectedUser(user);
+    setIsViewDetailsModalOpen(true);
+  };
+
   const filteredUsers = users.filter(user => {
     // Primero filtramos por estado según la pestaña activa
     if (activeTab === 'activos' && !user.estado) return false;
@@ -480,18 +488,6 @@ const UsersListPage = () => {
                             RUC: {user.ruc}
                           </div>
                         )}
-                        {/* Solo mostrar información de entrenador si tiene ese rol */}
-                        {user.roles?.includes('ENTRENADOR') && (
-                          <div className="text-xs text-gray-700">
-                            Instructor: {user.tipoInstructor || 'No especificado'}
-                          </div>
-                        )}
-                        {/* Solo mostrar salario si es empleado */}
-                        {user.roles?.some(rol => ['ADMIN', 'ENTRENADOR', 'RECEPCIONISTA'].includes(rol)) && (
-                          <div className="text-xs text-gray-700">
-                            Salario: S/. {user.salario || '0'}
-                          </div>
-                        )}
                       </div>
                     </div>
                   </TableCell>
@@ -565,12 +561,21 @@ const UsersListPage = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="space-y-1">                      <Button
+                    <div className="flex space-x-2">
+                      <Button
+                        size="xs"
+                        variant="light"
+                        icon={Eye}
+                        color="blue"
+                        onClick={() => handleViewUserDetails(user)}
+                      >
+                        Ver
+                      </Button>
+                      <Button
                         size="xs"
                         variant="light"
                         icon={Edit}
                         color="amber"
-                        className="w-full"
                         onClick={() => handleEditUser(user)}
                       >
                         Editar
@@ -597,6 +602,14 @@ const UsersListPage = () => {
         }}
         user={selectedUser}
         onSave={handleUserUpdated}
+      />
+      <ViewUserDetailsModal
+        isOpen={isViewDetailsModalOpen}
+        onClose={() => {
+          setIsViewDetailsModalOpen(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
       />
     </div>
   );
