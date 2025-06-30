@@ -184,7 +184,8 @@ const ProductoModal = ({
               <X size={20} />
             </button>
           </div>
-          <form onSubmit={handleSubmit} className="space-y-4">            <div className="space-y-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Nombre del Producto
               </label>
@@ -195,6 +196,9 @@ const ProductoModal = ({
                 onChange={(e) => handleInputChange('nombre', e.target.value)}
                 error={formErrors.nombre}
               />
+              {formErrors.nombre && (
+                <span className="text-xs text-red-600">{formErrors.nombre}</span>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -212,6 +216,9 @@ const ProductoModal = ({
                   onChange={(e) => handleInputChange('precioVenta', e.target.value)}
                   error={formErrors.precioVenta}
                 />
+                {formErrors.precioVenta && (
+                  <span className="text-xs text-red-600">{formErrors.precioVenta}</span>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -228,6 +235,9 @@ const ProductoModal = ({
                   onChange={(e) => handleInputChange('precioCompra', e.target.value)}
                   error={formErrors.precioCompra}
                 />
+                {formErrors.precioCompra && (
+                  <span className="text-xs text-red-600">{formErrors.precioCompra}</span>
+                )}
               </div>
             </div>
 
@@ -246,6 +256,9 @@ const ProductoModal = ({
                   onChange={(e) => handleInputChange('stockMinimo', e.target.value)}
                   error={formErrors.stockMinimo}
                 />
+                {formErrors.stockMinimo && (
+                  <span className="text-xs text-red-600">{formErrors.stockMinimo}</span>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -262,6 +275,9 @@ const ProductoModal = ({
                   onChange={(e) => handleInputChange('stockTotal', e.target.value)}
                   error={formErrors.stockTotal}
                 />
+                {formErrors.stockTotal && (
+                  <span className="text-xs text-red-600">{formErrors.stockTotal}</span>
+                )}
               </div>
             </div>
 
@@ -277,13 +293,17 @@ const ProductoModal = ({
                 error={formErrors.fechaVencimiento}
                 min={new Date().toISOString().split('T')[0]}
               />
+              {formErrors.fechaVencimiento && (
+                <span className="text-xs text-red-600">{formErrors.fechaVencimiento}</span>
+              )}
             </div>
 
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Categoría
-              </label>              <Select
-                value={formData.categoria || ''} 
+              </label>
+              <Select
+                value={formData.categoria || ''}
                 onValueChange={(value) => handleInputChange('categoria', value)}
                 placeholder="Selecciona una categoría"
                 error={formErrors.categoria}
@@ -294,10 +314,14 @@ const ProductoModal = ({
                   </SelectItem>
                 ))}
               </Select>
-            </div>            <div className="flex justify-end space-x-2 mt-6">
+              {formErrors.categoria && (
+                <span className="text-xs text-red-600">{formErrors.categoria}</span>
+              )}
+            </div>
+            <div className="flex justify-end space-x-2 mt-6">
               <Button
                 type="button"
-                variant="secondary" 
+                variant="secondary"
                 onClick={handleClose}
                 disabled={loading}
               >

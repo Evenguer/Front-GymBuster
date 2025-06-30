@@ -70,6 +70,7 @@ import ListaAlquileresPage from './modules/staff/pages/receptionist/ListaAlquile
 import  EspecialidadListaPage from './modules/staff/pages/receptionist/EspecialidadListaPage';
 import PlanesListaPage from './modules/staff/pages/receptionist/PlanesListaPage';
 import ClienteFormPage from './modules/staff/pages/receptionist/ClienteFormPage';
+import MaquinariaPage from './modules/staff/pages/receptionist/MaquinariaPage';
 
 import TrainerDashboardPage from './modules/staff/pages/trainer/TrainerDashboardPage';
 import ClientAttendancePage from './modules/staff/pages/trainer/ClientAttendancePage';
@@ -117,7 +118,7 @@ function App() {
               {/* Servicios del Gimnasio */}
               <Route path="categorias" element={<CategoriasPage />} />
               <Route path="especialidades" element={<EspecialidadesPage />} />
-              <Route path="planes" element={<PlanesListaPage />} />
+              <Route path="planes" element={<PlanesPage />} />
               {/* Asistencia y Monitoreo */}
               <Route path="asistencia/clientes" element={<AsistenciaClientesPage />} />
               <Route path="inscripciones" element={<InscripcionesPage />} />
@@ -150,7 +151,7 @@ function App() {
               <Route path="clientes" element={<ClientesListPage />} />
               <Route path="productos" element={<ProductoPage />} />
               <Route path="productos/stock" element={<ProductosStockPage />} />
-              <Route path="productos/equipamiento" element={<ProductosEquipamientoPage />} />
+              <Route path="equipamiento" element={<MaquinariaPage/>} />
               <Route path="ventas" element={<VentaPage/>} />
               <Route path="listas" element={<ListaPage />} />
               <Route path="alquileres/nuevo" element={<AlquilerPage />} />

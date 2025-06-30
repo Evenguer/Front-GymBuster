@@ -20,7 +20,7 @@ import {
 } from '@tremor/react';
 import { PlusCircle, Search, CreditCard } from 'react-feather';
 import { useAuth } from '../../../shared/hooks/useAuth';
-import { listPlanes, cambiarEstadoPlan } from '../../../shared/services/planAPI';
+import { listPlanes, cambiarEstadoPlan, eliminarPlan } from '../../../shared/services/planAPI';
 import PlanModal from '../components/Planes/PlanModal';
 
 const PlanesPage = () => {
@@ -66,16 +66,35 @@ const PlanesPage = () => {
   const handleToggleStatus = async (id, estadoActual) => {
     try {
       const token = localStorage.getItem('token');
+      // Mostrar toast de carga
+      const loadingToast = toast.loading('Actualizando estado...');
       await cambiarEstadoPlan(id, !estadoActual, token);
-      
-      setPlanes(planes.map(plan => 
-        plan.idPlan === id ? { ...plan, estado: !estadoActual } : plan
-      ));
-      
+
+      // Actualizar estado local y contadores
+      setPlanes(prevPlanes => {
+        const nuevosPlanes = prevPlanes.map(plan =>
+          plan.idPlan === id ? { ...plan, estado: !estadoActual } : plan
+        );
+        setCounters({
+          total: nuevosPlanes.length,
+          activos: nuevosPlanes.filter(p => p.estado).length,
+          inactivos: nuevosPlanes.filter(p => !p.estado).length
+        });
+        return nuevosPlanes;
+      });
+
+      toast.dismiss(loadingToast);
       toast.success('Estado del plan actualizado correctamente');
     } catch (error) {
+      toast.dismiss();
+      if (error.message && error.message.includes('permisos')) {
+        toast.error('No tienes permisos para cambiar el estado del plan');
+      } else if (error.message && error.message.includes('expirada')) {
+        toast.error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+      } else {
+        toast.error(error.message || 'Error al actualizar el estado del plan');
+      }
       console.error('Error al cambiar estado:', error);
-      toast.error('Error al actualizar el estado del plan');
     }
   };
 
@@ -146,10 +165,10 @@ const PlanesPage = () => {
         <TabGroup className="mt-4" onIndexChange={(index) => {
           setActiveTab(['todos', 'activos', 'inactivos'][index]);
         }}>
-          <TabList>
-            <Tab>Todos ({counters.total})</Tab>
-            <Tab>Activos ({counters.activos})</Tab>
-            <Tab>Inactivos ({counters.inactivos})</Tab>
+          <TabList variant="solid">
+            <Tab>Todos <Badge size="xs">{counters.total}</Badge></Tab>
+            <Tab>Activos <Badge size="xs" color="green">{counters.activos}</Badge></Tab>
+            <Tab>Inactivos <Badge size="xs" color="red">{counters.inactivos}</Badge></Tab>
           </TabList>
         </TabGroup>
 
@@ -171,30 +190,50 @@ const PlanesPage = () => {
                 <TableCell>{plan.nombre}</TableCell>
                 <TableCell>{plan.descripcion}</TableCell>
                 <TableCell>S/ {plan.precio}</TableCell>
-                <TableCell>{plan.duracion} {plan.esDiario ? 'días' : 'meses'}</TableCell>
+                <TableCell>{`${plan.duracion} ${plan.duracion === 1 ? 'día' : 'días'}`}</TableCell>
                 <TableCell>
                   <Badge color={plan.tipoPlan === 'PREMIUM' ? 'red' : 'blue'}>
                     {plan.tipoPlan}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge color={plan.estado ? 'emerald' : 'gray'}>
-                    {plan.estado ? 'Activo' : 'Inactivo'}
-                  </Badge>
+                  <div className="flex gap-2 items-center">
+                    <button
+                      onClick={() => handleToggleStatus(plan.idPlan, plan.estado)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${plan.estado ? 'bg-green-500' : 'bg-gray-300'}`}
+                      title="Cambiar estado"
+                    >
+                      <span className="sr-only">Cambiar estado</span>
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${plan.estado ? 'translate-x-6' : 'translate-x-1'}`}
+                      />
+                    </button>
+                    <span className={`ml-2 text-xs font-medium ${plan.estado ? 'text-green-700' : 'text-gray-600'}`}>{plan.estado ? 'Activo' : 'Inactivo'}</span>
+                  </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex space-x-2">
+                  <div className="flex gap-2 items-center">
                     <Button size="xs" variant="secondary" onClick={() => handleEditPlan(plan)}>
                       Editar
                     </Button>
-                    <Button
-                      size="xs"
-                      variant="primary"
-                      color={plan.estado ? 'red' : 'emerald'}
-                      onClick={() => handleToggleStatus(plan.idPlan, plan.estado)}
+                    <button
+                      onClick={async () => {
+                        if (!window.confirm('¿Estás seguro de que quieres eliminar este plan?')) return;
+                        try {
+                          const token = localStorage.getItem('token');
+                          await eliminarPlan(plan.idPlan, token);
+                          toast.success('Plan eliminado correctamente');
+                          await fetchPlanes();
+                        } catch (error) {
+                          toast.error(error.message || 'Error al eliminar el plan');
+                        }
+                      }}
+                      className="p-1.5 bg-transparent text-red-600 rounded hover:bg-red-50 flex items-center gap-1 border border-red-400 shadow-none"
+                      title="Eliminar"
                     >
-                      {plan.estado ? 'Desactivar' : 'Activar'}
-                    </Button>
+                      <CreditCard size={16} />
+                      <span className="ml-1 text-xs font-medium">Eliminar</span>
+                    </button>
                   </div>
                 </TableCell>
               </TableRow>

@@ -1,0 +1,229 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Card,
+  Table,
+  TableHead,
+  TableRow,
+  TableHeaderCell,
+  TableBody,
+  TableCell,
+  Button,
+  TextInput,
+  Title,
+  Flex,
+  Text
+} from '@tremor/react';
+import { Edit, Trash2, Search, PlusCircle, RefreshCw } from 'react-feather';
+import { maquinariaAPI } from '../../services/maquinariaAPI';
+import MaquinariaModal from '../../components/receptionist/MaquinariaModal';
+
+const MaquinariaPage = () => {
+  const [piezas, setPiezas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPieza, setSelectedPieza] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const fetchPiezas = async () => {
+    try {
+      setLoading(true);
+      const response = await maquinariaAPI.listarPiezas();
+      setPiezas(response);
+    } catch (err) {
+      setError('Error al cargar las máquinas');
+      console.error('Error:', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPiezas();
+  }, []);
+
+  const handleToggleEstado = async (id, estadoActual) => {
+    try {
+      await maquinariaAPI.cambiarEstadoPieza(id, !estadoActual);
+      setPiezas(piezas.map(pieza =>
+        pieza.idPieza === id ? { ...pieza, estado: !estadoActual } : pieza
+      ));
+    } catch (err) {
+      console.error('Error al cambiar el estado de la pieza:', err);
+      alert('Error al cambiar el estado de la pieza. Por favor, intenta nuevamente.');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('¿Estás seguro de que quieres eliminar esta máquina?')) {
+      return;
+    }
+    try {
+      await maquinariaAPI.eliminarPieza(id);
+      setPiezas(piezas.filter(pieza => pieza.idPieza !== id));
+    } catch (err) {
+      console.error('Error al eliminar la máquina:', err.message);
+      alert('Error al eliminar la máquina');
+    }
+  };
+
+  const handleEdit = (pieza) => {
+    setSelectedPieza(pieza);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenModal = () => {
+    setSelectedPieza(null);
+    setIsModalOpen(true);
+  };
+  const handleCloseModal = () => {
+    setSelectedPieza(null);
+    setIsModalOpen(false);
+  };
+
+  const handlePiezaSuccess = (updatedPieza) => {
+    if (selectedPieza) {
+      setPiezas(piezas.map(pieza =>
+        pieza.idPieza === updatedPieza.idPieza ? updatedPieza : pieza
+      ));
+    } else {
+      setPiezas([...piezas, updatedPieza]);
+    }
+    handleCloseModal();
+  };
+
+  const filteredPiezas = piezas.filter(pieza =>
+    pieza.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-800"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-4">
+        <p className="font-medium">Error</p>
+        <p>{error}</p>
+        <button
+          onClick={fetchPiezas}
+          className="mt-2 flex items-center text-sm bg-red-100 hover:bg-red-200 text-red-800 py-1 px-3 rounded"
+        >
+          <RefreshCw size={14} className="mr-1" /> Reintentar
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Gestión de Maquinaria</h1>
+          <p className="text-gray-500">Administra las piezas/maquinaria del gimnasio</p>
+        </div>
+        <Button
+          icon={PlusCircle}
+          size="sm"
+          variant="primary"
+          onClick={handleOpenModal}
+        >
+          Nueva Pieza
+        </Button>
+      </div>
+
+      <Card>
+        <Flex justifyContent="between" className="mb-4">
+          <Title>Lista de Maquinaria</Title>
+          <div className="w-64">
+            <TextInput
+              icon={Search}
+              placeholder="Buscar pieza..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </Flex>
+
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableHeaderCell>Nombre</TableHeaderCell>
+              <TableHeaderCell>Stock</TableHeaderCell>
+              {/* <TableHeaderCell>Stock Mínimo</TableHeaderCell> */}
+              <TableHeaderCell>Peso (kg)</TableHeaderCell>
+              <TableHeaderCell>Precio Alquiler (S/.)</TableHeaderCell>
+              <TableHeaderCell>Estado</TableHeaderCell>
+              <TableHeaderCell>Acciones</TableHeaderCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredPiezas.length > 0 ? (
+              filteredPiezas.map((pieza) => (
+                <TableRow key={pieza.idPieza}>
+                  <TableCell className="font-medium">{pieza.nombre}</TableCell>
+                  <TableCell>{pieza.stock}</TableCell>
+                  {/* <TableCell>{pieza.stockMinimo}</TableCell> */}
+                  <TableCell>{pieza.peso}</TableCell>
+                  <TableCell>{pieza.precioAlquiler}</TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => handleToggleEstado(pieza.idPieza, pieza.estado)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full ${
+                        pieza.estado ? 'bg-green-500' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          pieza.estado ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                    <span className="ml-2 text-xs">
+                      {pieza.estado ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEdit(pieza)}
+                        className="p-1.5 bg-amber-100 text-amber-600 rounded hover:bg-amber-200"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(pieza.idPieza)}
+                        className="p-1.5 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-4">
+                  No se encontraron piezas
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Card>
+
+      <MaquinariaModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        pieza={selectedPieza}
+        onSuccess={handlePiezaSuccess}
+      />
+    </div>
+  );
+};
+
+export default MaquinariaPage;

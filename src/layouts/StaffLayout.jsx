@@ -86,8 +86,7 @@ const StaffLayout = () => {
       submenu: true,
       submenuItems: [
         { title: 'Productos', path: '/staff/productos' },
-        { title: 'Gestión de Stock', path: '/staff/productos/stock' },
-        { title: 'Equipamiento', path: '/staff/productos/equipamiento' },
+        { title: 'Equipamiento', path: '/staff/equipamiento' },
       ],
     },
     {

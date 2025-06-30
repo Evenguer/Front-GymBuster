@@ -16,14 +16,13 @@ import {
   TabList,
   Tab,
 } from '@tremor/react';
-import { PlusCircle, Search, Edit } from 'react-feather';
+import { PlusCircle, Search, Edit, Trash2 } from 'react-feather';
 import { useAuth } from '../../../shared/hooks/useAuth';
-import {
-  listEspecialidades,
-  crearEspecialidad,
-  actualizarEspecialidad,
-  cambiarEstadoEspecialidad
-} from '../../../shared/services/especialidadAPI';
+import * as especialidadAPI from '../../../shared/services/especialidadAPI';
+
+
+// Ahora la función está dentro del componente para acceder a fetchEspecialidades y toast directamente
+
 import EspecialidadModal from '../components/Especialidades/EspecialidadModal';
 
 const EspecialidadesPage = () => {
@@ -44,7 +43,7 @@ const EspecialidadesPage = () => {
   const fetchEspecialidades = async () => {
     try {
       const token = localStorage.getItem('token');
-      const data = await listEspecialidades(token);
+      const data = await especialidadAPI.listEspecialidades(token);
       setEspecialidades(data);
       
       setCounters({
@@ -77,7 +76,7 @@ const EspecialidadesPage = () => {
       // Mostrar toast de carga
       const loadingToast = toast.loading('Actualizando estado...');
       
-      await cambiarEstadoEspecialidad(id, !estadoActual, token);
+      await especialidadAPI.cambiarEstadoEspecialidad(id, !estadoActual, token);
       
       // Actualizar estado local solo si la petición fue exitosa
       setEspecialidades(especialidades.map(esp => 
@@ -129,10 +128,10 @@ const EspecialidadesPage = () => {
     try {
       const token = localStorage.getItem('token');
       if (selectedEspecialidad) {
-        await actualizarEspecialidad({ ...formData, id: selectedEspecialidad.id }, token);
+        await especialidadAPI.actualizarEspecialidad({ ...formData, id: selectedEspecialidad.id }, token);
         toast.success('Especialidad actualizada correctamente');
       } else {
-        await crearEspecialidad(formData, token);
+        await especialidadAPI.crearEspecialidad(formData, token);
         toast.success('Especialidad creada correctamente');
       }
       await fetchEspecialidades();
@@ -286,14 +285,35 @@ const EspecialidadesPage = () => {
                   </TableCell>
                   <TableCell>
                     {isAdmin() && (
-                      <Button
-                        size="xs"
-                        variant="secondary"
-                        onClick={() => handleEditEspecialidad(especialidad)}
-                        icon={Edit}
-                      >
-                        Editar
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          size="xs"
+                          variant="secondary"
+                          onClick={() => handleEditEspecialidad(especialidad)}
+                          icon={Edit}
+                        >
+                          Editar
+                        </Button>
+                        <button
+                          onClick={async () => {
+                            if (!window.confirm('¿Estás seguro de que quieres eliminar esta especialidad?')) return;
+                            try {
+                              const token = localStorage.getItem('token');
+                              await especialidadAPI.eliminarEspecialidad(especialidad.id, token);
+                              toast.success('Especialidad eliminada correctamente');
+                              await fetchEspecialidades();
+                            } catch (error) {
+                              console.error('Error al eliminar especialidad:', error);
+                              toast.error(error.message || 'Error al eliminar la especialidad');
+                            }
+                          }}
+                          className="p-1.5 bg-transparent text-red-600 rounded hover:bg-red-50 flex items-center gap-1 border border-red-400 shadow-none"
+                          title="Eliminar"
+                        >
+                          <Trash2 size={16} />
+                          <span className="ml-1 text-xs font-medium">Eliminar</span>
+                        </button>
+                      </div>
                     )}
                   </TableCell>
                 </TableRow>

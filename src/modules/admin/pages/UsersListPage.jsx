@@ -378,9 +378,8 @@ const UsersListPage = () => {
           icon={PlusCircle} 
           size="sm" 
           variant="primary" 
-          color="primary"
+          className="bg-red-600 hover:bg-red-700 text-white relative group"
           onClick={() => setIsCreateModalOpen(true)}
-          className="relative group"
         >
           <span>Nuevo Usuario</span>
           <div className="absolute hidden group-hover:block w-48 bg-white border border-gray-200 rounded-md shadow-lg p-2 text-xs text-gray-600 bottom-full mb-1 left-1/2 transform -translate-x-1/2">

@@ -76,18 +76,24 @@ export const ventasAPI = {
   guardarVenta: async (venta) => {
     try {
       checkRole(['ADMIN', 'RECEPCIONISTA']);
-      console.log('Datos de venta a enviar:', venta);
-      
+      // Intentar con formato cliente/empleado como objeto
+      let body = {};
+      if (venta.clienteId && venta.empleadoId) {
+        body = {
+          cliente: { idCliente: venta.clienteId },
+          empleado: { idEmpleado: venta.empleadoId }
+        };
+      } else {
+        body = venta;
+      }
+      console.log('Datos de venta a enviar (ajustado):', body);
       const response = await axios.post(
         ENDPOINTS.SAVE_SALE,
-        venta,
+        body,
         getAuthConfig()
       );
-      
       console.log('Respuesta completa del servidor:', response);
-      
       let ventaData = response.data;
-      
       if (typeof ventaData === 'string') {
         const idMatch = ventaData.match(/"idVenta":(\d+)/);
         if (idMatch && idMatch[1]) {
@@ -102,18 +108,15 @@ export const ventasAPI = {
           throw new Error('No se pudo procesar la respuesta del servidor');
         }
       }
-
       if (!ventaData || typeof ventaData.idVenta !== 'number') {
         console.error('Datos de venta inválidos:', ventaData);
         throw new Error('La respuesta del servidor no tiene el formato esperado');
       }
-
       const ventaFormateada = {
         idVenta: ventaData.idVenta,
         estado: ventaData.estado || true,
         fecha: ventaData.fecha || new Date().toISOString().split('T')[0]
       };
-      
       console.log('Venta formateada:', ventaFormateada);
       return ventaFormateada;
     } catch (error) {
@@ -240,5 +243,35 @@ export const ventasAPI = {
       throw new Error('Venta no encontrada');
     }
     return venta;
+  },
+
+  /**
+   * Crea una venta completa: venta, detalles y pago en orden.
+   * @param {Object} ventaCompleta - { clienteId, empleadoId, detalles, montoPagado, metodoPago }
+   */
+  crearVentaCompleta: async function(ventaCompleta) {
+    try {
+      // 1. Crear la venta principal
+      const venta = await this.guardarVenta({
+        clienteId: ventaCompleta.clienteId,
+        empleadoId: ventaCompleta.empleadoId
+      });
+      if (!venta || !venta.idVenta) throw new Error('No se pudo crear la venta');
+
+      // 2. Agregar los detalles de la venta
+      await this.agregarDetallesVenta(venta.idVenta, ventaCompleta.detalles);
+
+      // 3. Registrar el pago
+      await this.registrarPago(
+        venta.idVenta,
+        ventaCompleta.montoPagado,
+        ventaCompleta.metodoPago
+      );
+
+      return { success: true, idVenta: venta.idVenta };
+    } catch (error) {
+      console.error('Error en crearVentaCompleta:', error);
+      throw new Error(error.message || 'Error al registrar la venta completa');
+    }
   }
 };

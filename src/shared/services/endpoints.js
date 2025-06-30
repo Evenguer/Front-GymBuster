@@ -4,7 +4,7 @@ console.log("BASE_URL configurada como:", BASE_URL);
 
 export const ENDPOINTS = {  
   BASE_URL,
-  
+  TOGGLE_CLIENT_STATUS: (id) => `${BASE_URL}/personas/clientes/${id}/estado`,
   // Ventas
   VENTAS: {
     LISTAR: `${BASE_URL}/venta/listar`,
@@ -57,7 +57,8 @@ export const ENDPOINTS = {
   SAVE_PLAN: `${BASE_URL}/plan/guardar`,
   LIST_PLANS: `${BASE_URL}/plan/listar`,
   UPDATE_PLAN: `${BASE_URL}/plan/actualizar`,
-  TOGGLE_PLAN_STATUS: (id) => `${BASE_URL}/plan/cambiarEstado/${id}`,
+  TOGGLE_PLAN_STATUS: (id) => `${BASE_URL}/plan/${id}/estado`,
+  DELETE_PLAN: (id) => `${BASE_URL}/plan/eliminar/${id}`,
   
  // Horario Empleado
     LIST_SCHEDULES: `${BASE_URL}/horario-empleado/listar`,

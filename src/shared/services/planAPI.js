@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { ENDPOINTS } from './endpoints';
 
@@ -47,21 +48,24 @@ export const actualizarPlan = async (id, planData, token) => {
   }
 };
 
+
 export const cambiarEstadoPlan = async (id, estado, token) => {
   try {
     if (!token) {
       throw new Error('No hay token de autenticación');
     }
 
-    const response = await axios({
-      method: 'PUT',
-      url: ENDPOINTS.TOGGLE_PLAN_STATUS(id),
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      params: { estado }
-    });
+    // El backend espera el booleano en el body, no en params
+    const response = await axios.put(
+      ENDPOINTS.TOGGLE_PLAN_STATUS(id),
+      estado, // solo el booleano, no un objeto
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
 
     return response.data;
   } catch (error) {
@@ -82,5 +86,19 @@ export const cambiarEstadoPlan = async (id, estado, token) => {
     throw error.response?.data?.message || 
           error.message || 
           'Error al cambiar el estado del plan';
+  }
+};
+
+export const eliminarPlan = async (id, token) => {
+  try {
+    const response = await axios.delete(ENDPOINTS.DELETE_PLAN(id), {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error al eliminar plan:', error);
+    throw error.response?.data?.message || 'Error al eliminar el plan';
   }
 };
