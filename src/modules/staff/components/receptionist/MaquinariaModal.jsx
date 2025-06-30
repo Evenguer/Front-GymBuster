@@ -155,7 +155,7 @@ const MaquinariaModal = ({
                 <label className="block text-sm font-medium text-gray-700">
                   Stock
                 </label>
-                <TextInput
+                <input
                   type="number"
                   name="stock"
                   placeholder="0"
@@ -163,7 +163,8 @@ const MaquinariaModal = ({
                   step="1"
                   value={formData.stock}
                   onChange={(e) => handleInputChange('stock', e.target.value)}
-                  error={formErrors.stock}
+                  className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 px-3 py-2"
+                  disabled={loading}
                 />
                 {formErrors.stock && (
                   <span className="text-xs text-red-600">{formErrors.stock}</span>
@@ -173,7 +174,7 @@ const MaquinariaModal = ({
                 <label className="block text-sm font-medium text-gray-700">
                   Stock Mínimo
                 </label>
-                <TextInput
+                <input
                   type="number"
                   name="stockMinimo"
                   placeholder="0"
@@ -181,7 +182,8 @@ const MaquinariaModal = ({
                   step="1"
                   value={formData.stockMinimo}
                   onChange={(e) => handleInputChange('stockMinimo', e.target.value)}
-                  error={formErrors.stockMinimo}
+                  className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 px-3 py-2"
+                  disabled={loading}
                 />
                 {formErrors.stockMinimo && (
                   <span className="text-xs text-red-600">{formErrors.stockMinimo}</span>
@@ -193,7 +195,7 @@ const MaquinariaModal = ({
                 <label className="block text-sm font-medium text-gray-700">
                   Peso (kg)
                 </label>
-                <TextInput
+                <input
                   type="number"
                   name="peso"
                   placeholder="0.00"
@@ -201,7 +203,8 @@ const MaquinariaModal = ({
                   step="0.01"
                   value={formData.peso}
                   onChange={(e) => handleInputChange('peso', e.target.value)}
-                  error={formErrors.peso}
+                  className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 px-3 py-2"
+                  disabled={loading}
                 />
                 {formErrors.peso && (
                   <span className="text-xs text-red-600">{formErrors.peso}</span>
@@ -211,7 +214,7 @@ const MaquinariaModal = ({
                 <label className="block text-sm font-medium text-gray-700">
                   Precio de Alquiler (S/.)
                 </label>
-                <TextInput
+                <input
                   type="number"
                   name="precioAlquiler"
                   placeholder="0.00"
@@ -219,7 +222,8 @@ const MaquinariaModal = ({
                   step="0.01"
                   value={formData.precioAlquiler}
                   onChange={(e) => handleInputChange('precioAlquiler', e.target.value)}
-                  error={formErrors.precioAlquiler}
+                  className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 px-3 py-2"
+                  disabled={loading}
                 />
                 {formErrors.precioAlquiler && (
                   <span className="text-xs text-red-600">{formErrors.precioAlquiler}</span>

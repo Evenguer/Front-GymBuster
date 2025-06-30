@@ -336,18 +336,18 @@ const CategoriasPage = () => {
                         variant="secondary"
                         icon={Edit}
                         onClick={() => handleEdit(categoria)}
-                      >
-                        Editar
-                      </Button>
+                        className="p-2"
+                        aria-label="Editar"
+                      />
                       <Button
                         size="xs"
                         variant="secondary"
                         color="red"
                         icon={Trash2}
                         onClick={() => handleDelete(categoria.idCategoria)}
-                      >
-                        Eliminar
-                      </Button>
+                        className="p-2"
+                        aria-label="Eliminar"
+                      />
                     </div>
                   </TableCell>
                 </TableRow>

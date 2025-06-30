@@ -206,16 +206,17 @@ const ProductoModal = ({
                 <label className="block text-sm font-medium text-gray-700">
                   Precio de Venta (S/.)
                 </label>
-                <TextInput
-                  type="number"
-                  name="precioVenta"
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                  value={formData.precioVenta}
-                  onChange={(e) => handleInputChange('precioVenta', e.target.value)}
-                  error={formErrors.precioVenta}
-                />
+              <input
+                type="number"
+                name="precioVenta"
+                placeholder="0.00"
+                min="0"
+                step="0.01"
+                value={formData.precioVenta}
+                onChange={(e) => handleInputChange('precioVenta', e.target.value)}
+                className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 px-3 py-2"
+                disabled={loading}
+              />
                 {formErrors.precioVenta && (
                   <span className="text-xs text-red-600">{formErrors.precioVenta}</span>
                 )}
@@ -225,7 +226,7 @@ const ProductoModal = ({
                 <label className="block text-sm font-medium text-gray-700">
                   Precio de Compra (S/.)
                 </label>
-                <TextInput
+                <input
                   type="number"
                   name="precioCompra"
                   placeholder="0.00"
@@ -233,7 +234,8 @@ const ProductoModal = ({
                   step="0.01"
                   value={formData.precioCompra}
                   onChange={(e) => handleInputChange('precioCompra', e.target.value)}
-                  error={formErrors.precioCompra}
+                  className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 px-3 py-2"
+                  disabled={loading}
                 />
                 {formErrors.precioCompra && (
                   <span className="text-xs text-red-600">{formErrors.precioCompra}</span>
@@ -246,7 +248,7 @@ const ProductoModal = ({
                 <label className="block text-sm font-medium text-gray-700">
                   Stock Mínimo
                 </label>
-                <TextInput
+                <input
                   type="number"
                   name="stockMinimo"
                   placeholder="0"
@@ -254,7 +256,8 @@ const ProductoModal = ({
                   step="1"
                   value={formData.stockMinimo}
                   onChange={(e) => handleInputChange('stockMinimo', e.target.value)}
-                  error={formErrors.stockMinimo}
+                  className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 px-3 py-2"
+                  disabled={loading}
                 />
                 {formErrors.stockMinimo && (
                   <span className="text-xs text-red-600">{formErrors.stockMinimo}</span>
@@ -265,7 +268,7 @@ const ProductoModal = ({
                 <label className="block text-sm font-medium text-gray-700">
                   Stock Total
                 </label>
-                <TextInput
+                <input
                   type="number"
                   name="stockTotal"
                   placeholder="0"
@@ -273,7 +276,8 @@ const ProductoModal = ({
                   step="1"
                   value={formData.stockTotal}
                   onChange={(e) => handleInputChange('stockTotal', e.target.value)}
-                  error={formErrors.stockTotal}
+                  className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 px-3 py-2"
+                  disabled={loading}
                 />
                 {formErrors.stockTotal && (
                   <span className="text-xs text-red-600">{formErrors.stockTotal}</span>

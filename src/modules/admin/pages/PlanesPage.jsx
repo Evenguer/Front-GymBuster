@@ -18,7 +18,7 @@ import {
   TabList,
   Tab,
 } from '@tremor/react';
-import { PlusCircle, Search, CreditCard } from 'react-feather';
+import { PlusCircle, Search, CreditCard, Edit, Trash2 } from 'react-feather';
 import { useAuth } from '../../../shared/hooks/useAuth';
 import { listPlanes, cambiarEstadoPlan, eliminarPlan } from '../../../shared/services/planAPI';
 import PlanModal from '../components/Planes/PlanModal';
@@ -213,10 +213,19 @@ const PlanesPage = () => {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2 items-center">
-                    <Button size="xs" variant="secondary" onClick={() => handleEditPlan(plan)}>
-                      Editar
-                    </Button>
-                    <button
+                    <Button
+                      size="xs"
+                      variant="secondary"
+                      icon={Edit}
+                      onClick={() => handleEditPlan(plan)}
+                      className="p-2"
+                      aria-label="Editar"
+                    />
+                    <Button
+                      size="xs"
+                      variant="secondary"
+                      color="red"
+                      icon={Trash2}
                       onClick={async () => {
                         if (!window.confirm('¿Estás seguro de que quieres eliminar este plan?')) return;
                         try {
@@ -228,12 +237,9 @@ const PlanesPage = () => {
                           toast.error(error.message || 'Error al eliminar el plan');
                         }
                       }}
-                      className="p-1.5 bg-transparent text-red-600 rounded hover:bg-red-50 flex items-center gap-1 border border-red-400 shadow-none"
-                      title="Eliminar"
-                    >
-                      <CreditCard size={16} />
-                      <span className="ml-1 text-xs font-medium">Eliminar</span>
-                    </button>
+                      className="p-2"
+                      aria-label="Eliminar"
+                    />
                   </div>
                 </TableCell>
               </TableRow>

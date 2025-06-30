@@ -251,7 +251,13 @@ const ClienteFormPage = () => {
             </div>
           </div>
           <div className="flex justify-end mt-6">
-            <Button type="submit" variant="primary" loading={loading} disabled={loading}>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={loading}
+              disabled={loading}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
               {loading ? 'Creando...' : 'Registrar Cliente'}
             </Button>
           </div>

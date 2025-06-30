@@ -262,7 +262,9 @@ const ListaAlquileresPage = () => {
   const formatearFecha = (fechaStr) => {
     try {
       if (!fechaStr) return 'Sin fecha';
-      return format(new Date(fechaStr), 'dd/MM/yyyy', { locale: es });
+      const date = new Date(fechaStr);
+      date.setDate(date.getDate() + 1);
+      return format(date, 'dd/MM/yyyy', { locale: es });
     } catch (error) {
       console.error('Error al formatear fecha:', error);
       return fechaStr || 'Fecha inválida';

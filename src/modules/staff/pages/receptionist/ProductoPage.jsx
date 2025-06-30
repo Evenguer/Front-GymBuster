@@ -11,7 +11,10 @@ import {
   TextInput,
   Title,
   Flex,
-  Text
+  Text,
+  TabGroup,
+  TabList,
+  Tab
 } from '@tremor/react';
 import { Edit, Trash2, Search, PlusCircle, RefreshCw } from 'react-feather';
 import { productosAPI } from '../../../staff/services/productosAPI';
@@ -26,12 +29,24 @@ const ProductoPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Contadores para tabs
+  const [counters, setCounters] = useState({
+    total: 0,
+    activos: 0,
+    inactivos: 0
+  });
+  const [activeTab, setActiveTab] = useState('todos');
 
   const fetchProductos = async () => {
     try {
       setLoading(true);
       const response = await productosAPI.listarProductos();
       setProductos(response);
+      setCounters({
+        total: response.length,
+        activos: response.filter(p => p.estado).length,
+        inactivos: response.filter(p => !p.estado).length
+      });
     } catch (err) {
       setError('Error al cargar los productos');
       console.error('Error:', err.message);
@@ -74,9 +89,15 @@ const ProductoPage = () => {
     try {
       const response = await productosAPI.cambiarEstadoProducto(id, !estadoActual);
       if (response) {
-        setProductos(productos.map(prod => 
+        const nuevos = productos.map(prod => 
           prod.idProducto === id ? {...prod, estado: !estadoActual} : prod
-        ));
+        );
+        setProductos(nuevos);
+        setCounters({
+          total: nuevos.length,
+          activos: nuevos.filter(p => p.estado).length,
+          inactivos: nuevos.filter(p => !p.estado).length
+        });
       }
     } catch (err) {
       console.error('Error al cambiar el estado del producto:', err);
@@ -92,10 +113,15 @@ const ProductoPage = () => {
     if (!window.confirm('¿Estás seguro de que quieres eliminar este producto?')) {
       return;
     }
-    
     try {
       await productosAPI.eliminarProducto(id);
-      setProductos(productos.filter(prod => prod.idProducto !== id));
+      const nuevos = productos.filter(prod => prod.idProducto !== id);
+      setProductos(nuevos);
+      setCounters({
+        total: nuevos.length,
+        activos: nuevos.filter(p => p.estado).length,
+        inactivos: nuevos.filter(p => !p.estado).length
+      });
     } catch (err) {
       console.error('Error al eliminar el producto:', err.message);
       alert('Error al eliminar el producto');
@@ -116,22 +142,32 @@ const ProductoPage = () => {
   };
 
   const handleProductSuccess = (updatedProducto) => {
+    let nuevos;
     if (selectedProduct) {
       // Actualizar producto existente
-      setProductos(productos.map(prod => 
+      nuevos = productos.map(prod => 
         prod.idProducto === updatedProducto.idProducto ? updatedProducto : prod
-      ));
+      );
     } else {
       // Agregar nuevo producto
-      setProductos([...productos, updatedProducto]);
+      nuevos = [...productos, updatedProducto];
     }
+    setProductos(nuevos);
+    setCounters({
+      total: nuevos.length,
+      activos: nuevos.filter(p => p.estado).length,
+      inactivos: nuevos.filter(p => !p.estado).length
+    });
     // Cerrar el modal después de actualizar los datos
     handleCloseModal();
   };
 
-  const filteredProductos = productos.filter(prod =>
-    prod.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProductos = productos.filter(prod => {
+    const matchesSearch = prod.nombre.toLowerCase().includes(searchTerm.toLowerCase());
+    if (activeTab === 'activos') return matchesSearch && prod.estado;
+    if (activeTab === 'inactivos') return matchesSearch && !prod.estado;
+    return matchesSearch;
+  });
 
   if (loading) {
     return (
@@ -167,12 +203,12 @@ const ProductoPage = () => {
           icon={PlusCircle} 
           size="sm" 
           variant="primary" 
+          className="bg-red-600 hover:bg-red-700 text-white"
           onClick={handleOpenModal}
         >
           Nuevo Producto
         </Button>
       </div>
-      
       <Card>
         <Flex justifyContent="between" className="mb-4">
           <Title>Lista de Productos</Title>
@@ -185,7 +221,16 @@ const ProductoPage = () => {
             />
           </div>
         </Flex>
-        
+        <TabGroup className="mb-6" onIndexChange={(index) => {
+          const tabs = ['todos', 'activos', 'inactivos'];
+          setActiveTab(tabs[index]);
+        }}>
+          <TabList variant="solid">
+            <Tab>Todos <span className="ml-1"><span className="inline-block bg-gray-200 text-gray-800 rounded px-2 text-xs">{counters.total}</span></span></Tab>
+            <Tab>Activos <span className="ml-1"><span className="inline-block bg-green-200 text-green-800 rounded px-2 text-xs">{counters.activos}</span></span></Tab>
+            <Tab>Inactivos <span className="ml-1"><span className="inline-block bg-red-200 text-red-800 rounded px-2 text-xs">{counters.inactivos}</span></span></Tab>
+          </TabList>
+        </TabGroup>
         <Table>
           <TableHead>
             <TableRow>

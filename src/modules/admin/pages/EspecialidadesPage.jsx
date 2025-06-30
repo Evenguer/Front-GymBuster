@@ -289,12 +289,16 @@ const EspecialidadesPage = () => {
                         <Button
                           size="xs"
                           variant="secondary"
-                          onClick={() => handleEditEspecialidad(especialidad)}
                           icon={Edit}
-                        >
-                          Editar
-                        </Button>
-                        <button
+                          onClick={() => handleEditEspecialidad(especialidad)}
+                          className="p-2"
+                          aria-label="Editar"
+                        />
+                        <Button
+                          size="xs"
+                          variant="secondary"
+                          color="red"
+                          icon={Trash2}
                           onClick={async () => {
                             if (!window.confirm('¿Estás seguro de que quieres eliminar esta especialidad?')) return;
                             try {
@@ -307,12 +311,9 @@ const EspecialidadesPage = () => {
                               toast.error(error.message || 'Error al eliminar la especialidad');
                             }
                           }}
-                          className="p-1.5 bg-transparent text-red-600 rounded hover:bg-red-50 flex items-center gap-1 border border-red-400 shadow-none"
-                          title="Eliminar"
-                        >
-                          <Trash2 size={16} />
-                          <span className="ml-1 text-xs font-medium">Eliminar</span>
-                        </button>
+                          className="p-2"
+                          aria-label="Eliminar"
+                        />
                       </div>
                     )}
                   </TableCell>
