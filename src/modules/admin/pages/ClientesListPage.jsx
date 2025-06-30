@@ -1,30 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { toast, Toaster } from 'react-hot-toast';
-import { useAuth } from '../../../shared/hooks/useAuth';
 import { 
-  Card, 
-  Table, 
-  TableHead, 
-  TableRow, 
-  TableHeaderCell, 
-  TableBody, 
-  TableCell, 
-  Badge, 
-  Button,
-  TextInput,
-  Title,
-  Flex,
-  TabGroup,
-  TabList,
-  Tab
+  Card, Table, TableHead, TableRow, TableHeaderCell,
+  TableBody, TableCell, TextInput, Title, Flex,
+  TabGroup, TabList, Tab, Badge
 } from '@tremor/react';
-import { Edit, Search } from 'react-feather';
-import { listClients, toggleClientStatus, updateClient } from '../../../shared/services/authAPI';
+import { Search } from 'react-feather';
+import { ActionButtons } from '../components/common/ActionButtons';
 import EditClientModal from '../components/UserManagement/EditClientModal';
+import { useAuth } from '../../../shared/hooks/useAuth';
+import { listClients, toggleClientStatus, updateClient } from '../../../shared/services/authAPI';
+import { useNotification } from '../../../shared/hooks/useNotification';
 
 const ClientesListPage = () => {
   const { user } = useAuth();
+  const notify = useNotification();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -65,41 +55,25 @@ const ClientesListPage = () => {
 
   const handleToggleStatus = async (client, currentStatus) => {
     try {
-      // Obtener el ID correcto del cliente, considerando todas las posibilidades
-      const clientId = client.idCliente || client.id_cliente || client.id;
-      console.log(`Cambiando estado del cliente con ID: ${clientId}, de ${currentStatus} a ${!currentStatus}`);
-      
       const token = localStorage.getItem('token');
+      if (!token) {
+        notify.error('Sesión no válida. Por favor, inicie sesión nuevamente.');
+        return;
+      }
+
+      const clientId = client.idCliente || client.id;
+      if (user?.role !== 'ADMIN') {
+        notify.error('No tienes permiso para cambiar el estado del usuario');
+        return;
+      }
+
       await toggleClientStatus(clientId, !currentStatus, token);
-      
-      // Refrescar la lista de clientes para actualizar la UI
       await fetchClients();
-      
-      toast.success(
-        `Cliente ${currentStatus ? 'desactivado' : 'activado'} correctamente`,
-        {
-          duration: 3000,
-          position: 'top-right',
-          style: {
-            background: '#10B981',
-            color: '#fff',
-          },
-        }
-      );
+      notify.success(`Cliente ${currentStatus ? 'desactivado' : 'activado'} correctamente`);
     } catch (error) {
-      console.error('Error al cambiar estado:', error);
-      toast.error(
-        error.response?.status === 403
-          ? 'No tienes permiso para cambiar el estado del usuario'
-          : error.response?.data?.message || 'Error al cambiar el estado del usuario',
-        {
-          duration: 4000,
-          position: 'top-right',
-          style: {
-            background: '#EF4444',
-            color: '#fff',
-          },
-        }
+      notify.error(error.response?.status === 403 
+        ? 'No tienes permiso para cambiar el estado del usuario'
+        : error.response?.data?.message || 'Error al cambiar el estado del usuario'
       );
     }
   };
@@ -115,59 +89,20 @@ const ClientesListPage = () => {
   };  const handleSaveChanges = async (changedData) => {
     try {
       const token = localStorage.getItem('token');
-      
-      // Determinar el id correcto del cliente
       const clientId = selectedClient.idCliente || selectedClient.id_cliente || selectedClient.id;
-      console.log('Actualizando cliente con ID:', clientId, 'y datos:', changedData);
-      console.log('Rol del usuario actual:', user?.role || 'No disponible');
-      
-      // Si el usuario no es ADMIN, mostrar un mensaje de error
+
       if (user?.role !== 'ADMIN') {
-        toast.error('Solo los administradores pueden actualizar datos de clientes');
+        notify.error('Solo los administradores pueden actualizar datos de clientes');
         return;
       }
-      
-      // Realizar la actualización y obtener la respuesta
-      const response = await updateClient(clientId, changedData, token);
-      console.log('Respuesta completa de la actualización:', response);
-      
-      // Mostrar información sobre los cambios realizados
-      if (response.cambiosRealizados) {
-        console.log('Cambios realizados en el servidor:', response.cambiosRealizados);
-        
-        // Verificar específicamente el campo género
-        if (changedData.genero && response.cambiosRealizados.genero) {
-          console.log(`Campo género actualizado exitosamente: ${response.cambiosRealizados.genero}`);
-        }
-      }
-      
-      // Actualizar la lista de clientes después de la edición
+
+      await updateClient(clientId, changedData, token);
       await fetchClients();
       handleCloseModal();
-      
-      toast.success('Cliente actualizado correctamente', {
-        duration: 3000,
-        position: 'top-right',
-        style: {
-          background: '#10B981',
-          color: '#fff',
-        },
-      });
+      notify.success('Cliente actualizado correctamente');
+
     } catch (error) {
-      console.error('Error al actualizar cliente:', error);
-      toast.error(
-        error.response?.status === 403
-          ? 'No tienes permiso para actualizar clientes'
-          : error.response?.data?.message || 'Error al actualizar los datos del cliente',
-        {
-          duration: 4000,
-          position: 'top-right',
-          style: {
-            background: '#EF4444',
-            color: '#fff',
-          },
-        }
-      );
+      notify.error(error.message || 'Error al actualizar el cliente');
     }
   };
   const filteredClients = clients.filter(client => {
@@ -198,7 +133,7 @@ const ClientesListPage = () => {
   }
 
   if (error) {
-    toast.error(error, {
+    notify.error(error, {
       duration: 4000,
       position: 'top-right',
       style: {
@@ -210,7 +145,7 @@ const ClientesListPage = () => {
 
   return (
     <div className="space-y-6">
-      <Toaster />      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestión de Clientes</h1>
           <p className="text-gray-500">Administra los clientes del gimnasio</p>
@@ -320,13 +255,12 @@ const ClientesListPage = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => handleEditClick(client)}
-                        className="p-1.5 bg-amber-100 text-amber-600 rounded hover:bg-amber-200"
-                      >
-                        <Edit size={16} />
-                      </button>
+                    <div className="flex gap-2">
+                      <ActionButtons
+                        onEdit={() => handleEditClick(client)}
+                        showDelete={false}
+                        showView={false}
+                      />
                     </div>
                   </TableCell>
                 </TableRow>

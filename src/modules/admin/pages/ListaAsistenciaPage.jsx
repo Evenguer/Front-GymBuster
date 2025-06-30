@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNotification } from '../../../shared/hooks/useNotification';
 import {
     Card,
     Title,
@@ -12,9 +13,10 @@ import {
 } from '@tremor/react';
 import { Search, User, Clock, Calendar } from 'react-feather';
 import { asistenciaEmpleadoAPI } from '../services/asistenciaEmpleadoAPI';
-import toast from 'react-hot-toast';
 
-const ListaAsistenciaPage = () => {    const [asistencias, setAsistencias] = useState([]);
+const ListaAsistenciaPage = () => {
+    const notify = useNotification();
+    const [asistencias, setAsistencias] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -29,12 +31,12 @@ const ListaAsistenciaPage = () => {    const [asistencias, setAsistencias] = use
                 setError(null);
             } else {
                 setError(response.message);
-                toast.error(response.message);
+                notify.error(response.message);
             }
         } catch (err) {
             setError('Error al cargar las asistencias');
             console.error('Error:', err.message);
-            toast.error('Error al cargar las asistencias');
+            notify.error('Error al cargar las asistencias');
         } finally {
             setLoading(false);
         }

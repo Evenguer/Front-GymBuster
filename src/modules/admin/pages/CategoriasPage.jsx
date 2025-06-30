@@ -19,8 +19,12 @@ import {
 import { Edit, Trash2, Search, PlusCircle, RefreshCw } from 'react-feather';
 import { categoriaAPI } from '../services/CategoriaAPI';
 import CategoriaModal from '../components/Categorias/CategoriaModal';
+import { ActionButtons } from '../components/common/ActionButtons';
+import { useNotification } from '../../../shared/hooks/useNotification';
 
 const CategoriasPage = () => {
+  const notify = useNotification();
+  
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -52,10 +56,10 @@ const CategoriasPage = () => {
       });
       setError(null);
       setLoading(false);
-    } catch (err) {
+    } catch {
       setError('Error al cargar las categorías');
       setLoading(false);
-      console.error('Error:', err.message);
+      // Optionally, you can log the error if needed
     }
   };
   
@@ -65,14 +69,12 @@ const CategoriasPage = () => {
 
   const handleToggleEstado = async (id, estadoActual) => {
     try {
-      const nuevoEstado = !estadoActual;
-      const response = await categoriaAPI.cambiarEstadoCategoria(id, nuevoEstado);
+      const response = await categoriaAPI.cambiarEstadoCategoria(id, !estadoActual);
       if (response) {
         setCategorias(prev => {
           const nuevasCategorias = prev.map(cat =>
             cat.idCategoria === id ? { ...cat, estado: response.estado } : cat
           );
-          // Actualizar contadores después del cambio de estado
           setCounters({
             total: nuevasCategorias.length,
             activas: nuevasCategorias.filter(cat => cat.estado).length,
@@ -80,10 +82,10 @@ const CategoriasPage = () => {
           });
           return nuevasCategorias;
         });
+        notify.success(`Categoría ${!estadoActual ? 'activada' : 'desactivada'} correctamente`);
       }
-    } catch (err) {
-      console.error('Error al cambiar el estado de la categoría:', err.message);
-      alert('Error al cambiar el estado de la categoría');
+    } catch {
+      notify.error('Error al cambiar el estado de la categoría');
     }
   };
 
@@ -94,12 +96,10 @@ const CategoriasPage = () => {
     
     try {
       await categoriaAPI.eliminarCategoria(id);
-      
-      // Elimina la categoría localmente después de la confirmación del servidor
       setCategorias(categorias.filter(cat => cat.idCategoria !== id));
-    } catch (err) {
-      console.error('Error al eliminar la categoría:', err.message);
-      alert('Error al eliminar la categoría');
+      notify.success('Categoría eliminada correctamente');
+    } catch {
+      notify.error('Error al eliminar la categoría');
     }
   };
   
@@ -166,7 +166,7 @@ const CategoriasPage = () => {
           setCategorias(categorias.map(cat => 
             cat.idCategoria === formData.id ? response : cat
           ));
-          alert('Categoría actualizada exitosamente');
+          notify.success('Categoría actualizada correctamente');
         }
       } else {
         // Crear nueva categoría
@@ -181,14 +181,13 @@ const CategoriasPage = () => {
         if (response) {
           // Añadir la nueva categoría a la lista
           setCategorias([...categorias, response]);
-          alert('Categoría creada exitosamente');
+          notify.success('Categoría creada correctamente');
         }
       }
       
       resetForm();
-    } catch (err) {
-      console.error('Error al guardar la categoría', err);
-      alert('Error al guardar la categoría');
+    } catch {
+      notify.error('Error al guardar la categoría');
     }
   };
     const resetForm = () => {
@@ -330,6 +329,8 @@ const CategoriasPage = () => {
                     </span>
                   </TableCell>
                   <TableCell>
+
+
                     <div className="flex space-x-2">
                       <Button
                         size="xs"
@@ -347,6 +348,7 @@ const CategoriasPage = () => {
                         onClick={() => handleDelete(categoria.idCategoria)}
                         className="p-2"
                         aria-label="Eliminar"
+
                       />
                     </div>
                   </TableCell>

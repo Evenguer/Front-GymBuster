@@ -33,136 +33,102 @@ export const login = async (credentials) => {
 export const checkExistingUser = async (dni, correo) => {
   try {
     const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('Se requiere autenticación');
+    if (!token || token === 'null' || token === 'undefined') {
+      console.error('Token no válido o no encontrado');
+      throw new Error('Sesión no válida. Por favor, inicia sesión nuevamente.');
     }
+
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
 
     // Verificar DNI
     try {
-      const response = await axios.get(`${ENDPOINTS.BASE_URL}/personas/buscar/dni/${dni}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (response.data && response.data.idPersona) {
+      const dniResponse = await axios.get(`${API_URL}/api/personas/buscar/dni/${dni}`, { headers });
+      if (dniResponse.data && dniResponse.data.idPersona) {
         return { exists: true, field: 'dni', message: 'El DNI ya está registrado' };
       }
     } catch (error) {
-      // Si retorna 404, significa que no existe, lo cual es bueno
-      if (error.response && error.response.status !== 404) {
-        console.error('Error al verificar DNI:', error);
+      // Solo manejamos errores que no sean 404
+      if (error.response) {
+        if (error.response.status === 401 || error.response.status === 403) {
+          throw new Error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+        } else if (error.response.status !== 404) {
+          console.error('Error al verificar DNI:', error.response.data);
+          throw new Error('Error al verificar el DNI');
+        }
       }
     }
 
     // Verificar correo
     try {
-      const response = await axios.get(`${ENDPOINTS.BASE_URL}/personas/buscar/correo/${correo}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (response.data && response.data.idPersona) {
+      const correoResponse = await axios.get(`${API_URL}/api/personas/buscar/correo/${correo}`, { headers });
+      if (correoResponse.data && correoResponse.data.idPersona) {
         return { exists: true, field: 'correo', message: 'El correo ya está registrado' };
       }
     } catch (error) {
-      // Si retorna 404, significa que no existe, lo cual es bueno
-      if (error.response && error.response.status !== 404) {
-        console.error('Error al verificar correo:', error);
+      if (error.response) {
+        if (error.response.status === 401 || error.response.status === 403) {
+          throw new Error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+        } else if (error.response.status !== 404) {
+          console.error('Error al verificar correo:', error.response.data);
+          throw new Error('Error al verificar el correo electrónico');
+        }
       }
     }
 
     return { exists: false };
   } catch (error) {
-    console.error('Error en verificación:', error);
-    throw new Error('Error al verificar los datos');
+    console.error('Error en verificación de usuario:', error);
+    throw error instanceof Error ? error : new Error('Error al verificar los datos del usuario');
   }
 };
 
 export const register = async (userData) => {
   try {
     const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('Se requiere autenticación para registrar usuarios');
-    }console.log('Iniciando registro de usuario:', {
+    if (!token || token === 'null' || token === 'undefined') {
+      console.error('Token no válido o no encontrado');
+      throw new Error('Sesión no válida. Por favor, inicia sesión nuevamente.');
+    }
+
+    console.log('Iniciando registro de usuario:', {
       rol: userData.rol,
       nombreUsuario: userData.nombreUsuario
     });
 
-    // Asegurarse de que el token es válido y no está expirado
-    if (token === 'null' || token === 'undefined') {
-      console.error('Token inválido:', token);
-      throw new Error('Sesión inválida. Por favor, vuelve a iniciar sesión');
+    // Verificar si el usuario ya existe antes de intentar registrarlo
+    const userExists = await checkExistingUser(userData.dni, userData.correo);
+    if (userExists.exists) {
+      throw new Error(userExists.message);
     }
 
-    console.log('Usando token para registro:', token.substring(0, 20) + '...');
-
+    // Configurar los headers con el token
     const headers = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
     };
 
-    // Asegurarse de que los campos requeridos estén presentes
-    const requiredFields = ['nombreUsuario', 'contrasena', 'nombre', 'apellidos', 'dni', 'correo', 'rol'];
-    const missingFields = requiredFields.filter(field => !userData[field]);
-    if (missingFields.length > 0) {
-      throw new Error(`Faltan campos requeridos: ${missingFields.join(', ')}`);
-    }
+    // Intentar el registro
+    const response = await axios.post(
+      `${API_URL}/api/auth/register`,
+      userData,
+      { headers }
+    );
 
-    // Validaciones específicas por rol
-    if (userData.rol === 'ENTRENADOR') {
-      if (!userData.especialidadesIds || userData.especialidadesIds.length === 0) {
-        throw new Error('Un entrenador debe tener al menos una especialidad');
-      }
-      if (userData.tipoInstructor === 'PREMIUM' && !userData.cupoMaximo) {
-        throw new Error('Los entrenadores premium deben especificar un cupo máximo');
-      }
-    }
+    console.log('Usuario registrado exitosamente:', response.data);
+    return response.data;
 
-    if (['ENTRENADOR', 'RECEPCIONISTA'].includes(userData.rol)) {
-      if (!userData.ruc || !userData.salario || !userData.fechaContratacion) {
-        throw new Error('Los empleados deben especificar RUC, salario y fecha de contratación');
-      }
-    }
-
-    console.log('Enviando datos de registro:', {
-      ...userData,
-      contrasena: '********' // No logear la contraseña
-    });
-
-    const response = await axios.post(ENDPOINTS.REGISTER, userData, { headers });
-    console.log('Registro exitoso:', response.data);
-    return response.data;  } catch (error) {
+  } catch (error) {
     console.error('Error en registro:', error);
     if (error.response) {
-      console.error('Detalles del error:', error.response.data);
-          // Detectar tipos de error específicos
-      if (error.response.status === 409 || 
-          (error.response.data && error.response.data.message && 
-           (error.response.data.message.includes('Duplicate') || 
-            error.response.data.message.includes('duplicado') ||
-            error.response.data.message.includes('existente')))) {
-        throw new Error('Ya existe un usuario con ese DNI o correo electrónico');
-      } else if (error.response.status === 403) {
-        // Intentar renovar el token y volver a intentar
-        console.error('Error 403: Posible token expirado o sin permisos');
-        localStorage.removeItem('token'); // Forzar nueva autenticación
-        throw new Error('Sesión caducada. Por favor, vuelve a iniciar sesión');
+      if (error.response.status === 401 || error.response.status === 403) {
+        throw new Error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
       }
+      throw new Error(error.response.data.message || 'Error al registrar el usuario');
     }
-    
-    // Si llegamos aquí, es un error genérico o desconocido
-    let errorMsg = 'Error al registrar usuario';
-    
-    // Intentar extraer mensaje más específico
-    if (error.response?.data?.message) {
-      errorMsg = error.response.data.message;
-    } else if (error.message && error.message.includes('Duplicate')) {
-      errorMsg = 'Ya existe un usuario con ese DNI o correo electrónico';
-    }
-    
-    throw new Error(errorMsg);
+    throw error instanceof Error ? error : new Error('Error al registrar el usuario');
   }
 };
 

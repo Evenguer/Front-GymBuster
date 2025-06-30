@@ -2,6 +2,7 @@ import React from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './shared/context/AuthContext';
+import GlobalToaster from './shared/components/GlobalToaster';
 
 // Layouts
 import AdminLayout from './layouts/AdminLayout';
@@ -90,6 +91,7 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <GlobalToaster />
         <Routes>
           {/* Rutas de autenticación */}
           <Route path="/login" element={<LoginPage />} />

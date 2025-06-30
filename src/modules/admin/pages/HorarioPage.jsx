@@ -16,10 +16,11 @@ import {
     TabList,
     Tab
 } from '@tremor/react';
-import { Search, PlusCircle, Edit2, Trash2 } from 'react-feather';
+import { Search, PlusCircle } from 'react-feather';
+import { ActionButtons } from '../components/common/ActionButtons';
 import horarioEmpleadoAPI from '../services/horarioEmpleadoAPI';
 import { getEmployees } from '../services/personaAPI';
-import toast from 'react-hot-toast';
+import { useNotification } from '../../../shared/hooks/useNotification';
 import HorarioModal from '../components/Horarios/HorarioModal';
 
 // Componente de fila memorizado
@@ -69,25 +70,13 @@ const HorarioRow = memo(({ horario, onToggleEstado, onEdit, onDelete, loadingId 
                 </span>
             </TableCell>
             <TableCell>
-                <Flex justifyContent="start" className="gap-2">
-                    <Button
-                        size="xs"
-                        variant="secondary"
-                        onClick={() => onEdit(horario)}
-                        disabled={isLoading}
-                    >
-                        <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        size="xs"
-                        variant="secondary"
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() => onDelete(horario.idHorarioEmpleado)}
-                        disabled={isLoading}
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                </Flex>
+                <div className="flex gap-2">
+                    <ActionButtons
+                        onEdit={() => onEdit(horario)}
+                        onDelete={() => onDelete(horario.idHorarioEmpleado)}
+                        showView={false}
+                    />
+                </div>
             </TableCell>
         </TableRow>
     );
@@ -106,6 +95,7 @@ const DIAS_SEMANA = [
 const TURNOS = ['MAÑANA', 'TARDE', 'NOCHE'];
 
 const HorarioPage = () => {
+    const notify = useNotification();
     const [horarios, setHorarios] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [selectedHorario, setSelectedHorario] = useState(null);
@@ -135,7 +125,7 @@ const HorarioPage = () => {
             });
         } catch (error) {
             console.error('Error al cargar horarios:', error);
-            toast.error('Error al cargar los horarios');
+            notify.error('Error al cargar los horarios');
         } finally {
             setIsLoading(false);
         }
@@ -147,7 +137,7 @@ const HorarioPage = () => {
             setEmpleados(data);
         } catch (error) {
             console.error('Error al cargar empleados:', error);
-            toast.error('Error al cargar los empleados');
+            notify.error('Error al cargar los empleados');
         }
     };
 
@@ -159,7 +149,7 @@ const HorarioPage = () => {
     const handleToggleEstado = useCallback(async (id, estadoActual) => {
         if (!id) {
             console.error('ID no válido:', id);
-            toast.error('Error: ID de horario no válido');
+            notify.error('Error: ID de horario no válido');
             return;
         }
         setLoadingId(id);
@@ -177,10 +167,10 @@ const HorarioPage = () => {
                 });
                 return nuevos;
             });
-            toast.success('Estado actualizado exitosamente');
+            notify.success('Estado actualizado exitosamente');
         } catch (error) {
             console.error('Error al cambiar estado:', error);
-            toast.error(error.message || 'Error al cambiar el estado');
+            notify.error(error.message || 'Error al cambiar el estado');
         } finally {
             setTimeout(() => {
                 setLoadingId(null);
@@ -192,17 +182,17 @@ const HorarioPage = () => {
         try {
             if (selectedHorario) {
                 await horarioEmpleadoAPI.actualizarHorario(selectedHorario.idHorarioEmpleado, horarioData);
-                toast.success('Horario actualizado exitosamente');
+                notify.success('Horario actualizado exitosamente');
             } else {
                 await horarioEmpleadoAPI.agregarHorario(empleadoId, horarioData);
-                toast.success('Horario creado exitosamente');
+                notify.success('Horario creado exitosamente');
             }
             await fetchHorarios();
             setShowModal(false);
             setSelectedHorario(null);
         } catch (error) {
             console.error('Error al guardar horario:', error);
-            toast.error(error.message || 'Error al procesar el horario');
+            notify.error(error.message || 'Error al procesar el horario');
         }
     };
 
@@ -210,10 +200,10 @@ const HorarioPage = () => {
         if (window.confirm('¿Está seguro de eliminar este horario?')) {
             try {
                 await horarioEmpleadoAPI.eliminarHorario(id);
-                toast.success('Horario eliminado exitosamente');
+                notify.success('Horario eliminado exitosamente');
                 await fetchHorarios();
             } catch (error) {
-                toast.error(error.message || 'Error al eliminar el horario');
+                notify.error(error.message || 'Error al eliminar el horario');
             }
         }
     };
@@ -347,6 +337,7 @@ const HorarioPage = () => {
                     fetchHorarios();
                     setShowModal(false);
                 }}
+                onSave={handleSave}
             />
         </div>
     );

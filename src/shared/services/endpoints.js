@@ -4,7 +4,9 @@ console.log("BASE_URL configurada como:", BASE_URL);
 
 export const ENDPOINTS = {  
   BASE_URL,
+  // Auth y usuarios
   TOGGLE_CLIENT_STATUS: (id) => `${BASE_URL}/personas/clientes/${id}/estado`,
+  UPDATE_CLIENT: (id) => `${BASE_URL}/personas/clientes/${id}`,
   // Ventas
   VENTAS: {
     LISTAR: `${BASE_URL}/venta/listar`,
@@ -55,9 +57,11 @@ export const ENDPOINTS = {
   LIST_EMPLOYEES: `${BASE_URL}/personas/empleados`,
   UPDATE_EMPLOYEE: (id) => `${BASE_URL}/personas/empleados/${id}`,
   GET_EMPLOYEE: (id) => `${BASE_URL}/personas/empleados/${id}`,
+  GET_CLIENT: (id) => `${BASE_URL}/personas/clientes/${id}`,
+  GET_USUARIO_DETAILS: (id) => `${BASE_URL}/auth/usuarios/${id}/detalles`,
+  GET_CLIENT_BY_USER: (userId) => `${BASE_URL}/personas/usuario/${userId}/cliente`,
+  GET_EMPLOYEE_BY_USER: (userId) => `${BASE_URL}/personas/usuario/${userId}/empleado`,
 
-
-  
   // Plan
   SAVE_PLAN: `${BASE_URL}/plan/guardar`,
   LIST_PLANS: `${BASE_URL}/plan/listar`,
@@ -101,7 +105,8 @@ export const ENDPOINTS = {
   REGISTER_PAYMENT: `${BASE_URL}/venta/pago/registrar`,
   
   // Especialidades
-  LIST_SPECIALTIES: `${BASE_URL}/especialidad/listar`,
+  LIST_SPECIALTIES: `${BASE_URL}/especialidad/listar-basico`, // Cambiado a endpoint seguro
+  LIST_SPECIALTIES_FULL: `${BASE_URL}/especialidad/listar`,  // Endpoint original (puede causar problemas)
   SAVE_SPECIALTY: `${BASE_URL}/especialidad/guardar`,
   UPDATE_SPECIALTY: `${BASE_URL}/especialidad/actualizar`,
   TOGGLE_SPECIALTY_STATUS: (id) => `${BASE_URL}/especialidad/cambiarEstado/${id}`,

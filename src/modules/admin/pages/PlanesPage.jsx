@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { toast } from 'react-hot-toast';
+import { useNotification } from '../../../shared/hooks/useNotification';
 import {
   Card,
   Table,
@@ -18,6 +18,7 @@ import {
   TabList,
   Tab,
 } from '@tremor/react';
+
 import { PlusCircle, Search, CreditCard, Edit, Trash2 } from 'react-feather';
 import { useAuth } from '../../../shared/hooks/useAuth';
 import { listPlanes, cambiarEstadoPlan, eliminarPlan } from '../../../shared/services/planAPI';
@@ -25,6 +26,7 @@ import PlanModal from '../components/Planes/PlanModal';
 
 const PlanesPage = () => {
   useAuth();
+  const notify = useNotification();
   const [planes, setPlanes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -52,7 +54,7 @@ const PlanesPage = () => {
       });
     } catch (error) {
       console.error('Error al cargar planes:', error);
-      toast.error('Error al cargar la lista de planes');
+      notify.error('Error al cargar la lista de planes');
       setError('Error al cargar los planes');
     } finally {
       setLoading(false);
@@ -66,8 +68,6 @@ const PlanesPage = () => {
   const handleToggleStatus = async (id, estadoActual) => {
     try {
       const token = localStorage.getItem('token');
-      // Mostrar toast de carga
-      const loadingToast = toast.loading('Actualizando estado...');
       await cambiarEstadoPlan(id, !estadoActual, token);
 
       // Actualizar estado local y contadores
@@ -83,16 +83,14 @@ const PlanesPage = () => {
         return nuevosPlanes;
       });
 
-      toast.dismiss(loadingToast);
-      toast.success('Estado del plan actualizado correctamente');
+      notify.success('Estado del plan actualizado correctamente');
     } catch (error) {
-      toast.dismiss();
       if (error.message && error.message.includes('permisos')) {
-        toast.error('No tienes permisos para cambiar el estado del plan');
+        notify.error('No tienes permisos para cambiar el estado del plan');
       } else if (error.message && error.message.includes('expirada')) {
-        toast.error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+        notify.error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
       } else {
-        toast.error(error.message || 'Error al actualizar el estado del plan');
+        notify.error(error.message || 'Error al actualizar el estado del plan');
       }
       console.error('Error al cambiar estado:', error);
     }
@@ -213,6 +211,7 @@ const PlanesPage = () => {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2 items-center">
+
                     <Button
                       size="xs"
                       variant="secondary"
@@ -227,18 +226,21 @@ const PlanesPage = () => {
                       color="red"
                       icon={Trash2}
                       onClick={async () => {
+
                         if (!window.confirm('¿Estás seguro de que quieres eliminar este plan?')) return;
                         try {
                           const token = localStorage.getItem('token');
                           await eliminarPlan(plan.idPlan, token);
-                          toast.success('Plan eliminado correctamente');
+                          notify.success('Plan eliminado correctamente');
                           await fetchPlanes();
                         } catch (error) {
-                          toast.error(error.message || 'Error al eliminar el plan');
+                          notify.error(error.message || 'Error al eliminar el plan');
                         }
                       }}
+
                       className="p-2"
                       aria-label="Eliminar"
+
                     />
                   </div>
                 </TableCell>
