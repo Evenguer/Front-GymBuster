@@ -1,34 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { toast, Toaster } from 'react-hot-toast';
 import { 
-  Card, 
-  Table, 
-  TableHead, 
-  TableRow, 
-  TableHeaderCell, 
-  TableBody, 
-  TableCell, 
-  Button,
-  TextInput,
-  Title,
-  Flex,
-  Badge,
-  TabGroup,
-  TabList,
-  Tab,
-  Select,
-  SelectItem,
-  Icon
+  Card, Table, TableHead, TableRow, TableHeaderCell, 
+  TableBody, TableCell, Button, TextInput, Title, Flex,
+  Badge, TabGroup, TabList, Tab, Select, SelectItem
 } from '@tremor/react';
+import { ActionButtons } from '../components/common/ActionButtons';
 import { PlusCircle, Search, Edit, Key, Clock, Eye } from 'react-feather';
 import CreateUserModal from '../components/UserManagement/CreateUserModal';
 import EditUserModal from '../components/UserManagement/EditUserModal';
 import ViewUserDetailsModal from '../components/UserManagement/ViewUserDetailsModal';
 import { listUsers, toggleUserStatus, getUsersSecurityDetails } from '../../../shared/services/authAPI.js';
+import { useNotification } from '../../../shared/hooks/useNotification';
+
 import { useAuth } from '../../../shared/hooks/useAuth';
 
 const UsersListPage = () => {
-  useAuth();
+  const auth = useAuth();
+  const currentUser = auth.user;
+  const notify = useNotification();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -90,7 +79,7 @@ const UsersListPage = () => {
       }
     } catch (error) {
       console.error('Error al cargar usuarios:', error);
-      toast.error('Error al cargar la lista de usuarios');
+      notify.error('Error al cargar la lista de usuarios');
     } finally {
       setLoading(false);
     }
@@ -102,64 +91,23 @@ const UsersListPage = () => {
 
   const handleToggleStatus = async (userId, currentStatus) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast.error('No se encontró el token de autenticación');
+      // Prevenir cambio de estado del usuario actual
+      if (userId === currentUser?.id) {
+        notify.error('No puedes cambiar tu propio estado');
         return;
       }
-      
-      const nuevoEstado = !currentStatus;
-      console.log(`Actualizando estado del usuario ${userId} de ${currentStatus} a ${nuevoEstado}`);
-      
-      const response = await toggleUserStatus(userId, nuevoEstado, token);
-      console.log('Respuesta de actualización de estado:', response);
-      
-      // Actualizar los datos locales
-      setUsers(prevUsers => prevUsers.map(user => 
-        user.id === userId ? { ...user, estado: nuevoEstado } : user
-      ));
-      
-      // Actualizar contadores
-      setCounters(prevCounters => {
-        const newCounters = { ...prevCounters };
-        if (nuevoEstado) {
-          newCounters.active++;
-          newCounters.inactive--;
-        } else {
-          newCounters.active--;
-          newCounters.inactive++;
-        }
-        return newCounters;
-      });
-      
-      // Mostrar mensaje de éxito
-      toast.success('Estado actualizado correctamente', {
-        duration: 3000,
-        position: 'top-right',
-        style: {
-          background: '#10B981',
-          color: '#fff',
-        }
-      });
-    } catch (error) {
-      console.error('Error al actualizar estado:', error);
-      
-      // Recargar todos los datos en caso de error
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        notify.error('Sesión no válida. Por favor, inicie sesión nuevamente.');
+        return;
+      }
+
+      await toggleUserStatus(userId, !currentStatus, token);
       await fetchUsers();
-      
-      toast.error(
-        error.response?.status === 403
-          ? 'No tienes permiso para cambiar el estado del usuario'
-          : error.response?.data?.message || 'Error al actualizar el estado',
-        {
-          duration: 4000,
-          position: 'top-right',
-          style: {
-            background: '#EF4444',
-            color: '#fff',
-          }
-        }
-      );
+      notify.success(`Usuario ${currentStatus ? 'desactivado' : 'activado'} correctamente`);
+    } catch (error) {
+      notify.error(error.message || 'Error al cambiar el estado del usuario');
     }
   };
 
@@ -244,47 +192,32 @@ const UsersListPage = () => {
       console.log('⚠️ Detectado cambio de cliente a empleado');
       
       // Mostrar un mensaje informativo con más detalles
-      toast.success('Cliente promovido a empleado correctamente. Actualizando información...', {
-        duration: 3000,
-        position: 'top-right',
-        style: {
-          background: '#3B82F6',
-          color: '#fff',
-        }
-      });
+      notify.info('Cliente promovido a empleado correctamente. Actualizando información...');
       
-      // Retrasar la recarga para que el usuario vea el mensaje
       setTimeout(() => {
-        // Recargar la lista completa desde el backend
-        fetchUsers();
-        
-        // Añadir una notificación más detallada para que el administrador complete la información
-        toast((t) => (
-          <div>
-            <strong>¡Acción requerida!</strong>
-            <p>El usuario {updatedUser.nombreUsuario} ha sido promovido a rol de empleado.</p>
-            <p>Es necesario completar sus datos laborales (RUC, salario, fecha de contratación).</p>
-            <div className="flex justify-end mt-2">
-              <button
-                onClick={() => toast.dismiss(t.id)}
-                className="bg-blue-500 text-white px-3 py-1 rounded text-sm mr-2"
-              >
-                Entendido
-              </button>
+        notify.custom(
+          <div className="flex items-start space-x-2">
+            <div className="flex-1">
+              <p className="font-medium">Cambios importantes realizados</p>
+              <ul className="mt-1 text-sm list-disc list-inside">
+                <li>El usuario ha sido promovido a empleado</li>
+                <li>Se han actualizado sus permisos</li>
+                <li>Se mantendrán sus datos de cliente</li>
+              </ul>
             </div>
-          </div>
-        ), {
-          duration: 8000,
-          position: 'top-center',
-          style: {
-            background: '#FEF3C7', // amber-100
-            color: '#92400E', // amber-800
-            border: '1px solid #F59E0B', // amber-500
-            borderLeft: '4px solid #D97706', // amber-600
-            padding: '16px',
-            width: '400px',
-          },
-        });
+          </div>,
+          {
+            duration: 8000,
+            style: {
+              background: '#FEF3C7',
+              color: '#92400E',
+              border: '1px solid #F59E0B',
+              borderLeft: '4px solid #D97706',
+              padding: '16px',
+              width: '400px',
+            },
+          }
+        );
       }, 1000);
       
       // Limpiar selección
@@ -328,14 +261,7 @@ const UsersListPage = () => {
     // Actualizar selectedUser para mantener sincronizados los datos
     setSelectedUser(null);
     
-    toast.success('Usuario actualizado correctamente', {
-      duration: 3000,
-      position: 'top-right',
-      style: {
-        background: '#10B981',
-        color: '#fff',
-      }
-    });
+    notify.success('Usuario actualizado correctamente');
   };
 
   // Función para abrir el modal de detalles de usuario
@@ -376,7 +302,6 @@ const UsersListPage = () => {
 
   return (
     <div className="space-y-6">
-      <Toaster />
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestión de Usuarios</h1>
@@ -543,44 +468,37 @@ const UsersListPage = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center">
-                      <button
-                        onClick={() => handleToggleStatus(user.id, user.estado)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full ${
-                          user.estado ? 'bg-green-500' : 'bg-gray-300'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                            user.estado ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
+                      <div className="group relative">
+                        <button
+                          onClick={() => handleToggleStatus(user.id, user.estado)}
+                          disabled={user.id === currentUser?.id}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full ${
+                            user.estado ? 'bg-green-500' : 'bg-gray-300'
+                          } ${user.id === currentUser?.id ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                              user.estado ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                        {user.id === currentUser?.id && (
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            No puedes cambiar tu propio estado
+                          </div>
+                        )}
+                      </div>
                       <span className="ml-2 text-xs">
                         {user.estado ? 'Activo' : 'Inactivo'}
                       </span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        size="xs"
-                        variant="light"
-                        icon={Eye}
-                        color="blue"
-                        onClick={() => handleViewUserDetails(user)}
-                      >
-                        Ver
-                      </Button>
-                      <Button
-                        size="xs"
-                        variant="light"
-                        icon={Edit}
-                        color="amber"
-                        onClick={() => handleEditUser(user)}
-                      >
-                        Editar
-                      </Button>
-                    </div>
+                    <ActionButtons
+                      onView={() => handleViewUserDetails(user)}
+                      onEdit={() => handleEditUser(user)}
+                      showDelete={false}
+                    />
                   </TableCell>
                 </TableRow>
               ))

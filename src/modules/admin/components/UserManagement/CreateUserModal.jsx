@@ -1,12 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Title, TextInput, Button } from '@tremor/react';
 import { EnhancedSelect as Select, EnhancedMultiSelect as MultiSelect, SelectItem, MultiSelectItem } from './SelectWrapper';
-import { register, checkExistingUser } from '../../../../shared/services/authAPI';
-import { toast } from 'react-hot-toast';
+import { register } from '../../../../shared/services/authAPI';
 import { listEspecialidades } from '../../../../shared/services/especialidadAPI';
-import './modal-styles.css'; // Importamos los estilos personalizados
+import { useNotification } from '../../../../shared/hooks/useNotification';
+import './modal-styles.css';
+import {
+  isValidDNI,
+  isValidPhone,
+  isValidRUC,
+  isStrongPassword,
+  isValidEmail,
+  isValidUsername,
+  isOver18,
+  isValidName,
+  isValidSalary,
+  isValidMaxQuota,
+  ERROR_MESSAGES
+} from '../../../../shared/utils/validations';
 
 const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
+  const notify = useNotification();
   const [especialidades, setEspecialidades] = useState([]);
   const initialFormData = {
     nombreUsuario: '',
@@ -46,10 +60,59 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    let finalValue = value;
+
+    // Aplicar restricciones específicas según el campo
+    switch (name) {
+      case 'dni':
+        // Solo permitir números y limitar a 8 dígitos
+        finalValue = value.replace(/\D/g, '').slice(0, 8);
+        break;
+      case 'celular':
+        // Solo permitir números y limitar a 9 dígitos
+        finalValue = value.replace(/\D/g, '').slice(0, 9);
+        break;
+      case 'ruc':
+        // Solo permitir números y limitar a 11 dígitos
+        finalValue = value.replace(/\D/g, '').slice(0, 11);
+        break;
+      case 'nombre':
+      case 'apellidos':
+        // Solo permitir letras y espacios
+        finalValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+        break;
+      case 'salario':
+        // Solo permitir números y un punto decimal
+        finalValue = value.replace(/[^\d.]/g, '');
+        if (finalValue.split('.').length > 2) {
+          finalValue = value; // Mantener el valor anterior si hay más de un punto
+        }
+        break;
+      case 'cupoMaximo':
+        // Solo permitir números enteros positivos
+        finalValue = value.replace(/\D/g, '');
+        if (finalValue > 100) finalValue = '100';
+        break;
+      case 'nombreUsuario':
+        // Solo permitir letras, números y guiones bajos
+        finalValue = value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20);
+        break;
+      default:
+        finalValue = value;
+    }
+
     setFormData(prevData => ({
       ...prevData,
-      [name]: value
+      [name]: finalValue
     }));
+
+    // Limpiar el error del campo si existe
+    if (formErrors[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
   };
 
   const handleEspecialidadesChange = (values) => {
@@ -63,118 +126,138 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
     const errors = {};
 
     // Validaciones básicas para todos los usuarios
-    if (!formData.nombreUsuario) errors.nombreUsuario = 'El nombre de usuario es requerido';
-    if (!formData.contrasena) errors.contrasena = 'La contraseña es requerida';
-    if (!formData.nombre) errors.nombre = 'El nombre es requerido';
-    if (!formData.apellidos) errors.apellidos = 'Los apellidos son requeridos';
-    if (!formData.dni) errors.dni = 'El DNI es requerido';
-    if (!formData.correo) errors.correo = 'El correo es requerido';
-    if (!formData.rol) errors.rol = 'El rol es requerido';
-    if (!formData.genero) errors.genero = 'El género es requerido';
+    if (!formData.nombreUsuario) {
+      errors.nombreUsuario = 'El nombre de usuario es requerido';
+    } else if (!isValidUsername(formData.nombreUsuario)) {
+      errors.nombreUsuario = ERROR_MESSAGES.username;
+    }
+
+    if (!formData.contrasena) {
+      errors.contrasena = 'La contraseña es requerida';
+    } else if (!isStrongPassword(formData.contrasena)) {
+      errors.contrasena = ERROR_MESSAGES.password;
+    }
+
+    if (!formData.nombre) {
+      errors.nombre = 'El nombre es requerido';
+    } else if (!isValidName(formData.nombre)) {
+      errors.nombre = ERROR_MESSAGES.name;
+    }
+
+    if (!formData.apellidos) {
+      errors.apellidos = 'Los apellidos son requeridos';
+    } else if (!isValidName(formData.apellidos)) {
+      errors.apellidos = ERROR_MESSAGES.name;
+    }
+
+    if (!formData.dni) {
+      errors.dni = 'El DNI es requerido';
+    } else if (!isValidDNI(formData.dni)) {
+      errors.dni = ERROR_MESSAGES.dni;
+    }
+
+    if (!formData.correo) {
+      errors.correo = 'El correo es requerido';
+    } else if (!isValidEmail(formData.correo)) {
+      errors.correo = ERROR_MESSAGES.email;
+    }
+
+    if (formData.celular && !isValidPhone(formData.celular)) {
+      errors.celular = ERROR_MESSAGES.phone;
+    }
+
+    if (!formData.fechaNacimiento) {
+      errors.fechaNacimiento = 'La fecha de nacimiento es requerida';
+    } else if (!isOver18(formData.fechaNacimiento)) {
+      errors.fechaNacimiento = ERROR_MESSAGES.age;
+    }
+
+    if (!formData.rol) {
+      errors.rol = 'El rol es requerido';
+    }
+
+    if (!formData.genero) {
+      errors.genero = 'El género es requerido';
+    }
 
     // Validaciones específicas para entrenadores
     if (formData.rol === 'ENTRENADOR') {
-      // Validar tipo de instructor
       if (!formData.tipoInstructor) {
         errors.tipoInstructor = 'Debe seleccionar el tipo de instructor';
       }
 
-      // Validar especialidades
       if (!formData.especialidadesIds || formData.especialidadesIds.length === 0) {
         errors.especialidadesIds = 'Debe seleccionar al menos una especialidad';
       }
 
-      // Validar cupo máximo para instructores premium
       if (formData.tipoInstructor === 'PREMIUM') {
         if (!formData.cupoMaximo) {
           errors.cupoMaximo = 'El cupo máximo es requerido para entrenadores premium';
-        } else if (parseInt(formData.cupoMaximo) <= 0) {
-          errors.cupoMaximo = 'El cupo máximo debe ser mayor a 0';
+        } else if (!isValidMaxQuota(formData.cupoMaximo)) {
+          errors.cupoMaximo = ERROR_MESSAGES.maxQuota;
         }
       }
     }
 
     // Validaciones para empleados (entrenadores y recepcionistas)
     if (formData.rol === 'ENTRENADOR' || formData.rol === 'RECEPCIONISTA') {
-      if (!formData.ruc) errors.ruc = 'El RUC es requerido para empleados';
-      if (!formData.salario) errors.salario = 'El salario es requerido para empleados';
+      if (!formData.ruc) {
+        errors.ruc = 'El RUC es requerido para empleados';
+      } else if (!isValidRUC(formData.ruc)) {
+        errors.ruc = ERROR_MESSAGES.ruc;
+      }
+
+      if (!formData.salario) {
+        errors.salario = 'El salario es requerido para empleados';
+      } else if (!isValidSalary(formData.salario)) {
+        errors.salario = ERROR_MESSAGES.salary;
+      }
       if (!formData.fechaContratacion) errors.fechaContratacion = 'La fecha de contratación es requerida';
     }
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
-    }    try {
-      // Verificar si el DNI o correo ya existe antes de intentar registrar
-      const checkResult = await checkExistingUser(formData.dni, formData.correo);
-      if (checkResult.exists) {
-        toast.error(checkResult.message, {
-          duration: 4000,
-          position: 'top-right',
-          style: {
-            background: '#EF4444',
-            color: '#fff',
-          },
-        });
-        return;
-      }
-      
-      const data = await register(formData);
-      if (!data) {
-        throw new Error('Error al crear el usuario');
-      }
-
-      // Limpiar formulario después de éxito
-      setFormData(initialFormData);
-      setFormErrors({});      toast.success('Usuario creado exitosamente', {
-        duration: 3000,
-        position: 'top-right',
-        style: {
-          background: '#10B981',
-          color: '#fff',
-        },
-      });
-      
-      // Si hay una función para actualizar la lista de usuarios, la llamamos
-      if (onUserCreated) {
-        onUserCreated();
-      }
-      
+    }
+    try {
+      await register(formData);
+      setFormErrors({});
+      notify.success('Usuario creado exitosamente');
+      onUserCreated();
       onClose();
+      setFormData(initialFormData);
     } catch (error) {
-      console.error('Error:', error);
-      
-      // Detectar errores comunes y mostrar mensajes más amigables
-      if (error.message.includes('Duplicate entry') || error.message.includes('duplicado')) {
-        toast.error('Ya existe un usuario con ese DNI o correo electrónico', {
-          duration: 4000,
-          position: 'top-right',
-          style: {
-            background: '#EF4444',
-            color: '#fff',
-          },
-        });
-      } else if (error.message.includes('permisos')) {
-        toast.error('No tienes permisos para crear usuarios', {
-          duration: 4000,
-          position: 'top-right',
-          style: {
-            background: '#EF4444',
-            color: '#fff',
-          },
-        });
+      if (error.response?.status === 409) {
+        notify.error('Ya existe un usuario con ese DNI o correo electrónico');
+      } else if (error.response?.status === 403) {
+        notify.error('No tienes permisos para crear usuarios');
       } else {
-        toast.error(error.message || 'Error al crear el usuario', {
-          duration: 4000,
-          position: 'top-right',
-          style: {
-            background: '#EF4444',
-            color: '#fff',
-          },
-        });
+        notify.error(error.message || 'Error al crear el usuario');
       }
     }
   };
+
+  // Función para mostrar mensajes de ayuda
+  const getHelpMessage = (fieldName) => {
+    switch (fieldName) {
+      case 'contrasena':
+        return 'La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, números y caracteres especiales.';
+      case 'dni':
+        return 'Ingrese un DNI válido de 8 dígitos.';
+      case 'celular':
+        return 'Ingrese un número celular válido de 9 dígitos comenzando con 9.';
+      case 'ruc':
+        return 'Ingrese un RUC válido de 11 dígitos comenzando con 10 o 20.';
+      case 'fechaNacimiento':
+        return 'Debe ser mayor de 18 años para registrarse.';
+      case 'nombreUsuario':
+        return 'Use entre 4 y 20 caracteres. Solo letras, números y guiones bajos.';
+      default:
+        return '';
+    }
+  };
+
+
   if (!isOpen) return null;
 
   return (
@@ -210,6 +293,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                 {formErrors.nombreUsuario && (
                   <p className="text-red-500 text-xs mt-1">{formErrors.nombreUsuario}</p>
                 )}
+                <p className="text-gray-500 text-xs mt-1">{getHelpMessage('nombreUsuario')}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
@@ -226,6 +310,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                 {formErrors.contrasena && (
                   <p className="text-red-500 text-xs mt-1">{formErrors.contrasena}</p>
                 )}
+                <p className="text-gray-500 text-xs mt-1">{getHelpMessage('contrasena')}</p>
               </div>
             </div>
 
@@ -278,6 +363,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                 {formErrors.dni && (
                   <p className="text-red-500 text-xs mt-1">{formErrors.dni}</p>
                 )}
+                <p className="text-gray-500 text-xs mt-1">{getHelpMessage('dni')}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
@@ -308,6 +394,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   onChange={handleInputChange}
                   placeholder="Ingrese número de celular"
                 />
+                <p className="text-gray-500 text-xs mt-1">{getHelpMessage('celular')}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
@@ -319,6 +406,10 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   value={formData.fechaNacimiento}
                   onChange={handleInputChange}
                 />
+                {formErrors.fechaNacimiento && (
+                  <p className="text-red-500 text-xs mt-1">{formErrors.fechaNacimiento}</p>
+                )}
+                <p className="text-gray-500 text-xs mt-1">{getHelpMessage('fechaNacimiento')}</p>
               </div>
             </div>
 
@@ -394,6 +485,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   {formErrors.ruc && (
                     <p className="text-red-500 text-xs mt-1">{formErrors.ruc}</p>
                   )}
+                  <p className="text-gray-500 text-xs mt-1">{getHelpMessage('ruc')}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">

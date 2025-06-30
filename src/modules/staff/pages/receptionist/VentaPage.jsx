@@ -149,9 +149,7 @@ const [pasoActual, setPasoActual] = useState(1); // 1: datos, 2: detalles, 3: pa
     }
     
     // Limpiar mensaje de éxito si existe
-    if (success) {
-      setSuccess(false);
-    }
+    // (Eliminado: setSuccess, no está definido ni utilizado)
 
     console.log('Estado actualizado:', formData);
   };  const validateForm = () => {
@@ -349,7 +347,7 @@ const procesarPago = async () => {
     };
     console.log('Enviando ventaCompleta a la API:', JSON.stringify(ventaCompleta, null, 2));
     // Enviar todo en una sola llamada
-    const response = await ventasAPI.crearVentaCompleta(ventaCompleta);
+    await ventasAPI.crearVentaCompleta(ventaCompleta);
     setVentaTemp(null);
     setDetallesVenta([]);
     setMontoPagado('');
@@ -367,67 +365,7 @@ const procesarPago = async () => {
   }
 };
 
-  // Función para recargar todos los datos
-  const recargarDatos = async () => {
-    try {
-      setLoading(true);
-      const [empleadosData, clientesData, productosData] = await Promise.all([
-        ventasAPI.obtenerEmpleados(),
-        ventasAPI.obtenerClientes(),
-        productosAPI.listarProductos()
-      ]);
-
-      // Procesar empleados
-      const recepcionistas = empleadosData
-        .filter(emp => emp && emp.estado && emp.idEmpleado)
-        .map(emp => ({
-          id: `emp-${emp.idEmpleado}`,
-          idEmpleado: emp.idEmpleado,
-          nombre: emp.nombre || '',
-          apellidos: emp.apellidos || '',
-          nombreCompleto: `${emp.nombre || ''} ${emp.apellidos || ''}`.trim()
-        }));      // Procesar clientes
-      const clientesFormateados = clientesData
-        .filter(cliente => cliente && cliente.estado && cliente.id)
-        .map(cliente => ({
-          id: `cli-${cliente.id}`,
-          clienteId: cliente.id,
-          nombre: cliente.nombre || '',
-          apellidos: cliente.apellidos || '',
-          nombreCompleto: `${cliente.nombre || ''} ${cliente.apellidos || ''}`.trim(),
-          dni: cliente.dni || ''
-        }));
-
-      // Procesar productos
-      const productosFormateados = productosData
-        .filter(p => p && p.idProducto && p.estado)
-        .map(p => ({
-          id: p.idProducto,
-          nombre: p.nombre || 'Sin nombre',
-          precio: p.precioVenta ? parseFloat(p.precioVenta) : 0,
-          stockTotal: p.stockTotal || 0,
-          categoria: p.categoria?.nombre || 'Sin categoría'
-        }));
-
-      setEmpleados(recepcionistas);
-      setClientes(clientesFormateados);
-      setProductos(productosFormateados);
-
-      // Asignar el primer empleado por defecto
-      if (recepcionistas.length > 0) {
-        setFormData(prev => ({
-          ...prev,
-          empleadoId: recepcionistas[0].id
-        }));
-      }
-
-    } catch (error) {
-      console.error('Error al recargar datos:', error);
-      showNotification('Error al recargar los datos', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // (Eliminado: recargarDatos no se utiliza)
 
   const showNotification = (message, severity = 'success') => {
     setSnackbarMessage(message);

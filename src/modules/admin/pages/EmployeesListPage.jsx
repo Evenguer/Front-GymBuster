@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { toast, Toaster } from 'react-hot-toast';
+import { listEmployees } from '../../../shared/services/authAPI';
+import { useNotification } from '../../../shared/hooks/useNotification';
 import { 
   Card, 
   Table, 
@@ -19,10 +20,11 @@ import {
   Badge
 } from '@tremor/react';
 import { Edit, Search } from 'react-feather';
-import { listEmployees } from '../../../shared/services/authAPI';
 import EditEmployeeModal from '../components/UserManagement/EditEmployeeModal';
+import { ActionButtons } from '../components/common/ActionButtons';
 
 const EmployeesListPage = () => {
+  const notify = useNotification();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -59,7 +61,7 @@ const EmployeesListPage = () => {
     } catch (error) {
       console.error('Error al cargar empleados:', error);
       setError('Error al cargar la lista de empleados');
-      toast.error('Error al cargar la lista de empleados');
+      notify.error('Error al cargar la lista de empleados');
     } finally {
       setLoading(false);
     }
@@ -209,15 +211,15 @@ const EmployeesListPage = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex space-x-2">                      <button 
-                        className="p-1.5 bg-amber-100 text-amber-600 rounded hover:bg-amber-200"
-                        onClick={() => {
+                    <div className="flex gap-2">
+                      <ActionButtons
+                        onEdit={() => {
                           setSelectedEmployee(employee);
                           setIsEditModalOpen(true);
                         }}
-                      >
-                        <Edit size={16} />
-                      </button>
+                        showDelete={false}
+                        showView={false}
+                      />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -241,14 +243,12 @@ const EmployeesListPage = () => {
                 emp.idEmpleado === updatedEmployee.idEmpleado ? updatedEmployee : emp
               )
             );
-            toast.success('Empleado actualizado exitosamente');
+            notify.success('Empleado actualizado exitosamente');
             // Refrescar la lista de empleados
             fetchEmployees();
           }}
         />
       )}
-      
-      <Toaster position="top-center" />
     </div>
   );
 };

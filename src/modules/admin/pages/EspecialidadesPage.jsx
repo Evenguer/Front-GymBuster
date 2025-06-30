@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { toast } from 'react-hot-toast';
+import { useNotification } from '../../../shared/hooks/useNotification';
 import {
   Card,
   Table,
@@ -16,16 +16,14 @@ import {
   TabList,
   Tab,
 } from '@tremor/react';
+import { ActionButtons } from '../components/common/ActionButtons';
 import { PlusCircle, Search, Edit, Trash2 } from 'react-feather';
 import { useAuth } from '../../../shared/hooks/useAuth';
 import * as especialidadAPI from '../../../shared/services/especialidadAPI';
-
-
-// Ahora la función está dentro del componente para acceder a fetchEspecialidades y toast directamente
-
 import EspecialidadModal from '../components/Especialidades/EspecialidadModal';
 
 const EspecialidadesPage = () => {
+  const notify = useNotification();
   const { user } = useAuth();
   const [especialidades, setEspecialidades] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +51,6 @@ const EspecialidadesPage = () => {
       });
     } catch (error) {
       console.error('Error al cargar especialidades:', error);
-      toast.error('Error al cargar la lista de especialidades');
       setError('Error al cargar las especialidades');
     } finally {
       setLoading(false);
@@ -69,13 +66,10 @@ const EspecialidadesPage = () => {
       const token = localStorage.getItem('token');
       
       if (!token) {
-        toast.error('No hay sesión activa. Por favor, inicia sesión nuevamente.');
+        notify.error('No hay sesión activa. Por favor, inicia sesión nuevamente.');
         return;
       }
 
-      // Mostrar toast de carga
-      const loadingToast = toast.loading('Actualizando estado...');
-      
       await especialidadAPI.cambiarEstadoEspecialidad(id, !estadoActual, token);
       
       // Actualizar estado local solo si la petición fue exitosa
@@ -91,18 +85,17 @@ const EspecialidadesPage = () => {
       }));
 
       // Eliminar toast de carga y mostrar éxito
-      toast.dismiss(loadingToast);
-      toast.success('Estado actualizado correctamente');
+      notify.success('Estado actualizado correctamente');
     } catch (error) {
       // Manejar errores específicos
       if (error.message.includes('No tienes permisos')) {
-        toast.error('No tienes permisos para realizar esta acción');
+        notify.error('No tienes permisos para realizar esta acción');
       } else if (error.message.includes('Sesión expirada')) {
-        toast.error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+        notify.error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
         // Opcional: redirigir al login
         // navigate('/login');
       } else {
-        toast.error(error.message || 'Error al actualizar el estado');
+        notify.error(error.message || 'Error al actualizar el estado');
       }
       
       console.error('Error al cambiar estado:', error);
@@ -129,16 +122,16 @@ const EspecialidadesPage = () => {
       const token = localStorage.getItem('token');
       if (selectedEspecialidad) {
         await especialidadAPI.actualizarEspecialidad({ ...formData, id: selectedEspecialidad.id }, token);
-        toast.success('Especialidad actualizada correctamente');
+        notify.success('Especialidad actualizada correctamente');
       } else {
         await especialidadAPI.crearEspecialidad(formData, token);
-        toast.success('Especialidad creada correctamente');
+        notify.success('Especialidad creada correctamente');
       }
       await fetchEspecialidades();
       handleCloseModal();
     } catch (error) {
       console.error('Error:', error);
-      toast.error(selectedEspecialidad ? 
+      notify.error(selectedEspecialidad ? 
         'Error al actualizar la especialidad' : 
         'Error al crear la especialidad'
       );
@@ -286,33 +279,25 @@ const EspecialidadesPage = () => {
                   <TableCell>
                     {isAdmin() && (
                       <div className="flex gap-2">
-                        <Button
-                          size="xs"
-                          variant="secondary"
-                          onClick={() => handleEditEspecialidad(especialidad)}
-                          icon={Edit}
-                        >
-                          Editar
-                        </Button>
-                        <button
-                          onClick={async () => {
+                        <ActionButtons
+                          onEdit={() => handleEditEspecialidad(especialidad)}
+                          onDelete={async () => {
                             if (!window.confirm('¿Estás seguro de que quieres eliminar esta especialidad?')) return;
                             try {
                               const token = localStorage.getItem('token');
                               await especialidadAPI.eliminarEspecialidad(especialidad.id, token);
-                              toast.success('Especialidad eliminada correctamente');
+                              notify.success('Especialidad eliminada correctamente');
                               await fetchEspecialidades();
                             } catch (error) {
                               console.error('Error al eliminar especialidad:', error);
-                              toast.error(error.message || 'Error al eliminar la especialidad');
+                              notify.error(error.message || 'Error al eliminar la especialidad');
                             }
                           }}
                           className="p-1.5 bg-transparent text-red-600 rounded hover:bg-red-50 flex items-center gap-1 border border-red-400 shadow-none"
                           title="Eliminar"
-                        >
-                          <Trash2 size={16} />
-                          <span className="ml-1 text-xs font-medium">Eliminar</span>
-                        </button>
+                          icon={<Trash2 size={16} />}
+                          label={<span className="ml-1 text-xs font-medium">Eliminar</span>}
+                        />
                       </div>
                     )}
                   </TableCell>

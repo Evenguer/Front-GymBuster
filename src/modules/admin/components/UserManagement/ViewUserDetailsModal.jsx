@@ -53,13 +53,25 @@ const ViewUserDetailsModal = ({ user, isOpen, onClose }) => {
         console.log('ID de usuario:', user.id);
 
         const roleEndpoint = isEmployee ? 
-          ENDPOINTS.GET_EMPLOYEE(user.id) : 
-          ENDPOINTS.GET_CLIENT(user.id);
+          ENDPOINTS.GET_EMPLOYEE_BY_USER(user.id) : 
+          ENDPOINTS.GET_CLIENT_BY_USER(user.id);
 
         console.log('Endpoint a usar:', roleEndpoint);
 
         // Obtener los detalles del usuario
-        const roleDetailsResponse = await axios.get(roleEndpoint, config);
+        let roleDetailsResponse;
+        try {
+          roleDetailsResponse = await axios.get(roleEndpoint, config);
+          console.log('Detalles obtenidos:', roleDetailsResponse.data);
+        } catch (error) {
+          console.error('Error al obtener detalles:', error.response?.status, error.response?.data);
+          // Intentar el endpoint antiguo como fallback
+          const fallbackEndpoint = isEmployee ? 
+            ENDPOINTS.GET_EMPLOYEE(user.id) : 
+            ENDPOINTS.GET_CLIENT(user.id);
+          console.log('Intentando endpoint fallback:', fallbackEndpoint);
+          roleDetailsResponse = await axios.get(fallbackEndpoint, config);
+        }
 
         console.log('Respuesta de detalles:', roleDetailsResponse.data);
 
