@@ -37,7 +37,8 @@ export const ENDPOINTS = {
     },
     PAGO: {
       REGISTRAR: `${BASE_URL}/alquiler/pago/registrar`
-    }
+    },
+    VERIFICAR_VENCIDOS: `${BASE_URL}/alquiler/verificar-vencidos`,
   },
 
   // Auth

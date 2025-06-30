@@ -156,6 +156,10 @@ const AlquilerPage = () => {
     }
     if (!formData.fechaFin) {
       errors.fechaFin = 'Debe seleccionar una fecha de fin del alquiler';
+    } else if (formData.fechaFin && !validarFechaFutura(formData.fechaFin)) {
+      errors.fechaFin = 'La fecha de fin debe ser igual o posterior a la fecha actual';
+    } else if (!validarFechaFutura(formData.fechaFin)) {
+      errors.fechaFin = 'La fecha de fin debe ser igual o posterior a la fecha actual';
     }
     return errors;
   };
@@ -175,7 +179,9 @@ const AlquilerPage = () => {
       // Formatear la fecha para usarla posteriormente (YYYY-MM-DD)
       const formattedFechaFin = formData.fechaFin instanceof Date 
         ? formData.fechaFin.toISOString().split('T')[0]
-        : formData.fechaFin;
+        : (typeof formData.fechaFin === 'string' ? formData.fechaFin : '');
+        
+      console.log('Fecha fin formateada:', formattedFechaFin);
 
       // Preparar datos del alquiler temporales
       const clienteId = parseInt(formData.clienteId.replace('cli-', ''));
@@ -385,7 +391,9 @@ const AlquilerPage = () => {
       // Formatear la fecha para enviarla al backend (YYYY-MM-DD)
       const formattedFechaFin = formData.fechaFin instanceof Date 
         ? formData.fechaFin.toISOString().split('T')[0]
-        : formData.fechaFin;
+        : (typeof formData.fechaFin === 'string' ? formData.fechaFin : '');
+        
+      console.log('Fecha fin formateada para pago:', formattedFechaFin);
 
       // Formatear los detalles en el formato esperado por el backend
       const detallesFormateados = detallesAlquiler.map(detalle => ({
@@ -574,6 +582,19 @@ const AlquilerPage = () => {
         </div>
       </div>
     );
+  };
+
+  // Validar que la fecha es futura
+  const validarFechaFutura = (fecha) => {
+    if (!fecha) return false;
+    
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0); // Normalizar la fecha actual para comparación
+    
+    const fechaComparar = new Date(fecha);
+    fechaComparar.setHours(0, 0, 0, 0); // Normalizar la fecha a comparar
+    
+    return fechaComparar >= hoy; // La fecha debe ser hoy o posterior
   };
 
   return (
