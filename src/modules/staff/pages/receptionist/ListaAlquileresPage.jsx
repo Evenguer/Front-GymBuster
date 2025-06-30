@@ -262,15 +262,11 @@ const ListaAlquileresPage = () => {
   const formatearFecha = (fechaStr) => {
     try {
       if (!fechaStr) return 'Sin fecha';
-      
-      // No necesitamos crear una fecha adicional, solo usamos fechaCorrecta
-      // Crear la fecha usando la cadena "YYYY-MM-DD" para evitar problemas de zona horaria
-      const fechaCorrecta = new Date(`${fechaStr}T12:00:00`);
-      
-      console.log('Fecha original:', fechaStr);
-      console.log('Fecha ajustada:', fechaCorrecta);
-      
-      return format(fechaCorrecta, 'dd/MM/yyyy', { locale: es });
+
+      const date = new Date(fechaStr);
+      date.setDate(date.getDate() + 1);
+      return format(date, 'dd/MM/yyyy', { locale: es });
+
     } catch (error) {
       console.error('Error al formatear fecha:', error);
       return fechaStr || 'Fecha inválida';
