@@ -44,6 +44,10 @@ export const ENDPOINTS = {
   LOGIN: `${BASE_URL}/auth/login`,
   REGISTER: `${BASE_URL}/auth/register`, // Único endpoint para registrar todo tipo de usuarios
   GET_USERS: `${BASE_URL}/auth/usuarios`,
+  // Perfil Cliente (autenticado)
+  CLIENT_PROFILE: `${BASE_URL}/auth/perfil`,
+  CLIENT_CHANGE_PASSWORD: `${BASE_URL}/auth/perfil/cambiar-contrasena`,
+  
   GET_USERS_SECURITY: `${BASE_URL}/auth/usuarios/seguridad`,
   TOGGLE_USER_STATUS: (id) => `${BASE_URL}/auth/usuarios/${id}/estado`,
   LIST_CLIENTS: `${BASE_URL}/personas/clientes`,

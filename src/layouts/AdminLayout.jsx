@@ -80,6 +80,7 @@ const AdminLayout = () => {
         { title: 'Horarios', path: '/admin/horarios' },
         { title: 'Asistencia Personal', path: '/admin/asistencia' },
         { title: 'Lista de Asistencias', path: '/admin/lista-asistencia' },
+        { title: 'Evaluación Desempeño', path: '/admin/evaluacion' },
       ],
     },
     {

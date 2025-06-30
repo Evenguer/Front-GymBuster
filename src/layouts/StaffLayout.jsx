@@ -40,7 +40,7 @@ const StaffLayout = () => {
       icon: <Users size={20} />,
       submenu: true,
       submenuItems: [
-        { title: 'Nuevo Cliente', path: '/staff/cliente/nuevo' },
+        { title: 'Empleados', path: '/staff/empleados' },
         { title: 'Clientes', path: '/staff/clientes' },
       ],
     },
@@ -49,7 +49,7 @@ const StaffLayout = () => {
       icon: <ShoppingCart size={20} />,
       submenu: true,
       submenuItems: [
-        { title: 'Nueva Venta', path: '/staff/ventas'},
+        { title: 'Nueva Venta', path: '/staff/ventas' },
         { title: 'Historial', path: '/staff/listas' },
       ],
     },
@@ -96,7 +96,7 @@ const StaffLayout = () => {
       submenuItems: [
         { title: 'Categorías', path: '/staff/categorias' },
         { title: 'Especialidades', path: '/staff/especialidades' },
-        { title: 'Planes', path: '/staff/planes' },
+        { title: 'Planes', path: '/staff/planes' },
       ],
     },
   ];
