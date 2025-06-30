@@ -240,4 +240,19 @@ export const alquilerAPI = {
       throw new Error(error.response?.data || error.message || 'Error al crear el alquiler completo');
     }
   },
+
+  verificarVencidos: async () => {
+    try {
+      checkRole(['ADMIN', 'RECEPCIONISTA']);
+      
+      const response = await axios.get(
+        ENDPOINTS.ALQUILER.VERIFICAR_VENCIDOS,
+        getAuthConfig()
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error al verificar alquileres vencidos:', error);
+      throw error;
+    }
+  },
 };
