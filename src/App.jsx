@@ -73,6 +73,7 @@ import  EspecialidadListaPage from './modules/staff/pages/receptionist/Especiali
 import PlanesListaPage from './modules/staff/pages/receptionist/PlanesListaPage';
 import ClienteFormPage from './modules/staff/pages/receptionist/ClienteFormPage';
 import MaquinariaPage from './modules/staff/pages/receptionist/MaquinariaPage';
+import InscripcionPage from './modules/staff/pages/receptionist/InscripcionPage';
 
 import TrainerDashboardPage from './modules/staff/pages/trainer/TrainerDashboardPage';
 import ClientAttendancePage from './modules/staff/pages/trainer/ClientAttendancePage';
@@ -157,6 +158,7 @@ function App() {
               <Route path="equipamiento" element={<MaquinariaPage/>} />
               <Route path="ventas" element={<VentaPage/>} />
               <Route path="listas" element={<ListaPage />} />
+              <Route path="inscripciones" element={<InscripcionPage />} />
               <Route path="alquileres/nuevo" element={<AlquilerPage />} />
               <Route path="alquileres/historial" element={<ListaAlquileresPage />} />
               <Route path="clientes" element={<ClientesStaffPage />} />

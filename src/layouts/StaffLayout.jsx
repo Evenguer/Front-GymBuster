@@ -67,7 +67,7 @@ const StaffLayout = () => {
       icon: <CheckSquare size={20} />,
       submenu: true,
       submenuItems: [
-        { title: 'Nueva Inscripción', path: '/staff/inscripciones/nueva' },
+        { title: 'Nueva Inscripción', path: '/staff/inscripciones' },
         { title: 'Gestionar Inscripciones', path: '/staff/inscripciones/gestionar' },
       ],
     },

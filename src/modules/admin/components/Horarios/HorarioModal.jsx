@@ -29,16 +29,29 @@ const HorarioModal = ({ isOpen, onClose, horario, empleados, onSuccess, isLoadin
     const [formErrors, setFormErrors] = useState({});
 
     useEffect(() => {
-        if (horario) {
-            setFormData({
-                empleadoId: horario.empleado?.idEmpleado || '',
-                dia: horario.dia || '',
-                horaInicio: formatTime(horario.horaInicio) || '',
-                horaFin: formatTime(horario.horaFin) || '',
-                turno: horario.turno || '',
-                estado: horario.estado ?? true
-            });
+        if (isOpen) {
+            if (horario) {
+                setFormData({
+                    empleadoId: horario.empleado?.idEmpleado || '',
+                    dia: horario.dia || '',
+                    horaInicio: formatTime(horario.horaInicio) || '',
+                    horaFin: formatTime(horario.horaFin) || '',
+                    turno: horario.turno || '',
+                    estado: horario.estado ?? true
+                });
+            } else {
+                setFormData({
+                    empleadoId: '',
+                    dia: '',
+                    horaInicio: '',
+                    horaFin: '',
+                    turno: '',
+                    estado: true
+                });
+            }
+            setFormErrors({});
         } else {
+            // Limpiar el formulario cuando el modal se cierra
             setFormData({
                 empleadoId: '',
                 dia: '',
@@ -47,9 +60,9 @@ const HorarioModal = ({ isOpen, onClose, horario, empleados, onSuccess, isLoadin
                 turno: '',
                 estado: true
             });
+            setFormErrors({});
         }
-        setFormErrors({});
-    }, [horario]);
+    }, [horario, isOpen]);
 
     const formatTime = (time) => {
         if (!time) return '';

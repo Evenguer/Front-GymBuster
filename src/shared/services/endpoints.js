@@ -111,4 +111,10 @@ export const ENDPOINTS = {
   UPDATE_SPECIALTY: `${BASE_URL}/especialidad/actualizar`,
   TOGGLE_SPECIALTY_STATUS: (id) => `${BASE_URL}/especialidad/cambiarEstado/${id}`,
   DELETE_SPECIALTY: (id) => `${BASE_URL}/especialidad/eliminar/${id}`,
+
+  // Inscripciones
+  REGISTER_INSCRIPTION: `${BASE_URL}/inscripciones/registrar`,
+  LIST_AVAILABLE_INSTRUCTORS: (idPlan) => `${BASE_URL}/inscripciones/instructores-disponibles/${idPlan}`,
+  LIST_INSTRUCTOR_SCHEDULES: (idEmpleado) => `${BASE_URL}/inscripciones/horarios-instructor/${idEmpleado}`,
+  REGISTER_INSCRIPTION_PAYMENT: `${BASE_URL}/inscripciones/pago/registrar`,
 };
