@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Eye, EyeOff } from 'react-feather';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../shared/hooks/useAuth';
 import { User, Lock } from "react-feather";
@@ -9,6 +10,7 @@ const LoginForm = () => {
     contrasena: '',
   });
   const [formErrors, setFormErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
   const { login, error, clearError } = useAuth();
   const navigate = useNavigate();
 
@@ -90,21 +92,30 @@ const LoginForm = () => {
         </div>
       {/* Contraseña */}
       <div className="mb-8 relative">
-            <input
-              type="password"
-              id="contrasena"
-              name="contrasena"
-              value={formData.contrasena}
-              onChange={handleChange}
+        <input
+          type={showPassword ? "text" : "password"}
+          id="contrasena"
+          name="contrasena"
+          value={formData.contrasena}
+          onChange={handleChange}
           placeholder="Contraseña"
           autoComplete="current-password"
-          className={`w-full pl-12 pr-4 py-3 rounded-lg bg-neutral-700/70 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-700 transition text-base ${formErrors.nombreUsuario ? "ring-2 ring-red-500" : ""}`}
+          className={`w-full pl-12 pr-12 py-3 rounded-lg bg-neutral-700/70 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-700 transition text-base ${formErrors.nombreUsuario ? "ring-2 ring-red-500" : ""}`}
         />
         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-red-700" size={20} />
-          {formErrors.contrasena && (
+        <button
+          type="button"
+          tabIndex={-1}
+          onClick={() => setShowPassword((prev) => !prev)}
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-red-700 focus:outline-none"
+          aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+        >
+          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+        </button>
+        {formErrors.contrasena && (
           <span className="text-xs text-red-500 absolute left-0 -bottom-5">{formErrors.contrasena}</span>
-          )}
-        </div>
+        )}
+      </div>
       {/* Error de login */}
       {error && (
         <div className="text-center text-sm text-red-500 mb-2">{error}</div>
@@ -118,12 +129,6 @@ const LoginForm = () => {
       </button>
       {/* Olvidaste tu contraseña */}
       <div className="mt-6 text-center">
-        <a
-          href="#"
-          className="text-red-700 hover:underline text-sm font-medium tracking-wide"
-        >
-          ¿Olvidaste tu contraseña?
-        </a>
     </div>
     </form>
   );

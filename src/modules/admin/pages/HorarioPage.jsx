@@ -75,6 +75,7 @@ const HorarioRow = memo(({ horario, onToggleEstado, onEdit, onDelete, loadingId 
                         onEdit={() => onEdit(horario)}
                         onDelete={() => onDelete(horario.idHorarioEmpleado)}
                         showView={false}
+                        hideText={true}
                     />
                 </div>
             </TableCell>

@@ -726,12 +726,6 @@ const AlquilerPage = () => {
           </Title>
           {alquilerCreado && (
             <div className="mb-4 p-2 bg-gray-50 border border-gray-200 rounded-md">
-              <Text className="flex items-center text-gray-700">
-                <ShoppingCart size={16} className="mr-2" />
-                {alquilerCreado.idAlquiler ? 
-                  `Alquiler #${alquilerCreado.idAlquiler} - ${new Date().toLocaleDateString()}` : 
-                  `Nuevo alquiler - ${new Date().toLocaleDateString()}`}
-              </Text>
             </div>
           )}
           

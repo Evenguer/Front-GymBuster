@@ -104,11 +104,6 @@ const StaffLayout = () => {
   // Menú para el entrenador
   const trainerMenuItems = [
     {
-      title: 'Dashboard',
-      path: '/staff/dashboard',
-      icon: <Home size={20} />,
-    },
-    {
       title: 'Clientes',
       icon: <Users size={20} />,
       submenu: true,

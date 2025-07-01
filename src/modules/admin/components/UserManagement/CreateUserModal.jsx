@@ -223,7 +223,9 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
       await register(formData);
       setFormErrors({});
       notify.success('Usuario creado exitosamente');
-      onUserCreated();
+      if (typeof onUserCreated === 'function') {
+        onUserCreated();
+      }
       onClose();
       setFormData(initialFormData);
     } catch (error) {

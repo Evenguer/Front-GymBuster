@@ -1,7 +1,7 @@
 import React from 'react';
 import { Eye, Edit, Trash2 } from 'react-feather';
 
-export const ActionButtons = ({ onView, onEdit, onDelete, showView = true, showEdit = true, showDelete = true }) => {
+export const ActionButtons = ({ onView, onEdit, onDelete, showView = true, showEdit = true, showDelete = true, hideText = false }) => {
   return (
     <div className="flex space-x-2 justify-start items-center">
       {showView && (
@@ -13,10 +13,10 @@ export const ActionButtons = ({ onView, onEdit, onDelete, showView = true, showE
           title="Ver detalles"
         >
           <Eye className="w-4 h-4 mr-1" />
-          Ver
+          {!hideText && 'Ver'}
         </button>
       )}
-      
+
       {showEdit && (
         <button
           className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium
@@ -26,10 +26,10 @@ export const ActionButtons = ({ onView, onEdit, onDelete, showView = true, showE
           title="Editar"
         >
           <Edit className="w-4 h-4 mr-1" />
-          Editar
+          {!hideText && 'Editar'}
         </button>
       )}
-      
+
       {showDelete && (
         <button
           className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium
@@ -39,7 +39,7 @@ export const ActionButtons = ({ onView, onEdit, onDelete, showView = true, showE
           title="Eliminar"
         >
           <Trash2 className="w-4 h-4 mr-1" />
-          Eliminar
+          {!hideText && 'Eliminar'}
         </button>
       )}
     </div>

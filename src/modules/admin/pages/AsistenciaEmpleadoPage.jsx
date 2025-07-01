@@ -60,10 +60,12 @@ const AsistenciaEmpleadoPage = () => {
             console.error('Error al cargar empleados:', error);
             toast.error('Error al cargar la lista de empleados');
         }
-    };    const fetchHorariosPorDia = async (idEmpleado, dia) => {
+    };
+
+    const fetchHorariosPorDia = async (idEmpleado, dia) => {
         if (!idEmpleado) {
             console.error('ID de empleado no proporcionado');
-            toast.error('Error: ID de empleado no válido');
+            // Se elimina el toast de error para ID de empleado no válido
             return;
         }
 
@@ -83,9 +85,7 @@ const AsistenciaEmpleadoPage = () => {
             console.log('Respuesta de horarios:', response);
             
             if (response.success) {
-                if (Array.isArray(response.data) && response.data.length === 0) {
-                    toast.info('No hay horarios registrados para este día');
-                }
+                // Se elimina el toast.info ya que no existe esa función en react-hot-toast
                 setHorariosDia(Array.isArray(response.data) ? response.data : []);
             } else {
                 throw new Error(response.message);
@@ -97,7 +97,9 @@ const AsistenciaEmpleadoPage = () => {
         } finally {
             setIsLoading(false);
         }
-    };    const buscarEmpleadoPorDNI = async () => {
+    };
+
+    const buscarEmpleadoPorDNI = async () => {
         if (!dni.trim()) {
             toast.error('Por favor, ingrese un DNI válido');
             return;
