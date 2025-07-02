@@ -172,6 +172,7 @@ const InscripcionPage = () => {
         // Si es plan PREMIUM, cargar instructores disponibles
         if (plan.tipoPlan === 'PREMIUM') {
           const instructores = await inscripcionAPI.obtenerInstructoresDisponibles(plan.id);
+          console.log('Instructores obtenidos del API:', instructores);
           setInstructoresDisponibles(instructores);
           setPasoActual(3); // Paso de selección de instructor
         } else {
@@ -313,7 +314,21 @@ const InscripcionPage = () => {
 
   const volver = () => {
     if (pasoActual > 1) {
-      setPasoActual(pasoActual - 1);
+      // Para planes ESTÁNDAR, manejar los saltos correctamente
+      if (planSeleccionado && planSeleccionado.tipoPlan === 'ESTANDAR') {
+        if (pasoActual === 5) { // Desde confirmación volver a plan
+          setPasoActual(2);
+        } else if (pasoActual === 6) { // Desde pago volver a confirmación
+          setPasoActual(5);
+        } else if (pasoActual === 7) { // Desde completado volver a pago
+          setPasoActual(6);
+        } else {
+          setPasoActual(pasoActual - 1);
+        }
+      } else {
+        // Para planes PREMIUM o cuando no hay plan seleccionado, comportamiento normal
+        setPasoActual(pasoActual - 1);
+      }
     }
   };
 
@@ -337,39 +352,57 @@ const InscripcionPage = () => {
       return true;
     });
 
+    // Mapear pasos actuales a la numeración filtrada para planes ESTÁNDAR
+    const obtenerPasoMapeado = (pasoOriginal) => {
+      if (!planSeleccionado || planSeleccionado.tipoPlan === 'PREMIUM') {
+        return pasoOriginal;
+      }
+      
+      // Para planes ESTÁNDAR: 1=Cliente, 2=Plan, 5=Confirmación, 6=Pago, 7=Completado
+      // Mapear a: 1=Cliente, 2=Plan, 3=Confirmación, 4=Pago, 5=Completado
+      if (pasoOriginal <= 2) return pasoOriginal;
+      if (pasoOriginal === 5) return 3; // Confirmación
+      if (pasoOriginal === 6) return 4; // Pago
+      if (pasoOriginal === 7) return 5; // Completado
+      return pasoOriginal;
+    };
+
+    const pasoMapeado = obtenerPasoMapeado(pasoActual);
+
     return (
-      <div className="mb-6">
-        <div className="flex items-center justify-between relative">
+      <div className="mb-8 bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+        <div className="flex justify-between">
           {pasosFiltrados.map((paso, index) => {
             const IconComponent = paso.icono;
+            const numeroEnSecuencia = index + 1;
             return (
-              <div key={paso.numero} className="flex flex-col items-center relative z-10">
+              <div 
+                key={paso.numero} 
+                className={`flex flex-col items-center ${numeroEnSecuencia <= pasoMapeado ? 'text-red-600' : 'text-gray-400'}`}
+              >
                 <div
-                  className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm font-medium ${
-                    paso.numero === pasoActual ? 'border-red-600 bg-red-50 text-red-600' : 
-                    paso.numero < pasoActual ? 'border-red-500 bg-red-500 text-white' : 'border-gray-300 bg-white text-gray-400'
+                  className={`w-10 h-10 rounded-full border-2 flex items-center justify-center ${
+                    numeroEnSecuencia === pasoMapeado ? 'border-red-600 bg-red-50 font-bold' : 
+                    numeroEnSecuencia < pasoMapeado ? 'border-red-500 bg-red-500 text-white' : 'border-gray-300'
                   }`}
                 >
-                  {paso.numero < pasoActual ? (
-                    <CheckCircle size={20} />
+                  {numeroEnSecuencia < pasoMapeado ? (
+                    <CheckCircle size={18} />
                   ) : (
                     <IconComponent size={16} />
                   )}
                 </div>
-                <span className={`mt-2 text-xs font-medium ${paso.numero <= pasoActual ? 'text-red-600' : 'text-gray-400'}`}>
-                  {paso.titulo}
-                </span>
+                <div className="mt-2 text-sm font-medium">{paso.titulo}</div>
               </div>
             );
           })}
-          
-          {/* Línea de progreso */}
-          <div className="absolute top-5 left-0 w-full h-0.5 bg-gray-200 -z-10">
-            <div 
-              className="h-full bg-red-500 transition-all duration-300"
-              style={{ width: `${((pasoActual - 1) / (pasosFiltrados.length - 1)) * 100}%` }}
-            />
-          </div>
+        </div>
+        <div className="relative mt-4">
+          <div className="absolute top-0 h-2 bg-gray-200 w-full rounded-full"></div>
+          <div 
+            className="absolute top-0 h-2 bg-red-500 rounded-full transition-all duration-500" 
+            style={{ width: `${((pasoMapeado - 1) / (pasosFiltrados.length - 1)) * 100}%` }}
+          ></div>
         </div>
       </div>
     );
@@ -516,26 +549,38 @@ const InscripcionPage = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {instructoresDisponibles.map(instructor => (
-              <div 
-                key={instructor.idEmpleado}
-                className="p-4 border rounded-lg cursor-pointer hover:border-red-500 hover:bg-red-50 transition-colors"
-                onClick={() => seleccionarInstructor(instructor.idEmpleado)}
-              >
-                <h3 className="font-semibold text-lg mb-2">{instructor.nombre}</h3>
-                <div className="space-y-1 text-sm text-gray-600">
-                  <p>👨‍🏫 Tipo: {instructor.tipoInstructor}</p>
-                  <p>👥 Cupo disponible: {instructor.cupoMaximo}</p>
-                </div>
-                <Button 
-                  className="w-full mt-3 bg-red-600 hover:bg-red-700 text-white"
-                  size="sm"
-                  disabled={loading}
-                >
-                  Seleccionar
-                </Button>
+            {instructoresDisponibles.length === 0 ? (
+              <div className="col-span-full p-4 text-center border border-gray-200 rounded">
+                <Text>No hay instructores disponibles para este plan</Text>
               </div>
-            ))}
+            ) : (
+              instructoresDisponibles.map(instructor => {
+                console.log('Renderizando instructor:', instructor);
+                console.log('Nombre completo:', instructor.nombreCompleto);
+                return (
+                  <div 
+                    key={instructor.idEmpleado}
+                    className="p-4 border rounded-lg cursor-pointer hover:border-red-500 hover:bg-red-50 transition-colors"
+                    onClick={() => seleccionarInstructor(instructor.idEmpleado)}
+                  >
+                    <h3 className="font-semibold text-lg mb-2 text-gray-900">
+                      {instructor.nombreCompleto || `Instructor ID: ${instructor.idEmpleado}`}
+                    </h3>
+                    <div className="space-y-1 text-sm text-gray-600">
+                      <p>👨‍🏫 Tipo: {instructor.tipoInstructor || 'No especificado'}</p>
+                      <p>👥 Cupo disponible: {instructor.cupoMaximo || 0}</p>
+                    </div>
+                    <Button 
+                      className="w-full mt-3 bg-red-600 hover:bg-red-700 text-white"
+                      size="sm"
+                      disabled={loading}
+                    >
+                      Seleccionar
+                    </Button>
+                  </div>
+                );
+              })
+            )}
           </div>
         </Card>
       )}
@@ -550,39 +595,47 @@ const InscripcionPage = () => {
           
           <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded">
             <Text className="text-blue-700">
-              Instructor seleccionado: <strong>{instructorSeleccionado.nombre}</strong>
+              Instructor seleccionado: <strong>{instructorSeleccionado.nombreCompleto}</strong>
             </Text>
           </div>
           
           {horariosInstructor.length > 0 ? (
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableHeaderCell>Día</TableHeaderCell>
-                  <TableHeaderCell>Hora Inicio</TableHeaderCell>
-                  <TableHeaderCell>Hora Fin</TableHeaderCell>
-                  <TableHeaderCell>Acción</TableHeaderCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {horariosInstructor.map((horario, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{horario.dia}</TableCell>
-                    <TableCell>{horario.horaInicio}</TableCell>
-                    <TableCell>{horario.horaFin}</TableCell>
-                    <TableCell>
-                      <Button 
-                        onClick={() => seleccionarHorario(horario)}
-                        size="sm"
-                        className="bg-red-600 hover:bg-red-700 text-white"
-                      >
-                        Seleccionar
-                      </Button>
-                    </TableCell>
+            <div>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>Día</TableHeaderCell>
+                    <TableHeaderCell>Hora Inicio</TableHeaderCell>
+                    <TableHeaderCell>Hora Fin</TableHeaderCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {horariosInstructor.map((horario, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{horario.dia}</TableCell>
+                      <TableCell>{horario.horaInicio}</TableCell>
+                      <TableCell>{horario.horaFin}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              
+              <div className="flex justify-center mt-6">
+                <Button 
+                  onClick={() => {
+                    setHorarioSeleccionado(horariosInstructor[0]); // Seleccionar el primer horario por defecto
+                    setPasoActual(5); // Ir al paso de confirmación
+                    showSnackbar('Bloque de horarios seleccionado exitosamente', 'success');
+                  }}
+                  disabled={loading}
+                  loading={loading}
+                  className="bg-red-600 hover:bg-red-700 text-white px-8"
+                  size="lg"
+                >
+                  Seleccionar Bloque de Horarios
+                </Button>
+              </div>
+            </div>
           ) : (
             <div className="p-4 text-center border border-gray-200 rounded">
               <Text>No hay horarios disponibles para este instructor</Text>
@@ -607,10 +660,7 @@ const InscripcionPage = () => {
                 <p><strong>Plan:</strong> {planSeleccionado?.nombre} ({planSeleccionado?.tipoPlan})</p>
                 <p><strong>Duración:</strong> {planSeleccionado?.duracion} días</p>
                 {instructorSeleccionado && (
-                  <p><strong>Instructor:</strong> {instructorSeleccionado.nombre}</p>
-                )}
-                {horarioSeleccionado && (
-                  <p><strong>Horario:</strong> {horarioSeleccionado.dia} - {horarioSeleccionado.horaInicio} a {horarioSeleccionado.horaFin}</p>
+                  <p><strong>Instructor:</strong> {instructorSeleccionado.nombreCompleto}</p>
                 )}
                 <p><strong>Fecha de inicio:</strong> {formData.fechaInicio instanceof Date ? formData.fechaInicio.toLocaleDateString() : formData.fechaInicio}</p>
                 <p className="text-lg font-semibold text-red-600"><strong>Monto total: S/ {formData.monto}</strong></p>
