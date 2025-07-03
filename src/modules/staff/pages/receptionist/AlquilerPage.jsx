@@ -51,7 +51,6 @@ const AlquilerPage = () => {
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState({});
-  const [success, setSuccess] = useState(false);
   const [alquilerCreado, setAlquilerCreado] = useState(null);
   const [mostrarDetalles, setMostrarDetalles] = useState(false);
   const [piezas, setPiezas] = useState([]);
@@ -105,46 +104,10 @@ const AlquilerPage = () => {
     }
   }, [isAuthenticated]);
 
-  const handleInputChange = (field, value) => {
-    console.log(`Cambiando ${field} a:`, value);
-    
-    // Si el valor es null o undefined, usar cadena vacía
-    const safeValue = value || '';
-    
-    // Validar el formato del ID
-    if (field === 'clienteId' && !safeValue.startsWith('cli-')) {
-      const formattedValue = `cli-${safeValue}`;
-      setFormData(prev => ({
-        ...prev,
-        [field]: formattedValue
-      }));
-    } else if (field === 'fechaFin') {
-      setFormData(prev => ({
-        ...prev,
-        fechaFin: value // Fecha completa para el DatePicker
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [field]: safeValue
-      }));
-    }
+  // Manejar cambios en los inputs del formulario
 
-    // Limpiar error del campo cuando cambia
-    if (formErrors[field]) {
-      setFormErrors(prev => ({
-        ...prev,
-        [field]: null
-      }));
-    }
-    
-    // Limpiar mensaje de éxito si existe
-    if (success) {
-      setSuccess(false);
-    }
 
-    console.log('Estado actualizado:', formData);
-  };
+  // Validar todos los campos requeridos
 
   const validateForm = () => {
     const errors = {};
@@ -173,51 +136,45 @@ const AlquilerPage = () => {
       return;
     }
 
-    try {
-      setFormErrors({});
+    setFormErrors({});
+    
+    // Formatear la fecha para usarla posteriormente (YYYY-MM-DD)
+    const formattedFechaFin = formData.fechaFin instanceof Date 
+      ? formData.fechaFin.toISOString().split('T')[0]
+      : (typeof formData.fechaFin === 'string' ? formData.fechaFin : '');
       
-      // Formatear la fecha para usarla posteriormente (YYYY-MM-DD)
-      const formattedFechaFin = formData.fechaFin instanceof Date 
-        ? formData.fechaFin.toISOString().split('T')[0]
-        : (typeof formData.fechaFin === 'string' ? formData.fechaFin : '');
-        
-      console.log('Fecha fin formateada:', formattedFechaFin);
+    console.log('Fecha fin formateada:', formattedFechaFin);
 
-      // Preparar datos del alquiler temporales
-      const clienteId = parseInt(formData.clienteId.replace('cli-', ''));
-      
-      // Validar que los IDs sean números válidos
-      if (isNaN(clienteId)) {
-        throw new Error('ID de cliente inválido');
-      }
-      
-      // Estructura temporal del alquiler (sin enviar a backend todavía)
-      const alquilerTemp = {
-        idAlquiler: Date.now(), // ID temporal para identificar el alquiler
-        clienteId: clienteId,
-        fechaFin: formattedFechaFin
-      };
-      
-      console.log('Datos de alquiler preparados (no guardados aún):', alquilerTemp);
-      
-      // Guardar temporalmente el alquiler creado en el estado
-      setAlquilerCreado(alquilerTemp);
-      
-      // Solo avanzamos al siguiente paso, sin guardar todavía en el backend
-      setSuccess(true);
-      setMostrarDetalles(true);
-      setBotonCrearBloqueado(true); 
-      setPasoActual(2); // Avanzar a la selección de detalles/piezas
-      
-      // Cargar piezas para el siguiente paso
-      await cargarPiezas();
-      
-      showNotification('Datos registrados. Continúe agregando los elementos del alquiler', 'success');
-    } catch (err) {
-      console.error('Error en la validación de datos:', err);
-      setFormErrors({ submit: `Error: ${err.message}` });
-      showNotification(`Error: ${err.message}`, 'error');
+    // Preparar datos del alquiler temporales
+    const clienteId = parseInt(formData.clienteId.replace('cli-', ''));
+    
+    // Validar que los IDs sean números válidos
+    if (isNaN(clienteId)) {
+      setFormErrors({ submit: 'ID de cliente inválido' });
+      showNotification('ID de cliente inválido', 'error');
+      return;
     }
+    
+    // Estructura temporal del alquiler (sin enviar a backend todavía)
+    const alquilerTemp = {
+      idAlquiler: Date.now(), // ID temporal para identificar el alquiler
+      clienteId: clienteId,
+      fechaFin: formattedFechaFin
+    };
+    
+    console.log('Datos de alquiler preparados (no guardados aún):', alquilerTemp);
+    
+    // Guardar temporalmente el alquiler creado en el estado
+    setAlquilerCreado(alquilerTemp);
+    
+    // Solo avanzamos al siguiente paso, sin guardar todavía en el backend
+    setMostrarDetalles(true);
+    setBotonCrearBloqueado(true); 
+    setPasoActual(2); // Avanzar a la selección de detalles/piezas
+    // Cargar piezas para el siguiente paso
+    await cargarPiezas();
+    
+    showNotification('Datos registrados. Continúe agregando los elementos del alquiler', 'success');
   };
 
   // Función para cargar piezas disponibles
@@ -350,17 +307,17 @@ const AlquilerPage = () => {
   };
 
   // Preparar para avanzar al paso de pago
-  const guardarDetalles = () => {
+  const guardarDetalles = async () => {
     if (detallesAlquiler.length === 0) {
       showNotification('Error: No hay elementos seleccionados para el alquiler', 'error');
       return;
     }
 
     try {
-      // Calcular el total del alquiler
-      const total = detallesAlquiler.reduce((sum, detalle) => {
-        return sum + (detalle.cantidad * detalle.pieza.precioAlquiler);
-      }, 0);
+      setLoading(true);
+      
+      // Calcular el total del alquiler basado en días
+      const total = await calcularPrecioConDias();
       
       setTotalAlquiler(total);
       setMostrarPago(true);
@@ -370,6 +327,8 @@ const AlquilerPage = () => {
     } catch (error) {
       console.error('Error al procesar los detalles:', error);
       showNotification(`Error: ${error.message}`, 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -440,15 +399,12 @@ const AlquilerPage = () => {
         setMostrarDetalles(false);
         setMostrarPago(false);
         setAlquilerCreado(null);
-        setSuccess(false);
+        setPiezaSeleccionada('');
+        setPiezaSeleccionada('');
         setPiezaSeleccionada('');
         setCantidad(1);
         setFormData({
-          clienteId: '',
-          fechaFin: new Date(new Date().setDate(new Date().getDate() + 7))
         });
-        setDni('');
-        setClienteEncontrado(null);
         setTotalAlquiler(0);
         setMontoPagado('');
         setFormErrors({});
@@ -521,7 +477,8 @@ const AlquilerPage = () => {
       setMostrarDetalles(false);
       setMostrarPago(false);
       setAlquilerCreado(null);
-      setSuccess(false);
+      setPiezaSeleccionada('');
+      setCantidad(1);
       setPiezaSeleccionada('');
       setCantidad(1);
       setFormData({
@@ -584,17 +541,102 @@ const AlquilerPage = () => {
     );
   };
 
-  // Validar que la fecha es futura
+  // Validar que la fecha es futura y no excede 30 días
   const validarFechaFutura = (fecha) => {
     if (!fecha) return false;
     
     const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0); // Normalizar la fecha actual para comparación
+    hoy.setHours(0, 0, 0, 0);
     
-    const fechaComparar = new Date(fecha);
-    fechaComparar.setHours(0, 0, 0, 0); // Normalizar la fecha a comparar
+    const fechaComparar = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
     
-    return fechaComparar >= hoy; // La fecha debe ser hoy o posterior
+    // Validar que la fecha es futura
+    const esFechaFutura = fechaComparar >= hoy;
+    
+    // Calcular días entre hoy y la fecha seleccionada
+    const diferenciaDias = Math.ceil((fechaComparar - hoy) / (1000 * 60 * 60 * 24));
+    
+    // Validar que no excede 30 días
+    const noExcedePlazo = diferenciaDias <= 30;
+    
+    return esFechaFutura && noExcedePlazo;
+  };
+
+  // Calcular días entre fechas
+  const calcularDias = (fechaInicio, fechaFin) => {
+    if (!fechaInicio || !fechaFin) return 1;
+    
+    // Normalizar las fechas a medianoche en la zona horaria local
+    const inicio = new Date(fechaInicio);
+    inicio.setHours(0, 0, 0, 0);
+    
+    const fin = new Date(fechaFin);
+    fin.setHours(0, 0, 0, 0);
+    
+    // Asegurarnos de que estamos trabajando con las fechas correctas
+    console.log('Calculando días entre:', {
+      fechaInicioOriginal: fechaInicio,
+      fechaFinOriginal: fechaFin,
+      inicioNormalizado: inicio.toISOString(),
+      finNormalizado: fin.toISOString()
+    });
+    
+    // Calcular la diferencia en milisegundos y convertir a días
+    const diferenciaMilisegundos = fin.getTime() - inicio.getTime();
+    // Añadimos 1 para incluir tanto el día inicial como el final
+    const diferenciaDias = Math.round(diferenciaMilisegundos / (1000 * 60 * 60 * 24)) + 1;
+    
+    // Generar array de fechas para verificación
+    const fechas = [];
+    const fechaTemp = new Date(inicio);
+    for (let i = 0; i < diferenciaDias; i++) {
+      fechas.push(new Date(fechaTemp).toLocaleDateString('es-PE'));
+      fechaTemp.setDate(fechaTemp.getDate() + 1);
+    }
+    
+    console.log('Resultado del cálculo:', {
+      inicio: inicio.toLocaleDateString('es-PE'),
+      fin: fin.toLocaleDateString('es-PE'),
+      diferenciaDias,
+      fechasIncluidas: fechas.join(', ')
+    });
+    
+    return diferenciaDias > 0 ? diferenciaDias : 1;
+  };
+
+  // Calcular precio total basado en días
+  const calcularPrecioConDias = async () => {
+    if (detallesAlquiler.length === 0) return 0;
+
+    try {
+      const fechaInicio = new Date();
+      fechaInicio.setHours(0, 0, 0, 0);
+      const fechaInicioStr = fechaInicio.toISOString().split('T')[0];
+      
+      const fechaFin = new Date(formData.fechaFin);
+      fechaFin.setHours(0, 0, 0, 0);
+      const fechaFinStr = fechaFin.toISOString().split('T')[0];
+
+      const detallesParaCalculo = detallesAlquiler.map(detalle => ({
+        piezaId: detalle.piezaId,
+        cantidad: detalle.cantidad
+      }));
+
+      const resultado = await alquilerAPI.calcularPrecio(fechaInicioStr, fechaFinStr, detallesParaCalculo);
+      
+      return resultado.total;
+    } catch (error) {
+      console.error('Error al calcular precio:', error);
+      // Fallback al cálculo local simple
+      const fechaInicio = new Date();
+      fechaInicio.setHours(0, 0, 0, 0);
+      const fechaFin = new Date(formData.fechaFin);
+      fechaFin.setHours(0, 0, 0, 0);
+      const dias = calcularDias(fechaInicio, fechaFin);
+      return detallesAlquiler.reduce((sum, detalle) => {
+        return sum + (detalle.cantidad * detalle.pieza.precioAlquiler * dias);
+      }, 0);
+    }
   };
 
   return (
@@ -684,15 +726,52 @@ const AlquilerPage = () => {
         <div className="mb-6">
           <div className="p-4 bg-gray-50 rounded-lg">
             <Text className="mb-2 font-medium">Fecha de fin del alquiler</Text>
-            <DatePicker
-              value={formData.fechaFin}
-              onValueChange={(value) => handleInputChange('fechaFin', value)}
-              enableClear={false}
-              minDate={new Date(new Date().setDate(new Date().getDate() + 1))}
-              icon={Calendar}
-              disabled={botonCrearBloqueado}
-              className="bg-white"
-            />
+            <div className="space-y-2 mb-4">
+              <label className="block text-sm font-semibold">Fecha Fin:</label>
+              <input
+                type="date"
+                className={`w-full p-2 border rounded ${formErrors.fechaFin ? 'border-red-500' : 'border-gray-300'}`}
+                value={formData.fechaFin instanceof Date ? formData.fechaFin.toISOString().split('T')[0] : formData.fechaFin}
+                onChange={(e) => {
+                  // Crear la fecha seleccionada en la zona horaria local
+                  const [year, month, day] = e.target.value.split('-').map(Number);
+                  const fechaSeleccionada = new Date(year, month - 1, day);
+                  
+                  // Crear la fecha de inicio (hoy) en la zona horaria local
+                  const fechaInicio = new Date();
+                  fechaInicio.setHours(0, 0, 0, 0);
+                  
+                  const diasAlquiler = calcularDias(fechaInicio, fechaSeleccionada);
+                  
+                  console.log('Selección de fecha:', {
+                    fechaInicio: fechaInicio.toLocaleDateString('es-PE'),
+                    fechaFin: fechaSeleccionada.toLocaleDateString('es-PE'),
+                    diasCalculados: diasAlquiler,
+                    fechaSeleccionadaOriginal: e.target.value
+                  });
+                  
+                  if (diasAlquiler > 30) {
+                    setFormErrors(prev => ({
+                      ...prev,
+                      fechaFin: 'El período de alquiler no puede exceder los 30 días'
+                    }));
+                    showNotification('El período de alquiler no puede exceder los 30 días', 'error');
+                    return;
+                  }
+                  
+                  setFormErrors(prev => ({ ...prev, fechaFin: '' }));
+                  setFormData(prev => ({
+                    ...prev,
+                    fechaFin: fechaSeleccionada
+                  }));
+                }}
+                min={new Date().toISOString().split('T')[0]}
+                max={new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0]}
+              />
+              {formErrors.fechaFin && (
+                <span className="text-red-500 text-xs">{formErrors.fechaFin}</span>
+              )}
+            </div>
           </div>
         </div>
         
@@ -753,7 +832,7 @@ const AlquilerPage = () => {
                     value={pieza.id.toString()}
                     icon={Package}
                   >
-                    {pieza.nombre} - S/ {pieza.precioAlquiler} (Stock: {pieza.stock})
+                    {pieza.nombre} - S/ {pieza.precioAlquiler}/día (Stock: {pieza.stock})
                   </SearchSelectItem>
                 ))}
               </SearchSelect>
@@ -798,19 +877,25 @@ const AlquilerPage = () => {
                 <TableHead>
                   <TableRow>
                     <TableHeaderCell>Pieza</TableHeaderCell>
-                    <TableHeaderCell>Precio</TableHeaderCell>
+                    <TableHeaderCell>Precio Diario</TableHeaderCell>
                     <TableHeaderCell>Cantidad</TableHeaderCell>
+                    <TableHeaderCell>Días</TableHeaderCell>
                     <TableHeaderCell>Subtotal</TableHeaderCell>
                     <TableHeaderCell>Opciones</TableHeaderCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {detallesAlquiler.map((detalle) => {
-                    const subtotal = detalle.cantidad * detalle.pieza.precioAlquiler;
+                    const fechaInicio = new Date();
+                    fechaInicio.setHours(0, 0, 0, 0);
+                    const fechaFin = new Date(formData.fechaFin);
+                    fechaFin.setHours(0, 0, 0, 0);
+                    const dias = calcularDias(fechaInicio, fechaFin);
+                    const subtotal = detalle.cantidad * detalle.pieza.precioAlquiler * dias;
                     return (
                       <TableRow key={detalle.piezaId}>
                         <TableCell>{detalle.pieza.nombre}</TableCell>
-                        <TableCell>S/ {detalle.pieza.precioAlquiler}</TableCell>
+                        <TableCell>S/ {detalle.pieza.precioAlquiler}/día</TableCell>
                         <TableCell>
                           {!mostrarPago ? (
                             <NumberInput
@@ -825,6 +910,7 @@ const AlquilerPage = () => {
                             detalle.cantidad
                           )}
                         </TableCell>
+                        <TableCell>{dias}</TableCell>
                         <TableCell>S/ {subtotal.toFixed(2)}</TableCell>
                         <TableCell>
                           {!mostrarPago && (
@@ -847,9 +933,43 @@ const AlquilerPage = () => {
               </Table>
               
               <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg border border-blue-100 mb-4">
-                <Text className="text-lg font-semibold text-blue-800">
-                  Total: S/ {detallesAlquiler.reduce((sum, detalle) => sum + (detalle.cantidad * detalle.pieza.precioAlquiler), 0).toFixed(2)}
-                </Text>
+                <div>
+                  {detallesAlquiler.length > 0 && (
+                    <>
+                      <Text className="text-lg font-semibold text-blue-800">
+                        {(() => {
+                          const fechaInicio = new Date();
+                          fechaInicio.setHours(0, 0, 0, 0);
+                          const fechaFin = new Date(formData.fechaFin);
+                          fechaFin.setHours(0, 0, 0, 0);
+                          const dias = calcularDias(fechaInicio, fechaFin);
+                          const total = detallesAlquiler.reduce((sum, detalle) => {
+                            return sum + (detalle.cantidad * detalle.pieza.precioAlquiler * dias);
+                          }, 0);
+                          return `Total (por ${dias} días): S/ ${total.toFixed(2)}`;
+                        })()}
+                      </Text>
+                      <Text className="text-sm text-gray-600">
+                        {(() => {
+                          const formatDate = (date) => {
+                            if (!date) return '';
+                            const d = new Date(date);
+                            d.setHours(12, 0, 0, 0); // Usar mediodía para evitar problemas de zona horaria
+                            return d.toLocaleDateString('es-PE', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric'
+                            });
+                          };
+                          const fechaInicio = new Date();
+                          fechaInicio.setHours(12, 0, 0, 0);
+                          const fechaFin = new Date(formData.fechaFin);
+                          return `Desde: ${formatDate(fechaInicio)} - Hasta: ${formatDate(fechaFin)}`;
+                        })()}
+                      </Text>
+                    </>
+                  )}
+                </div>
                 {!mostrarPago && (
                   <Button 
                     onClick={guardarDetalles} 
