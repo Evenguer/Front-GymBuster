@@ -74,6 +74,9 @@ import PlanesListaPage from './modules/staff/pages/receptionist/PlanesListaPage'
 import ClienteFormPage from './modules/staff/pages/receptionist/ClienteFormPage';
 import MaquinariaPage from './modules/staff/pages/receptionist/MaquinariaPage';
 import InscripcionPage from './modules/staff/pages/receptionist/InscripcionPage';
+import ListaInscripcionesPage from './modules/staff/pages/receptionist/ListaInscripcionesPage';
+import VerificarInscripcionPage from './modules/staff/pages/receptionist/VerificarInscripcionPage';
+import ListaAsistenciaCliente from './modules/staff/pages/receptionist/ListaAsistenciaCliente';
 
 import TrainerDashboardPage from './modules/staff/pages/trainer/TrainerDashboardPage';
 import ClientAttendancePage from './modules/staff/pages/trainer/ClientAttendancePage';
@@ -164,9 +167,12 @@ function App() {
               <Route path="clientes" element={<ClientesStaffPage />} />
               <Route path="cliente/nuevo" element={<ClienteFormPage />} />
               <Route path="inscripciones/nueva" element={<NuevaInscripcionPage />} />
-              <Route path="inscripciones/gestionar" element={<GestionarInscripcionesPage />} />
+
+              <Route path="historial" element={<ListaInscripcionesPage/>} />
               <Route path="asistencias/registrar" element={<AsistenciaEmpleadoPage />} />
               <Route path="asistencias/ver" element={<ListaAsistenciaPage />} />
+              <Route path="asistencias/clientes" element={<ListaAsistenciaCliente />} />
+              <Route path="verificar" element={<VerificarInscripcionPage />} />
               <Route path="planes" element={<PlanesStaffPage />} />
               {/* Rutas específicas para ENTRENADOR */}
               <Route path="clientes/asistencia" element={<ClientAttendancePage />} />

@@ -230,6 +230,93 @@ export const inscripcionAPI = {
       console.error('Error en crearInscripcionCompleta:', error);
       throw new Error(error.message || 'Error al registrar la inscripción completa');
     }
+  },
+
+  // Obtener detalle completo de una inscripción
+  obtenerDetalleInscripcion: async (idInscripcion) => {
+    try {
+      checkRole(['ADMIN', 'RECEPCIONISTA']);
+      
+      if (!idInscripcion) {
+        throw new Error('ID de inscripción es requerido');
+      }
+      
+      const url = ENDPOINTS.GET_INSCRIPTION_DETAIL(idInscripcion);
+      console.log('URL de detalle de inscripción:', url);
+      console.log('ID de inscripción:', idInscripcion);
+      
+      const response = await axios.get(url, getAuthConfig());
+      
+      console.log('Detalle de inscripción', idInscripcion, ':', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener detalle de inscripción:', error);
+      console.error('URL utilizada:', ENDPOINTS.GET_INSCRIPTION_DETAIL(idInscripcion));
+      console.error('Status code:', error.response?.status);
+      console.error('Response data:', error.response?.data);
+      
+      if (error.response?.status === 404) {
+        throw new Error('Inscripción no encontrada');
+      }
+      if (error.response?.status === 403) {
+        throw new Error('No tienes permiso para ver el detalle de esta inscripción');
+      }
+      throw new Error(error.response?.data?.message || error.message || 'Error al obtener el detalle de la inscripción');
+    }
+  },
+
+  // Listar todas las inscripciones con detalles
+  listarTodasLasInscripciones: async () => {
+    try {
+      checkRole(['ADMIN', 'RECEPCIONISTA']);
+      
+      const response = await axios.get(
+        ENDPOINTS.LIST_ALL_INSCRIPTIONS,
+        getAuthConfig()
+      );
+      
+      console.log('Lista de todas las inscripciones:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error al listar inscripciones:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Error al obtener la lista de inscripciones');
+    }
+  },
+
+  // Cancelar una inscripción
+  cancelarInscripcion: async (idInscripcion) => {
+    try {
+      checkRole(['ADMIN', 'RECEPCIONISTA']);
+      
+      if (!idInscripcion) {
+        throw new Error('ID de inscripción es requerido');
+      }
+      
+      console.log('Cancelando inscripción:', idInscripcion);
+      
+      const response = await axios.put(
+        ENDPOINTS.CANCEL_INSCRIPTION(idInscripcion),
+        {},
+        getAuthConfig()
+      );
+      
+      console.log('Inscripción cancelada exitosamente:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error al cancelar inscripción:', error);
+      
+      if (error.response?.status === 404) {
+        throw new Error('Inscripción no encontrada');
+      }
+      if (error.response?.status === 400) {
+        throw new Error(error.response.data || 'La inscripción ya está cancelada o no puede ser cancelada');
+      }
+      if (error.response?.status === 403) {
+        throw new Error('No tienes permiso para cancelar inscripciones');
+      }
+      
+      throw new Error(error.response?.data?.message || error.message || 'Error al cancelar la inscripción');
+    }
   }
 };
 

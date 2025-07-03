@@ -48,6 +48,10 @@ const InscripcionPage = () => {
   const [horariosInstructor, setHorariosInstructor] = useState([]);
   const [horarioSeleccionado, setHorarioSeleccionado] = useState(null);
   
+  // Estados para filtros de planes
+  const [busquedaPlan, setBusquedaPlan] = useState('');
+  const [filtroTipoPlan, setFiltroTipoPlan] = useState('TODOS');
+  
   // Datos de formulario
   const [formData, setFormData] = useState({
     idCliente: '',
@@ -287,6 +291,18 @@ const InscripcionPage = () => {
     setOpenSnackbar(true);
   };
 
+  // Función para filtrar planes
+  const planesFiltrados = planes.filter(plan => {
+    const coincideBusqueda = plan.nombre.toLowerCase().includes(busquedaPlan.toLowerCase());
+    const coincideTipo = filtroTipoPlan === 'TODOS' || plan.tipoPlan === filtroTipoPlan;
+    return coincideBusqueda && coincideTipo;
+  });
+
+  // Función para formatear duración correctamente (singular/plural)
+  const formatearDuracion = (duracion) => {
+    return duracion === 1 ? `${duracion} día` : `${duracion} días`;
+  };
+
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
   };
@@ -298,6 +314,8 @@ const InscripcionPage = () => {
     setInstructorSeleccionado(null);
     setHorariosInstructor([]);
     setHorarioSeleccionado(null);
+    setBusquedaPlan('');
+    setFiltroTipoPlan('TODOS');
     setFormData({
       idCliente: '',
       idPlan: '',
@@ -414,14 +432,16 @@ const InscripcionPage = () => {
         <Title>Registro de Inscripción</Title>
         {pasoActual > 1 && pasoActual < 7 && (
           <div className="flex gap-2">
-            <Button 
-              onClick={volver}
-              variant="secondary"
-              icon={ArrowLeft}
-              size="sm"
-            >
-              Volver
-            </Button>
+            {pasoActual !== 6 && (
+              <Button 
+                onClick={volver}
+                variant="secondary"
+                icon={ArrowLeft}
+                size="sm"
+              >
+                Volver
+              </Button>
+            )}
             <Button 
               onClick={reiniciarFormulario} 
               variant="secondary"
@@ -502,35 +522,86 @@ const InscripcionPage = () => {
             </div>
           )}
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {planes.map(plan => (
-              <div 
-                key={plan.id}
-                className="p-4 border rounded-lg cursor-pointer hover:border-red-500 hover:bg-red-50 transition-colors"
-                onClick={() => seleccionarPlan(plan.id)}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold text-lg">{plan.nombre}</h3>
-                  <span className={`px-2 py-1 text-xs rounded ${
-                    plan.tipoPlan === 'PREMIUM' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
-                  }`}>
-                    {plan.tipoPlan}
-                  </span>
-                </div>
-                <div className="space-y-1 text-sm text-gray-600">
-                  <p>💰 Precio: S/ {plan.precio}</p>
-                  <p>📅 Duración: {plan.duracion} días</p>
-                </div>
-                <Button 
-                  className="w-full mt-3 bg-red-600 hover:bg-red-700 text-white"
-                  size="sm"
-                  disabled={loading}
-                >
-                  Seleccionar
-                </Button>
+          {/* Filtros y buscador */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Text className="mb-2 font-medium">Buscar plan</Text>
+                <TextInput
+                  placeholder="Buscar por nombre del plan..."
+                  value={busquedaPlan}
+                  onChange={(e) => setBusquedaPlan(e.target.value)}
+                  icon={Search}
+                  className="bg-white"
+                />
               </div>
-            ))}
+              <div>
+                <Text className="mb-2 font-medium">Filtrar por tipo</Text>
+                <SearchSelect
+                  value={filtroTipoPlan}
+                  onValueChange={setFiltroTipoPlan}
+                  className="bg-white"
+                >
+                  <SearchSelectItem value="TODOS">Todos los planes</SearchSelectItem>
+                  <SearchSelectItem value="ESTANDAR">Plan Estándar</SearchSelectItem>
+                  <SearchSelectItem value="PREMIUM">Plan Premium</SearchSelectItem>
+                </SearchSelect>
+              </div>
+            </div>
+            
+            {/* Contador de resultados */}
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <Text className="text-sm text-gray-600">
+                Mostrando {planesFiltrados.length} de {planes.length} planes
+                {busquedaPlan && ` que contienen "${busquedaPlan}"`}
+                {filtroTipoPlan !== 'TODOS' && ` del tipo ${filtroTipoPlan}`}
+              </Text>
+            </div>
           </div>
+          
+          {/* Lista de planes filtrados */}
+          {planesFiltrados.length === 0 ? (
+            <div className="p-8 text-center border border-gray-200 rounded-lg">
+              <Calendar size={48} className="mx-auto mb-4 text-gray-300" />
+              <Text className="text-gray-500 mb-2">No se encontraron planes</Text>
+              <Text className="text-sm text-gray-400">
+                {busquedaPlan || filtroTipoPlan !== 'TODOS' 
+                  ? 'Intenta ajustar los filtros de búsqueda'
+                  : 'No hay planes disponibles en este momento'
+                }
+              </Text>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {planesFiltrados.map(plan => (
+                <div 
+                  key={plan.id}
+                  className="p-4 border rounded-lg cursor-pointer hover:border-red-500 hover:bg-red-50 transition-colors"
+                  onClick={() => seleccionarPlan(plan.id)}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-semibold text-lg">{plan.nombre}</h3>
+                    <span className={`px-2 py-1 text-xs rounded ${
+                      plan.tipoPlan === 'PREMIUM' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {plan.tipoPlan}
+                    </span>
+                  </div>
+                  <div className="space-y-1 text-sm text-gray-600">
+                    <p>💰 Precio: S/ {plan.precio}</p>
+                    <p>📅 Duración: {formatearDuracion(plan.duracion)}</p>
+                  </div>
+                  <Button 
+                    className="w-full mt-3 bg-red-600 hover:bg-red-700 text-white"
+                    size="sm"
+                    disabled={loading}
+                  >
+                    Seleccionar
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
       )}
 
@@ -658,7 +729,7 @@ const InscripcionPage = () => {
               <div className="space-y-2 text-sm">
                 <p><strong>Cliente:</strong> {clienteEncontrado?.nombreCompleto}</p>
                 <p><strong>Plan:</strong> {planSeleccionado?.nombre} ({planSeleccionado?.tipoPlan})</p>
-                <p><strong>Duración:</strong> {planSeleccionado?.duracion} días</p>
+                <p><strong>Duración:</strong> {formatearDuracion(planSeleccionado?.duracion)}</p>
                 {instructorSeleccionado && (
                   <p><strong>Instructor:</strong> {instructorSeleccionado.nombreCompleto}</p>
                 )}

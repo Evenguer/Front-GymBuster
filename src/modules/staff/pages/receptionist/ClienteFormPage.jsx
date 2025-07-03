@@ -2,6 +2,16 @@ import React, { useState } from 'react';
 import { Card, Title, TextInput, Button } from '@tremor/react';
 import { register, checkExistingUser } from '../../../../shared/services/authAPI';
 import { toast, Toaster } from 'react-hot-toast';
+import {
+  isValidDNI,
+  isValidPhone,
+  isStrongPassword,
+  isValidEmail,
+  isValidUsername,
+  isOver18,
+  isValidName,
+  ERROR_MESSAGES
+} from '../../../../shared/utils/validations';
 import './modal-styles.css';
 
 const initialFormData = {
@@ -24,28 +34,108 @@ const ClienteFormPage = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    let finalValue = value;
+
+    // Aplicar restricciones específicas según el campo
+    switch (name) {
+      case 'dni':
+        // Solo permitir números y limitar a 8 dígitos
+        finalValue = value.replace(/\D/g, '').slice(0, 8);
+        break;
+      case 'celular':
+        // Solo permitir números y limitar a 9 dígitos
+        finalValue = value.replace(/\D/g, '').slice(0, 9);
+        break;
+      case 'nombre':
+      case 'apellidos':
+        // Solo permitir letras y espacios
+        finalValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+        break;
+      case 'nombreUsuario':
+        // Solo permitir letras, números y guiones bajos
+        finalValue = value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20);
+        break;
+      default:
+        finalValue = value;
+    }
+
     setFormData(prevData => ({
       ...prevData,
-      [name]: value
+      [name]: finalValue
     }));
+
+    // Limpiar el error del campo si existe
+    if (formErrors[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errors = {};
-    if (!formData.nombreUsuario) errors.nombreUsuario = 'El nombre de usuario es requerido';
-    if (!formData.contrasena) errors.contrasena = 'La contraseña es requerida';
-    if (!formData.nombre) errors.nombre = 'El nombre es requerido';
-    if (!formData.apellidos) errors.apellidos = 'Los apellidos son requeridos';
-    if (!formData.dni) errors.dni = 'El DNI es requerido';
-    if (!formData.correo) errors.correo = 'El correo es requerido';
-    if (!formData.genero) errors.genero = 'El género es requerido';
+
+    // Validaciones básicas usando las funciones de validación
+    if (!formData.nombreUsuario) {
+      errors.nombreUsuario = 'El nombre de usuario es requerido';
+    } else if (!isValidUsername(formData.nombreUsuario)) {
+      errors.nombreUsuario = ERROR_MESSAGES.username;
+    }
+
+    if (!formData.contrasena) {
+      errors.contrasena = 'La contraseña es requerida';
+    } else if (!isStrongPassword(formData.contrasena)) {
+      errors.contrasena = ERROR_MESSAGES.password;
+    }
+
+    if (!formData.nombre) {
+      errors.nombre = 'El nombre es requerido';
+    } else if (!isValidName(formData.nombre)) {
+      errors.nombre = ERROR_MESSAGES.name;
+    }
+
+    if (!formData.apellidos) {
+      errors.apellidos = 'Los apellidos son requeridos';
+    } else if (!isValidName(formData.apellidos)) {
+      errors.apellidos = ERROR_MESSAGES.name;
+    }
+
+    if (!formData.dni) {
+      errors.dni = 'El DNI es requerido';
+    } else if (!isValidDNI(formData.dni)) {
+      errors.dni = ERROR_MESSAGES.dni;
+    }
+
+    if (!formData.correo) {
+      errors.correo = 'El correo es requerido';
+    } else if (!isValidEmail(formData.correo)) {
+      errors.correo = ERROR_MESSAGES.email;
+    }
+
+    if (formData.celular && !isValidPhone(formData.celular)) {
+      errors.celular = ERROR_MESSAGES.phone;
+    }
+
+    if (!formData.fechaNacimiento) {
+      errors.fechaNacimiento = 'La fecha de nacimiento es requerida';
+    } else if (!isOver18(formData.fechaNacimiento)) {
+      errors.fechaNacimiento = ERROR_MESSAGES.age;
+    }
+
+    if (!formData.genero) {
+      errors.genero = 'El género es requerido';
+    }
+
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
+
     setLoading(true);
     try {
+      // Verificar si el usuario ya existe
       const checkResult = await checkExistingUser(formData.dni, formData.correo);
       if (checkResult.exists) {
         toast.error(checkResult.message, {
@@ -56,11 +146,15 @@ const ClienteFormPage = () => {
         setLoading(false);
         return;
       }
+
+      // Registrar el cliente con el token incluido automáticamente por la función register
       const data = await register({ ...formData, rol: 'CLIENTE' });
       if (!data) throw new Error('Error al crear el cliente');
+      
+      // Limpiar formulario y mostrar éxito
       setFormData(initialFormData);
       setFormErrors({});
-      toast.success('Usuario registrado exitosamente', {
+      toast.success('Cliente registrado exitosamente', {
         duration: 3000,
         position: 'top-right',
         style: {
@@ -74,7 +168,9 @@ const ClienteFormPage = () => {
       });
     } catch (error) {
       console.error('Error:', error);
-      if (error.message.includes('Duplicate entry') || error.message.includes('duplicado')) {
+      
+      // Manejar diferentes tipos de errores
+      if (error.response?.status === 409 || error.message.includes('Duplicate entry') || error.message.includes('duplicado')) {
         toast.error('Ya existe un cliente con ese DNI o correo electrónico', {
           duration: 4000,
           position: 'top-right',
@@ -83,7 +179,7 @@ const ClienteFormPage = () => {
             color: '#fff',
           },
         });
-      } else if (error.message.includes('permisos')) {
+      } else if (error.response?.status === 403 || error.message.includes('permisos')) {
         toast.error('No tienes permisos para crear clientes', {
           duration: 4000,
           position: 'top-right',
@@ -92,8 +188,17 @@ const ClienteFormPage = () => {
             color: '#fff',
           },
         });
+      } else if (error.response?.status === 401) {
+        toast.error('Sesión expirada. Por favor, inicia sesión nuevamente', {
+          duration: 4000,
+          position: 'top-right',
+          style: {
+            background: '#EF4444',
+            color: '#fff',
+          },
+        });
       } else {
-        toast.error(error.message || 'Error al crear el cliente', {
+        toast.error(error.message || 'Error al crear el cliente. Inténtalo nuevamente', {
           duration: 4000,
           position: 'top-right',
           style: {
@@ -102,8 +207,27 @@ const ClienteFormPage = () => {
           },
         });
       }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  // Función para mostrar mensajes de ayuda
+  const getHelpMessage = (fieldName) => {
+    switch (fieldName) {
+      case 'contrasena':
+        return 'La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, números y caracteres especiales.';
+      case 'dni':
+        return 'Ingrese un DNI válido de 8 dígitos.';
+      case 'celular':
+        return 'Ingrese un número celular válido de 9 dígitos comenzando con 9.';
+      case 'fechaNacimiento':
+        return 'Debe ser mayor de 18 años para registrarse.';
+      case 'nombreUsuario':
+        return 'Use entre 4 y 20 caracteres. Solo letras, números y guiones bajos.';
+      default:
+        return '';
+    }
   };
 
   return (
@@ -130,6 +254,7 @@ const ClienteFormPage = () => {
               {formErrors.nombreUsuario && (
                 <p className="text-red-500 text-xs mt-1">{formErrors.nombreUsuario}</p>
               )}
+              <p className="text-gray-500 text-xs mt-1">{getHelpMessage('nombreUsuario')}</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Contraseña</label>
@@ -144,6 +269,7 @@ const ClienteFormPage = () => {
               {formErrors.contrasena && (
                 <p className="text-red-500 text-xs mt-1">{formErrors.contrasena}</p>
               )}
+              <p className="text-gray-500 text-xs mt-1">{getHelpMessage('contrasena')}</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -187,6 +313,7 @@ const ClienteFormPage = () => {
               {formErrors.dni && (
                 <p className="text-red-500 text-xs mt-1">{formErrors.dni}</p>
               )}
+              <p className="text-gray-500 text-xs mt-1">{getHelpMessage('dni')}</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Correo</label>
@@ -210,8 +337,13 @@ const ClienteFormPage = () => {
                 name="celular"
                 value={formData.celular}
                 onChange={handleInputChange}
+                error={formErrors.celular}
                 placeholder="Ingrese número de celular"
               />
+              {formErrors.celular && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.celular}</p>
+              )}
+              <p className="text-gray-500 text-xs mt-1">{getHelpMessage('celular')}</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Fecha de Nacimiento</label>
@@ -220,7 +352,12 @@ const ClienteFormPage = () => {
                 name="fechaNacimiento"
                 value={formData.fechaNacimiento}
                 onChange={handleInputChange}
+                error={formErrors.fechaNacimiento}
               />
+              {formErrors.fechaNacimiento && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.fechaNacimiento}</p>
+              )}
+              <p className="text-gray-500 text-xs mt-1">{getHelpMessage('fechaNacimiento')}</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">

@@ -79,7 +79,12 @@ export const ENDPOINTS = {
   // Asistencia Empleado
   MARK_ATTENDANCE: `${BASE_URL}/asistencia/marcar`,
   LIST_ATTENDANCE: `${BASE_URL}/asistencia/listar`,
+
   
+  // Asistencia Cliente
+  LIST_CLIENT_ATTENDANCE: `${BASE_URL}/listar`,
+  REGISTER_ATTENDANCE_QR: `${BASE_URL}/asistencia/registrar`,
+
   // Categoría
   SAVE_CATEGORY: `${BASE_URL}/categoria/guardar`,
   UPDATE_CATEGORY: `${BASE_URL}/categoria/actualizar`,
@@ -117,4 +122,7 @@ export const ENDPOINTS = {
   LIST_AVAILABLE_INSTRUCTORS: (idPlan) => `${BASE_URL}/inscripciones/instructores-disponibles/${idPlan}`,
   LIST_INSTRUCTOR_SCHEDULES: (idEmpleado) => `${BASE_URL}/inscripciones/horarios-instructor/${idEmpleado}`,
   REGISTER_INSCRIPTION_PAYMENT: `${BASE_URL}/inscripciones/pago/registrar`,
+  GET_INSCRIPTION_DETAIL: (id) => `${BASE_URL}/inscripciones/inscripciones/${id}/detalle`,
+  LIST_ALL_INSCRIPTIONS: `${BASE_URL}/inscripciones/listar`,
+  CANCEL_INSCRIPTION: (id) => `${BASE_URL}/inscripciones/cancelar/${id}`,
 };

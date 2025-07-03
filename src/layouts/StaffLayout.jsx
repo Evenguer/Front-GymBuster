@@ -68,7 +68,7 @@ const StaffLayout = () => {
       submenu: true,
       submenuItems: [
         { title: 'Nueva Inscripción', path: '/staff/inscripciones' },
-        { title: 'Gestionar Inscripciones', path: '/staff/inscripciones/gestionar' },
+        { title: 'Historial', path: '/staff/historial' },
       ],
     },
     {
@@ -78,6 +78,8 @@ const StaffLayout = () => {
       submenuItems: [
         { title: 'Registrar Asistencia', path: '/staff/asistencias/registrar' },
         { title: 'Ver Asistencias', path: '/staff/asistencias/ver' },
+        {title: 'Verificar Inscripción', path: '/staff/verificar' },
+        { title: 'Asistencias de Clientes', path: '/staff/asistencias/clientes' },
       ],
     },
     {

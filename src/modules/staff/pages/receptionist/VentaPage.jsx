@@ -52,8 +52,11 @@ const VentaPage = () => {
 const [ventaTemp, setVentaTemp] = useState(null); // venta temporal
 const [productos, setProductos] = useState([]);
 const [detallesVenta, setDetallesVenta] = useState([]);
-const [productoSeleccionado, setProductoSeleccionado] = useState('');
+const [productoSeleccionado, setProductoSeleccionado] = useState(null);
 const [cantidad, setCantidad] = useState(1);
+const [busquedaProducto, setBusquedaProducto] = useState('');
+const [filtroCategoriaProducto, setFiltroCategoriaProducto] = useState('TODOS');
+const [categorias, setCategorias] = useState([]);
 const [openSnackbar, setOpenSnackbar] = useState(false);
 const [snackbarMessage, setSnackbarMessage] = useState('');
 const [snackbarSeverity, setSnackbarSeverity] = useState('success');
@@ -200,6 +203,10 @@ const handleSubmit = async (e) => {
         categoria: p.categoria?.nombre || 'Sin categoría'
       }));
     setProductos(productosFormateados);
+    
+    // Extraer categorías únicas para el filtro
+    const categoriasUnicas = [...new Set(productosFormateados.map(p => p.categoria))];
+    setCategorias(categoriasUnicas);
   } catch (err) {
     setFormErrors({ submit: `Error: ${err.message}` });
     showNotification(`Error: ${err.message}`, 'error');
@@ -221,59 +228,47 @@ const handleSubmit = async (e) => {
       return;
     }
 
-    // Buscar el producto seleccionado
-    const producto = productos.find(p => p.id.toString() === productoSeleccionado.toString());
-    console.log('Producto encontrado:', producto);
-
-    if (!producto) {
-      setFormErrors(prev => ({
-        ...prev,
-        detalles: 'Producto no encontrado'
-      }));
-      return;
-    }
-
     // Verificar stock disponible
-    if (cantidad > producto.stockTotal) {
+    if (cantidad > productoSeleccionado.stockTotal) {
       setFormErrors(prev => ({
         ...prev,
-        detalles: `Stock insuficiente. Stock disponible: ${producto.stockTotal}`
+        detalles: `Stock insuficiente. Stock disponible: ${productoSeleccionado.stockTotal}`
       }));
       return;
     }
 
     // Verificar si el producto ya está en los detalles
     const detalleExistente = detallesVenta.find(d => 
-      d.productoId.toString() === productoSeleccionado.toString()
+      d.productoId === productoSeleccionado.id
     );
 
     if (detalleExistente) {
       // Si el producto ya existe, verificar si la nueva cantidad total excede el stock
       const cantidadTotal = detalleExistente.cantidad + cantidad;
-      if (cantidadTotal > producto.stockTotal) {
+      if (cantidadTotal > productoSeleccionado.stockTotal) {
         setFormErrors(prev => ({
           ...prev,
-          detalles: `La cantidad total excede el stock disponible (${producto.stockTotal})`
+          detalles: `La cantidad total excede el stock disponible (${productoSeleccionado.stockTotal})`
         }));
         return;
       }
 
       // Actualizar la cantidad del detalle existente
       setDetallesVenta(detallesVenta.map(d => 
-        d.productoId.toString() === productoSeleccionado.toString()
+        d.productoId === productoSeleccionado.id
           ? { ...d, cantidad: cantidadTotal }
           : d
       ));
     } else {
       // Agregar nuevo detalle
       const nuevoDetalle = {
-        productoId: parseInt(productoSeleccionado),
+        productoId: productoSeleccionado.id,
         cantidad: parseInt(cantidad),
         producto: {
-          id: producto.id,
-          nombre: producto.nombre,
-          precio: producto.precio,
-          categoria: producto.categoria
+          id: productoSeleccionado.id,
+          nombre: productoSeleccionado.nombre,
+          precio: productoSeleccionado.precio,
+          categoria: productoSeleccionado.categoria
         }
       };
 
@@ -281,9 +276,10 @@ const handleSubmit = async (e) => {
       setDetallesVenta(prev => [...prev, nuevoDetalle]);
     }
 
-    setProductoSeleccionado('');
+    setProductoSeleccionado(null);
     setCantidad(1);
     setFormErrors(prev => ({ ...prev, detalles: '' }));
+    showNotification('Producto agregado correctamente', 'success');
   };
   // Eliminar un detalle de la venta
   const eliminarDetalle = (productoId) => {
@@ -299,10 +295,23 @@ const handleSubmit = async (e) => {
   // Actualizar cantidad de un detalle
   const actualizarCantidad = (productoId, nuevaCantidad) => {
     if (nuevaCantidad <= 0) return;
+    
+    // Buscar el producto para verificar stock
+    const producto = productos.find(p => p.id === productoId);
+    if (!producto) return;
+    
+    // Limitar la cantidad al stock disponible
+    if (nuevaCantidad > producto.stockTotal) {
+      showNotification(`Cantidad máxima disponible: ${producto.stockTotal}`, 'warning');
+      nuevaCantidad = producto.stockTotal;
+    }
+    
     setDetallesVenta(detallesVenta.map(d => 
       d.productoId === productoId ? { ...d, cantidad: nuevaCantidad } : d
     ));
   };
+
+  
 // Guardar detalles y avanzar a pago
 const guardarDetalles = () => {
   if (!ventaTemp || !ventaTemp.idVenta) {
@@ -366,6 +375,31 @@ const procesarPago = async () => {
 };
 
   // (Eliminado: recargarDatos no se utiliza)
+
+  // Función para seleccionar producto
+  const seleccionarProducto = (productoId) => {
+    try {
+      const producto = productos.find(p => p.id === productoId);
+      if (!producto) {
+        showNotification('Producto no encontrado', 'error');
+        return;
+      }
+      
+      setProductoSeleccionado(producto);
+      setCantidad(1);
+      showNotification(`Producto "${producto.nombre}" seleccionado`, 'success');
+    } catch (error) {
+      console.error('Error al seleccionar producto:', error);
+      showNotification('Error al seleccionar el producto', 'error');
+    }
+  };
+
+  // Función para filtrar productos
+  const productosFiltrados = productos.filter(producto => {
+    const coincideBusqueda = producto.nombre.toLowerCase().includes(busquedaProducto.toLowerCase());
+    const coincideCategoria = filtroCategoriaProducto === 'TODOS' || producto.categoria === filtroCategoriaProducto;
+    return coincideBusqueda && coincideCategoria;
+  });
 
   const showNotification = (message, severity = 'success') => {
     setSnackbarMessage(message);
@@ -621,102 +655,227 @@ return (
       <Card>
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <Title>Detalles de la Venta</Title>
-            {/* <Text>Venta #{ventaTemp?.idVenta}</Text> */}
+            <Title>Seleccionar Productos</Title>
           </div>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <SearchSelect
-                value={productoSeleccionado}
-                onValueChange={setProductoSeleccionado}
-                placeholder="Buscar producto..."
-                className="w-full"
-              >
-                {productos.map((producto) => (
-                  <SearchSelectItem
-                    key={producto.id}
-                    value={producto.id.toString()}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Package className="w-4 h-4" />
-                      <span>{producto.nombre}</span>
-                    </div>
-                  </SearchSelectItem>
-                ))}
-              </SearchSelect>
+          
+          {clienteEncontrado && (
+            <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded">
+              <Text className="text-blue-700">
+                Cliente: <strong>{clienteEncontrado.nombreCompleto}</strong>
+              </Text>
             </div>
-            <Button
-              icon={Plus}
-              variant="primary"
-              onClick={() => {
-                if (productoSeleccionado) {
-                  setCantidad(1);
-                  agregarDetalle();
-                }
-              }}
-              disabled={!productoSeleccionado}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              Agregar Producto
-            </Button>
+          )}
+          
+          {/* Filtros y buscador */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Text className="mb-2 font-medium">Buscar producto</Text>
+                <TextInput
+                  placeholder="Buscar por nombre del producto..."
+                  value={busquedaProducto}
+                  onChange={(e) => setBusquedaProducto(e.target.value)}
+                  icon={Search}
+                  className="bg-white"
+                />
+              </div>
+              <div>
+                <Text className="mb-2 font-medium">Filtrar por categoría</Text>
+                <SearchSelect
+                  value={filtroCategoriaProducto}
+                  onValueChange={setFiltroCategoriaProducto}
+                  className="bg-white"
+                >
+                  <SearchSelectItem value="TODOS">Todas las categorías</SearchSelectItem>
+                  {categorias.map(categoria => (
+                    <SearchSelectItem key={categoria} value={categoria}>
+                      {categoria}
+                    </SearchSelectItem>
+                  ))}
+                </SearchSelect>
+              </div>
+            </div>
+            
+            {/* Contador de resultados */}
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <Text className="text-sm text-gray-600">
+                Mostrando {productosFiltrados.length} de {productos.length} productos
+                {busquedaProducto && ` que contienen "${busquedaProducto}"`}
+                {filtroCategoriaProducto !== 'TODOS' && ` de la categoría ${filtroCategoriaProducto}`}
+              </Text>
+            </div>
           </div>
+
+          {/* Producto seleccionado */}
+          {productoSeleccionado && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <Text className="font-semibold text-lg text-green-800">
+                    {productoSeleccionado.nombre}
+                  </Text>
+                  <Text className="text-green-600">
+                    Precio: S/ {productoSeleccionado.precio.toFixed(2)} | Stock: {productoSeleccionado.stockTotal}
+                  </Text>
+                </div>
+                <Button
+                  size="sm"
+                  variant="light"
+                  onClick={() => setProductoSeleccionado(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </Button>
+              </div>
+              
+              <div className="flex gap-4 items-end">
+                <div className="flex-1">
+                  <Text className="mb-2 font-medium">Cantidad</Text>
+                  <NumberInput
+                    value={cantidad}
+                    onValueChange={(value) => {
+                      if (value > productoSeleccionado.stockTotal) {
+                        showNotification(`Cantidad máxima disponible: ${productoSeleccionado.stockTotal}`, 'warning');
+                        setCantidad(productoSeleccionado.stockTotal);
+                      } else {
+                        setCantidad(value);
+                      }
+                    }}
+                    min={1}
+                    max={productoSeleccionado.stockTotal}
+                    className="w-32"
+                  />
+                </div>
+                <Button
+                  icon={Plus}
+                  variant="primary"
+                  onClick={agregarDetalle}
+                  disabled={!productoSeleccionado || cantidad <= 0}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Agregar al Detalle
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {/* Lista de productos filtrados */}
+          {productosFiltrados.length === 0 ? (
+            <div className="p-8 text-center border border-gray-200 rounded-lg">
+              <Package size={48} className="mx-auto mb-4 text-gray-300" />
+              <Text className="text-gray-500 mb-2">No se encontraron productos</Text>
+              <Text className="text-sm text-gray-400">
+                {busquedaProducto || filtroCategoriaProducto !== 'TODOS' 
+                  ? 'Intenta ajustar los filtros de búsqueda'
+                  : 'No hay productos disponibles en este momento'
+                }
+              </Text>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+              {productosFiltrados.map(producto => (
+                <div 
+                  key={producto.id}
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                    productoSeleccionado?.id === producto.id 
+                      ? 'border-green-500 bg-green-50' 
+                      : 'hover:border-red-500 hover:bg-red-50'
+                  } ${producto.stockTotal === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={() => producto.stockTotal > 0 && seleccionarProducto(producto.id)}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-semibold text-lg">{producto.nombre}</h3>
+                    <span className={`px-2 py-1 text-xs rounded ${
+                      producto.stockTotal > 10 ? 'bg-green-100 text-green-700' : 
+                      producto.stockTotal > 0 ? 'bg-yellow-100 text-yellow-700' : 
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      Stock: {producto.stockTotal}
+                    </span>
+                  </div>
+                  <div className="space-y-1 text-sm text-gray-600">
+                    <p>💰 Precio: S/ {producto.precio.toFixed(2)}</p>
+                    <p>📦 Categoría: {producto.categoria}</p>
+                  </div>
+                  <Button 
+                    className={`w-full mt-3 ${
+                      producto.stockTotal === 0 
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-red-600 hover:bg-red-700 text-white'
+                    }`}
+                    size="sm"
+                    disabled={loading || producto.stockTotal === 0}
+                  >
+                    {producto.stockTotal === 0 ? 'Sin Stock' : 'Seleccionar'}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
           {formErrors.detalles && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
               <Text color="red">{formErrors.detalles}</Text>
             </div>
           )}
+          
           {detallesVenta.length > 0 && (
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableHeaderCell>Producto</TableHeaderCell>
-                  <TableHeaderCell>Stock</TableHeaderCell>
-                  <TableHeaderCell>Cantidad</TableHeaderCell>
-                  <TableHeaderCell>Precio Unit.</TableHeaderCell>
-                  <TableHeaderCell>Subtotal</TableHeaderCell>
-                  <TableHeaderCell className="text-right">Acciones</TableHeaderCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {detallesVenta.map((detalle, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{detalle.producto.nombre}</TableCell>
-                    <TableCell>
-                      {productos.find(p => p.id === detalle.productoId)?.stockTotal || 0}
+            <div>
+              <Text className="mb-4 font-medium text-lg">Productos Agregados:</Text>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>Producto</TableHeaderCell>
+                    <TableHeaderCell>Stock</TableHeaderCell>
+                    <TableHeaderCell>Cantidad</TableHeaderCell>
+                    <TableHeaderCell>Precio Unit.</TableHeaderCell>
+                    <TableHeaderCell>Subtotal</TableHeaderCell>
+                    <TableHeaderCell className="text-right">Acciones</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {detallesVenta.map((detalle, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{detalle.producto.nombre}</TableCell>
+                      <TableCell>
+                        {productos.find(p => p.id === detalle.productoId)?.stockTotal || 0}
+                      </TableCell>
+                      <TableCell>
+                        <NumberInput
+                          value={detalle.cantidad}
+                          onValueChange={(value) => actualizarCantidad(detalle.productoId, value)}
+                          min={1}
+                          max={productos.find(p => p.id === detalle.productoId)?.stockTotal || 1}
+                          className="w-24"
+                        />
+                      </TableCell>
+                      <TableCell>S/ {detalle.producto.precio.toFixed(2)}</TableCell>
+                      <TableCell>S/ {(detalle.cantidad * detalle.producto.precio).toFixed(2)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="light"
+                          color="red"
+                          icon={Trash2}
+                          onClick={() => eliminarDetalle(detalle.productoId)}
+                        >
+                          Eliminar
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-right font-medium">
+                      Total:
                     </TableCell>
-                    <TableCell>
-                      <NumberInput
-                        value={detalle.cantidad}
-                        onValueChange={(value) => actualizarCantidad(detalle.productoId, value)}
-                        min={1}
-                        className="w-24"
-                      />
-                    </TableCell>
-                    <TableCell>S/ {detalle.producto.precio.toFixed(2)}</TableCell>
-                    <TableCell>S/ {(detalle.cantidad * detalle.producto.precio).toFixed(2)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="light"
-                        color="red"
-                        icon={Trash2}
-                        onClick={() => eliminarDetalle(detalle.productoId)}
-                      >
-                        Eliminar
-                      </Button>
+                    <TableCell className="font-medium" colSpan={2}>
+                      S/ {totalVenta.toFixed(2)}
                     </TableCell>
                   </TableRow>
-                ))}
-                <TableRow>
-                  <TableCell colSpan={4} className="text-right font-medium">
-                    Total:
-                  </TableCell>
-                  <TableCell className="font-medium" colSpan={2}>
-                    S/ {totalVenta.toFixed(2)}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+                </TableBody>
+              </Table>
+            </div>
           )}
+          
           <div className="flex justify-end">
             <Button
               variant="primary"
