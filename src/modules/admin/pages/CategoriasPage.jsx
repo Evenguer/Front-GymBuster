@@ -329,11 +329,26 @@ const CategoriasPage = () => {
                     </span>
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
-                      <ActionButtons
-                        onEdit={() => handleEdit(categoria)}
-                        onDelete={() => handleDelete(categoria.idCategoria)}
-                        showView={false}
+
+
+                    <div className="flex space-x-2">
+                      <Button
+                        size="xs"
+                        variant="secondary"
+                        icon={Edit}
+                        onClick={() => handleEdit(categoria)}
+                        className="p-2"
+                        aria-label="Editar"
+                      />
+                      <Button
+                        size="xs"
+                        variant="secondary"
+                        color="red"
+                        icon={Trash2}
+                        onClick={() => handleDelete(categoria.idCategoria)}
+                        className="p-2"
+                        aria-label="Eliminar"
+
                       />
                     </div>
                   </TableCell>

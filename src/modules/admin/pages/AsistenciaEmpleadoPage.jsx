@@ -232,6 +232,7 @@ const AsistenciaEmpleadoPage = () => {
                             onClick={buscarEmpleadoPorDNI}
                             loading={isLoading}
                             disabled={!dni.trim()}
+                            className="bg-red-600 hover:bg-red-700 text-white"
                         >
                             Buscar
                         </Button>
@@ -325,6 +326,7 @@ const AsistenciaEmpleadoPage = () => {
                                 loading={isLoading}
                                 onClick={handleMarcarAsistencia}
                                 disabled={horariosDia.length === 0}
+                                className="bg-red-600 hover:bg-red-700 text-white"
                             >
                                 Marcar Asistencia
                             </Button>

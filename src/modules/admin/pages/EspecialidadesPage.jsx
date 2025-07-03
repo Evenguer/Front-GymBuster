@@ -279,9 +279,22 @@ const EspecialidadesPage = () => {
                   <TableCell>
                     {isAdmin() && (
                       <div className="flex gap-2">
-                        <ActionButtons
-                          onEdit={() => handleEditEspecialidad(especialidad)}
-                          onDelete={async () => {
+
+                        <Button
+                          size="xs"
+                          variant="secondary"
+                          icon={Edit}
+                          onClick={() => handleEditEspecialidad(especialidad)}
+                          className="p-2"
+                          aria-label="Editar"
+                        />
+                        <Button
+                          size="xs"
+                          variant="secondary"
+                          color="red"
+                          icon={Trash2}
+                          onClick={async () => {
+
                             if (!window.confirm('¿Estás seguro de que quieres eliminar esta especialidad?')) return;
                             try {
                               const token = localStorage.getItem('token');
@@ -293,10 +306,11 @@ const EspecialidadesPage = () => {
                               notify.error(error.message || 'Error al eliminar la especialidad');
                             }
                           }}
-                          className="p-1.5 bg-transparent text-red-600 rounded hover:bg-red-50 flex items-center gap-1 border border-red-400 shadow-none"
-                          title="Eliminar"
-                          icon={<Trash2 size={16} />}
-                          label={<span className="ml-1 text-xs font-medium">Eliminar</span>}
+
+
+                          className="p-2"
+                          aria-label="Eliminar"
+
                         />
                       </div>
                     )}

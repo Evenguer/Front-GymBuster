@@ -456,12 +456,12 @@ const ProgresoVenta = ({ pasoActual }) => {
         {pasos.map(paso => (
           <div 
             key={paso.numero} 
-            className={`flex flex-col items-center ${paso.numero <= pasoActual ? 'text-blue-600' : 'text-gray-400'}`}
+            className={`flex flex-col items-center ${paso.numero <= pasoActual ? 'text-red-600' : 'text-gray-400'}`}
           >
             <div 
               className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
-                paso.numero === pasoActual ? 'border-blue-600 bg-blue-50 font-bold' : 
-                paso.numero < pasoActual ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300'
+                paso.numero === pasoActual ? 'border-red-600 bg-red-50 font-bold' : 
+                paso.numero < pasoActual ? 'border-red-500 bg-red-500 text-white' : 'border-gray-300'
               }`}
             >
               {paso.numero < pasoActual ? (
@@ -477,7 +477,7 @@ const ProgresoVenta = ({ pasoActual }) => {
       <div className="relative mt-4">
         <div className="absolute top-0 h-2 bg-gray-200 w-full rounded-full"></div>
         <div 
-          className="absolute top-0 h-2 bg-blue-500 rounded-full transition-all duration-500" 
+          className="absolute top-0 h-2 bg-red-500 rounded-full transition-all duration-500" 
           style={{ width: `${((pasoActual - 1) / (pasos.length - 1)) * 100}%` }}
         ></div>
       </div>
@@ -524,6 +524,7 @@ return (
                   onClick={buscarClientePorDNI}
                   disabled={!dni.trim()}
                   icon={Search}
+                  className="bg-red-600 hover:bg-red-700 text-white"
                 >
                   Buscar
                 </Button>
@@ -600,15 +601,15 @@ return (
               )}
             </div>
             <div className="flex justify-end">
-              <Button
-                onClick={handleSubmit}
-                icon={loading ? Loader2 : ShoppingCart}
-                disabled={loading}
-                variant="primary"
-                className="w-full md:w-auto"
-              >
-                {loading ? 'Procesando...' : 'Crear Venta'}
-              </Button>
+            <Button
+              onClick={handleSubmit}
+              icon={loading ? Loader2 : ShoppingCart}
+              disabled={loading}
+              variant="primary"
+              className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white"
+            >
+              {loading ? 'Procesando...' : 'Crear Venta'}
+            </Button>
             </div>
           </div>
         </div>
@@ -621,7 +622,7 @@ return (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <Title>Detalles de la Venta</Title>
-            <Text>Venta #{ventaTemp?.idVenta}</Text>
+            {/* <Text>Venta #{ventaTemp?.idVenta}</Text> */}
           </div>
           <div className="flex gap-4">
             <div className="flex-1">
@@ -654,6 +655,7 @@ return (
                 }
               }}
               disabled={!productoSeleccionado}
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               Agregar Producto
             </Button>
@@ -721,6 +723,7 @@ return (
               icon={loading ? Loader2 : CreditCard}
               disabled={loading || detallesVenta.length === 0}
               onClick={guardarDetalles}
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               {loading ? 'Guardando...' : 'Proceder al Pago'}
             </Button>
@@ -779,6 +782,7 @@ return (
               icon={loading ? Loader2 : CheckCircle}
               disabled={loading || !montoPagado || parseFloat(montoPagado) < totalVenta}
               onClick={procesarPago}
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               {loading ? 'Procesando...' : 'Finalizar Venta'}
             </Button>
@@ -793,7 +797,7 @@ return (
         <CheckCircle className="mx-auto mb-4 text-green-500" size={48} />
         <Title>¡Venta registrada exitosamente!</Title>
         <Text>La venta ha sido registrada y procesada correctamente.</Text>
-        <Button className="mt-6" variant="primary" onClick={() => setPasoActual(1)}>
+        <Button className="mt-6 bg-red-600 hover:bg-red-700 text-white" variant="primary" onClick={() => setPasoActual(1)}>
           Registrar otra venta
         </Button>
       </Card>

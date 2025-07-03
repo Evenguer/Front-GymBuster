@@ -11,7 +11,10 @@ import {
   TextInput,
   Title,
   Flex,
-  Text
+  Text,
+  TabGroup,
+  TabList,
+  Tab
 } from '@tremor/react';
 import { Edit, Trash2, Search, PlusCircle, RefreshCw } from 'react-feather';
 import { maquinariaAPI } from '../../services/maquinariaAPI';
@@ -24,12 +27,24 @@ const MaquinariaPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPieza, setSelectedPieza] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Contadores para tabs
+  const [counters, setCounters] = useState({
+    total: 0,
+    activos: 0,
+    inactivos: 0
+  });
+  const [activeTab, setActiveTab] = useState('todos');
 
   const fetchPiezas = async () => {
     try {
       setLoading(true);
       const response = await maquinariaAPI.listarPiezas();
       setPiezas(response);
+      setCounters({
+        total: response.length,
+        activos: response.filter(p => p.estado).length,
+        inactivos: response.filter(p => !p.estado).length
+      });
     } catch (err) {
       setError('Error al cargar las máquinas');
       console.error('Error:', err.message);
@@ -45,9 +60,15 @@ const MaquinariaPage = () => {
   const handleToggleEstado = async (id, estadoActual) => {
     try {
       await maquinariaAPI.cambiarEstadoPieza(id, !estadoActual);
-      setPiezas(piezas.map(pieza =>
+      const nuevos = piezas.map(pieza =>
         pieza.idPieza === id ? { ...pieza, estado: !estadoActual } : pieza
-      ));
+      );
+      setPiezas(nuevos);
+      setCounters({
+        total: nuevos.length,
+        activos: nuevos.filter(p => p.estado).length,
+        inactivos: nuevos.filter(p => !p.estado).length
+      });
     } catch (err) {
       console.error('Error al cambiar el estado de la pieza:', err);
       alert('Error al cambiar el estado de la pieza. Por favor, intenta nuevamente.');
@@ -60,7 +81,13 @@ const MaquinariaPage = () => {
     }
     try {
       await maquinariaAPI.eliminarPieza(id);
-      setPiezas(piezas.filter(pieza => pieza.idPieza !== id));
+      const nuevos = piezas.filter(pieza => pieza.idPieza !== id);
+      setPiezas(nuevos);
+      setCounters({
+        total: nuevos.length,
+        activos: nuevos.filter(p => p.estado).length,
+        inactivos: nuevos.filter(p => !p.estado).length
+      });
     } catch (err) {
       console.error('Error al eliminar la máquina:', err.message);
       alert('Error al eliminar la máquina');
@@ -82,19 +109,29 @@ const MaquinariaPage = () => {
   };
 
   const handlePiezaSuccess = (updatedPieza) => {
+    let nuevos;
     if (selectedPieza) {
-      setPiezas(piezas.map(pieza =>
+      nuevos = piezas.map(pieza =>
         pieza.idPieza === updatedPieza.idPieza ? updatedPieza : pieza
-      ));
+      );
     } else {
-      setPiezas([...piezas, updatedPieza]);
+      nuevos = [...piezas, updatedPieza];
     }
+    setPiezas(nuevos);
+    setCounters({
+      total: nuevos.length,
+      activos: nuevos.filter(p => p.estado).length,
+      inactivos: nuevos.filter(p => !p.estado).length
+    });
     handleCloseModal();
   };
 
-  const filteredPiezas = piezas.filter(pieza =>
-    pieza.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPiezas = piezas.filter(pieza => {
+    const matchesSearch = pieza.nombre.toLowerCase().includes(searchTerm.toLowerCase());
+    if (activeTab === 'activos') return matchesSearch && pieza.estado;
+    if (activeTab === 'inactivos') return matchesSearch && !pieza.estado;
+    return matchesSearch;
+  });
 
   if (loading) {
     return (
@@ -130,12 +167,12 @@ const MaquinariaPage = () => {
           icon={PlusCircle}
           size="sm"
           variant="primary"
+          className="bg-red-600 hover:bg-red-700 text-white"
           onClick={handleOpenModal}
         >
           Nueva Pieza
         </Button>
       </div>
-
       <Card>
         <Flex justifyContent="between" className="mb-4">
           <Title>Lista de Maquinaria</Title>
@@ -148,7 +185,16 @@ const MaquinariaPage = () => {
             />
           </div>
         </Flex>
-
+        <TabGroup className="mb-6" onIndexChange={(index) => {
+          const tabs = ['todos', 'activos', 'inactivos'];
+          setActiveTab(tabs[index]);
+        }}>
+          <TabList variant="solid">
+            <Tab>Todos <span className="ml-1"><span className="inline-block bg-gray-200 text-gray-800 rounded px-2 text-xs">{counters.total}</span></span></Tab>
+            <Tab>Activos <span className="ml-1"><span className="inline-block bg-green-200 text-green-800 rounded px-2 text-xs">{counters.activos}</span></span></Tab>
+            <Tab>Inactivos <span className="ml-1"><span className="inline-block bg-red-200 text-red-800 rounded px-2 text-xs">{counters.inactivos}</span></span></Tab>
+          </TabList>
+        </TabGroup>
         <Table>
           <TableHead>
             <TableRow>

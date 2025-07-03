@@ -8,7 +8,7 @@ import {
   Clipboard, 
   Calendar, 
   DollarSign, 
-  Settings, 
+  List, 
   ChevronRight, 
   ChevronDown,
   Clock,
@@ -91,7 +91,7 @@ const StaffLayout = () => {
     },
     {
       title: 'Listas',
-      icon: <Settings size={20} />,
+      icon: <List size={20} />,
       submenu: true,
       submenuItems: [
         { title: 'Categorías', path: '/staff/categorias' },
