@@ -17,7 +17,7 @@ const DIAS_SEMANA = [
 const TURNOS = ['Mañana', 'Tarde', 'Noche'];
 
 const HorarioModal = ({ isOpen, onClose, horario, empleados, onSuccess, isLoading }) => {
-    const { token, checkRole } = useAuth();
+    useAuth();
     const [formData, setFormData] = useState({
         empleadoId: '',
         dia: '',

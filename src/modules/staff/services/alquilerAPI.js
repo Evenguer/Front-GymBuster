@@ -255,4 +255,25 @@ export const alquilerAPI = {
       throw error;
     }
   },
+
+  calcularPrecio: async (fechaInicio, fechaFin, detalles) => {
+    try {
+      checkRole(['ADMIN', 'RECEPCIONISTA']);
+      
+      const response = await axios.post(
+        ENDPOINTS.ALQUILER.CALCULAR_PRECIO,
+        {
+          fechaInicio,
+          fechaFin,
+          detalles
+        },
+        getAuthConfig()
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error al calcular precio del alquiler:', error);
+      throw error;
+    }
+  },
 };

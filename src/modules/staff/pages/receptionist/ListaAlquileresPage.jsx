@@ -99,7 +99,19 @@ const ListaAlquileresPage = () => {
       
       // Formatear los datos para mostrarlos en la tabla
       const alquileresFormateados = response.map(alquiler => {
-        const fechaFinObj = alquiler.fechaFin ? new Date(alquiler.fechaFin) : null;
+        // Normalizar las fechas
+        const fechaInicio = alquiler.fechaInicio ? new Date(alquiler.fechaInicio) : null;
+        const fechaFin = alquiler.fechaFin ? new Date(alquiler.fechaFin) : null;
+        
+        if (fechaInicio) fechaInicio.setHours(12, 0, 0, 0);
+        if (fechaFin) fechaFin.setHours(12, 0, 0, 0);
+        
+        // Calcular días solo si ambas fechas son válidas
+        const diasAlquiler = (fechaInicio && fechaFin) ? 
+          calcularDiasAlquiler(
+            format(fechaInicio, 'yyyy-MM-dd'),
+            format(fechaFin, 'yyyy-MM-dd')
+          ) : 1;
         
         // Determinar si hay devolución pendiente
         const tienePiezasPendientes = Array.isArray(alquiler.detalles) && 
@@ -110,12 +122,15 @@ const ListaAlquileresPage = () => {
           cliente: `${alquiler.clienteNombre} ${alquiler.clienteApellido}`,
           clienteDni: alquiler.clienteDni,
           empleado: `${alquiler.empleadoNombre} ${alquiler.empleadoApellido}`,
-          fechaInicio: alquiler.fechaInicio ? formatearFecha(alquiler.fechaInicio) : 'N/A',
-          fechaFin: alquiler.fechaFin ? formatearFecha(alquiler.fechaFin) : 'N/A', 
-          fechaInicioObj: alquiler.fechaInicio ? new Date(alquiler.fechaInicio) : null,
-          fechaFinObj: fechaFinObj,
+          fechaInicio: fechaInicio ? formatearFecha(fechaInicio.toISOString()) : 'N/A',
+          fechaFin: fechaFin ? formatearFecha(fechaFin.toISOString()) : 'N/A', 
+          fechaInicioObj: fechaInicio,
+          fechaFinObj: fechaFin,
+          diasAlquiler, // Agregamos el cálculo de días
           devolucionPendiente: tienePiezasPendientes,
           total: alquiler.total || 0,
+          mora: alquiler.mora || 0,
+          totalConMora: alquiler.totalConMora || alquiler.total || 0,
           estado: alquiler.estado || ESTADO_ALQUILER.ACTIVO,
           metodoPago: alquiler.metodoPago || 'No registrado',
           idPago: alquiler.idPago,
@@ -262,14 +277,39 @@ const ListaAlquileresPage = () => {
   const formatearFecha = (fechaStr) => {
     try {
       if (!fechaStr) return 'Sin fecha';
+      
+      // Primero intentamos crear una fecha con el formato ISO
+      let fecha = new Date(fechaStr);
+      
+      // Si la fecha es inválida, intentamos parsear diferentes formatos
+      if (isNaN(fecha.getTime())) {
+        if (fechaStr.includes('/')) {
+          // Formato dd/MM/yyyy
+          const [dia, mes, anio] = fechaStr.split('/');
+          fecha = new Date(parseInt(anio), parseInt(mes) - 1, parseInt(dia));
+        } else if (fechaStr.includes('-')) {
+          // Formato yyyy-MM-dd
+          const [anio, mes, dia] = fechaStr.split('-');
+          fecha = new Date(parseInt(anio), parseInt(mes) - 1, parseInt(dia));
+        }
+      }
 
-      const date = new Date(fechaStr);
-      date.setDate(date.getDate() + 1);
-      return format(date, 'dd/MM/yyyy', { locale: es });
-
+      // Verificar si la fecha es válida después de los intentos de parseo
+      if (isNaN(fecha.getTime())) {
+        console.error('Fecha inválida después de intentos de parseo:', fechaStr);
+        return 'Fecha inválida';
+      }
+      
+      // Normalizar la fecha a mediodía para evitar problemas de zona horaria
+      fecha.setHours(12, 0, 0, 0);
+      
+      console.log('Fecha original:', fechaStr);
+      console.log('Fecha normalizada:', fecha);
+      
+      return format(fecha, 'dd/MM/yyyy', { locale: es });
     } catch (error) {
       console.error('Error al formatear fecha:', error);
-      return fechaStr || 'Fecha inválida';
+      return 'Fecha inválida';
     }
   };
   
@@ -316,11 +356,77 @@ const ListaAlquileresPage = () => {
     return resultado;
   };
   
+  // Función auxiliar para calcular días de manera confiable
+  const calcularDiasAlquiler = (fechaInicioStr, fechaFinStr) => {
+    try {
+      if (!fechaInicioStr || !fechaFinStr) return 1;
+      
+      console.log('Calculando días entre:', { fechaInicioStr, fechaFinStr });
+      
+      // Convertir las fechas a objetos Date normalizados
+      let fechaInicio, fechaFin;
+      
+      // Función auxiliar para normalizar fechas
+      const normalizarFecha = (fechaStr) => {
+        let fecha;
+        if (fechaStr.includes('/')) {
+          const [dia, mes, anio] = fechaStr.split('/');
+          fecha = new Date(parseInt(anio), parseInt(mes) - 1, parseInt(dia));
+        } else if (fechaStr.includes('-')) {
+          const [anio, mes, dia] = fechaStr.split('-');
+          fecha = new Date(parseInt(anio), parseInt(mes) - 1, parseInt(dia));
+        } else {
+          fecha = new Date(fechaStr);
+        }
+        
+        // Normalizar a mediodía
+        fecha.setHours(12, 0, 0, 0);
+        return fecha;
+      };
+      
+      fechaInicio = normalizarFecha(fechaInicioStr);
+      fechaFin = normalizarFecha(fechaFinStr);
+      
+      // Verificar que las fechas sean válidas
+      if (isNaN(fechaInicio.getTime()) || isNaN(fechaFin.getTime())) {
+        console.error('Fechas inválidas después de normalización:', { fechaInicio, fechaFin });
+        return 1;
+      }
+      
+      // Calcular la diferencia en días
+      const diferenciaTiempo = fechaFin.getTime() - fechaInicio.getTime();
+      const diferenciaDias = Math.floor(diferenciaTiempo / (1000 * 60 * 60 * 24)) + 1;
+      
+      console.log('Resultado del cálculo:', {
+        fechaInicio: fechaInicio.toISOString(),
+        fechaFin: fechaFin.toISOString(),
+        diferenciaTiempo,
+        diferenciaDias
+      });
+      
+      return diferenciaDias > 0 ? diferenciaDias : 1;
+    } catch (error) {
+      console.error('Error en cálculo de días:', error);
+      return 1;
+    }
+  };
+  
   // Cargar alquileres al inicio
   useEffect(() => {
     cargarAlquileres();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
+  // Debug: agregar logs para verificar las fechas que llegan
+  useEffect(() => {
+    if (detalleAlquiler) {
+      console.log('Detalle del alquiler recibido:', {
+        fechaInicio: detalleAlquiler.fechaInicio,
+        fechaFin: detalleAlquiler.fechaFin,
+        detalles: detalleAlquiler.detalles
+      });
+    }
+  }, [detalleAlquiler]);
   
   return (
     <div className="p-4">
@@ -411,7 +517,15 @@ const ListaAlquileresPage = () => {
                     <TableCell className="text-center">{alquiler.fechaInicio}</TableCell>
                     <TableCell className="text-center">{alquiler.fechaFin}</TableCell>
                     <TableCell className="text-right">
-                      <Text className="font-medium">S/ {alquiler.total.toFixed(2)}</Text>
+                      <div className="flex flex-col items-end">
+                        <Text className="font-medium">S/ {alquiler.total.toFixed(2)}</Text>
+                        {alquiler.mora > 0 && (
+                          <>
+                            <Text className="text-xs text-red-600">Mora: S/ {alquiler.mora.toFixed(2)}</Text>
+                            <Text className="font-medium">Total: S/ {alquiler.totalConMora.toFixed(2)}</Text>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col space-y-2">
@@ -473,7 +587,7 @@ const ListaAlquileresPage = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-center">
-                        {/* Botón Ver detalle con texto e icono */}
+                        {/* Botón Ver detalle with text and icon */}
                         <Button
                           icon={Eye}
                           variant="secondary"
@@ -598,6 +712,15 @@ const ListaAlquileresPage = () => {
                       <Text className="font-medium">Empleado:</Text>
                       <Text>{detalleAlquiler.empleado}</Text>
                     </div>
+                    <div className="grid grid-cols-[auto_1fr] gap-2">
+                      <Text className="font-medium">Duración:</Text>
+                      <Text>
+                        {(() => {
+                          const dias = calcularDiasAlquiler(detalleAlquiler.fechaInicio, detalleAlquiler.fechaFin);
+                          return `${dias} día${dias > 1 ? 's' : ''}`;
+                        })()}
+                      </Text>
+                    </div>
                   </div>
 
                   {/* Tabla de Piezas Alquiladas */}
@@ -608,19 +731,34 @@ const ListaAlquileresPage = () => {
                         <tr className="text-left [&>th]:py-2 [&>th]:text-xs [&>th]:font-medium [&>th]:text-gray-500">
                           <th>CANT.</th>
                           <th>DESCRIPCIÓN</th>
-                          <th className="text-right">P.UNIT</th>
+                          <th className="text-right">P.DIARIO</th>
+                          <th className="text-center">DÍAS</th>
                           <th className="text-right">TOTAL</th>
                         </tr>
                       </thead>
                       <tbody className="[&>tr]:border-b [&>tr]:border-gray-100">
-                        {detalleAlquiler.detalles.map((detalle, index) => (
-                          <tr key={detalle.idDetalleAlquiler || index} className="[&>td]:py-2">
-                            <td>{detalle.cantidad}</td>
-                            <td>{detalle.pieza}</td>
-                            <td className="text-right">S/ {detalle.precioUnitario.toFixed(2)}</td>
-                            <td className="text-right">S/ {detalle.subtotal.toFixed(2)}</td>
-                          </tr>
-                        ))}
+                        {detalleAlquiler.detalles.map((detalle, index) => {
+                          // Calcular días del alquiler
+                          // Primero intentar usar el campo diasAlquiler del backend
+                          // Si no existe, calcularlo desde el subtotal: diasAlquiler = subtotal / (cantidad * precioUnitario)
+                          const diasAlquiler = detalle.diasAlquiler || (() => {
+                            if (detalle.cantidad > 0 && detalle.precioUnitario > 0) {
+                              const diasCalculados = Math.round(detalle.subtotal / (detalle.cantidad * detalle.precioUnitario));
+                              return diasCalculados > 0 ? diasCalculados : 1;
+                            }
+                            return calcularDiasAlquiler(detalleAlquiler.fechaInicio, detalleAlquiler.fechaFin);
+                          })();
+                          
+                          return (
+                            <tr key={detalle.idDetalleAlquiler || index} className="[&>td]:py-2">
+                              <td>{detalle.cantidad}</td>
+                              <td>{detalle.pieza}</td>
+                              <td className="text-right">S/ {detalle.precioUnitario.toFixed(2)}</td>
+                              <td className="text-center">{diasAlquiler}</td>
+                              <td className="text-right">S/ {detalle.subtotal.toFixed(2)}</td>
+                            </tr>
+                          );
+                        })}
                         {detalleAlquiler.detalles.length === 0 && (
                           <tr>
                             <td colSpan="4" className="text-center py-4">No hay piezas alquiladas</td>
@@ -633,11 +771,37 @@ const ListaAlquileresPage = () => {
                   {/* Totales y Detalles de Pago */}
                   <div className="text-sm space-y-2 pt-2">
                     <div className="grid grid-cols-2 text-right gap-2 border-t pt-2">
-                      <Text className="font-bold">TOTAL:</Text>
+                      <Text className="font-bold">SUBTOTAL:</Text>
                       <Text className="font-bold">S/ {detalleAlquiler.total.toFixed(2)}</Text>
+                      
+                      {detalleAlquiler.mora > 0 && (
+                        <>
+                          <Text className="font-bold text-red-600">MORA:</Text>
+                          <Text className="font-bold text-red-600">S/ {detalleAlquiler.mora.toFixed(2)}</Text>
+                          
+                          <Text className="font-bold">TOTAL CON MORA:</Text>
+                          <Text className="font-bold">S/ {detalleAlquiler.totalConMora.toFixed(2)}</Text>
+                        </>
+                      )}
                     </div>
-                    <Text>SON: {convertirNumeroALetras(detalleAlquiler.total)}</Text>
+                    <Text>SON: {convertirNumeroALetras(detalleAlquiler.totalConMora || detalleAlquiler.total)}</Text>
                   </div>
+
+                  {/* Mostrar alerta de mora si existe */}
+                  {detalleAlquiler.mora > 0 && (
+                    <div className="bg-red-50 border border-red-200 rounded-md p-3 mt-4">
+                      <div className="flex items-center">
+                        <AlertTriangle className="text-red-500 mr-2" size={20} />
+                        <Text className="text-red-700 font-medium">
+                          ¡Atención! Este alquiler tiene mora por atraso
+                        </Text>
+                      </div>
+                      <Text className="text-red-600 mt-1">
+                        Se ha aplicado una mora de S/ {detalleAlquiler.mora.toFixed(2)} por retraso en la devolución.
+                        El monto total a pagar es de S/ {detalleAlquiler.totalConMora.toFixed(2)}.
+                      </Text>
+                    </div>
+                  )}
 
                   {/* Información de Pago */}
                   <div className="text-sm space-y-2 border-t pt-4">
