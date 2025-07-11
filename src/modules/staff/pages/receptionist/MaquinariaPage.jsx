@@ -157,26 +157,26 @@ const MaquinariaPage = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Maquinaria</h1>
-          <p className="text-gray-500">Administra las piezas/maquinaria del gimnasio</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Gestión de Maquinaria</h1>
+          <p className="text-sm sm:text-base text-gray-500">Administra las piezas/maquinaria del gimnasio</p>
         </div>
         <Button
           icon={PlusCircle}
           size="sm"
           variant="primary"
-          className="bg-red-600 hover:bg-red-700 text-white"
+          className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white"
           onClick={handleOpenModal}
         >
           Nueva Pieza
         </Button>
       </div>
-      <Card>
-        <Flex justifyContent="between" className="mb-4">
-          <Title>Lista de Maquinaria</Title>
-          <div className="w-64">
+      <Card className="overflow-hidden">
+        <Flex justifyContent="between" className="flex-col sm:flex-row gap-4 sm:gap-0 mb-4">
+          <Title className="text-base sm:text-lg">Lista de Maquinaria</Title>
+          <div className="w-full sm:w-64">
             <TextInput
               icon={Search}
               placeholder="Buscar pieza..."
@@ -185,56 +185,29 @@ const MaquinariaPage = () => {
             />
           </div>
         </Flex>
-        <TabGroup className="mb-6" onIndexChange={(index) => {
+        <TabGroup className="mb-4 sm:mb-6" onIndexChange={(index) => {
           const tabs = ['todos', 'activos', 'inactivos'];
           setActiveTab(tabs[index]);
         }}>
-          <TabList variant="solid">
-            <Tab>Todos <span className="ml-1"><span className="inline-block bg-gray-200 text-gray-800 rounded px-2 text-xs">{counters.total}</span></span></Tab>
-            <Tab>Activos <span className="ml-1"><span className="inline-block bg-green-200 text-green-800 rounded px-2 text-xs">{counters.activos}</span></span></Tab>
-            <Tab>Inactivos <span className="ml-1"><span className="inline-block bg-red-200 text-red-800 rounded px-2 text-xs">{counters.inactivos}</span></span></Tab>
+          <TabList variant="solid" className="overflow-x-auto">
+            <Tab className="text-sm sm:text-base whitespace-nowrap">Todos <span className="ml-1"><span className="inline-block bg-gray-200 text-gray-800 rounded px-2 text-xs">{counters.total}</span></span></Tab>
+            <Tab className="text-sm sm:text-base whitespace-nowrap">Activos <span className="ml-1"><span className="inline-block bg-green-200 text-green-800 rounded px-2 text-xs">{counters.activos}</span></span></Tab>
+            <Tab className="text-sm sm:text-base whitespace-nowrap">Inactivos <span className="ml-1"><span className="inline-block bg-red-200 text-red-800 rounded px-2 text-xs">{counters.inactivos}</span></span></Tab>
           </TabList>
         </TabGroup>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableHeaderCell>Nombre</TableHeaderCell>
-              <TableHeaderCell>Stock</TableHeaderCell>
-              {/* <TableHeaderCell>Stock Mínimo</TableHeaderCell> */}
-              <TableHeaderCell>Peso (kg)</TableHeaderCell>
-              <TableHeaderCell>Precio Alquiler (S/.)</TableHeaderCell>
-              <TableHeaderCell>Estado</TableHeaderCell>
-              <TableHeaderCell>Acciones</TableHeaderCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredPiezas.length > 0 ? (
-              filteredPiezas.map((pieza) => (
-                <TableRow key={pieza.idPieza}>
-                  <TableCell className="font-medium">{pieza.nombre}</TableCell>
-                  <TableCell>{pieza.stock}</TableCell>
-                  {/* <TableCell>{pieza.stockMinimo}</TableCell> */}
-                  <TableCell>{pieza.peso}</TableCell>
-                  <TableCell>{pieza.precioAlquiler}</TableCell>
-                  <TableCell>
-                    <button
-                      onClick={() => handleToggleEstado(pieza.idPieza, pieza.estado)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full ${
-                        pieza.estado ? 'bg-green-500' : 'bg-gray-300'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                          pieza.estado ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                    <span className="ml-2 text-xs">
-                      {pieza.estado ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
+
+        {/* Vista móvil - Cards */}
+        <div className="block sm:hidden">
+          {filteredPiezas.length > 0 ? (
+            <div className="space-y-3">
+              {filteredPiezas.map((pieza) => (
+                <div key={pieza.idPieza} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium">{pieza.nombre}</p>
+                      <p className="text-sm text-gray-500">Stock: {pieza.stock}</p>
+                    </div>
+                    <div className="flex gap-2">
                       <button
                         onClick={() => handleEdit(pieza)}
                         className="p-1.5 bg-amber-100 text-amber-600 rounded hover:bg-amber-200"
@@ -248,18 +221,111 @@ const MaquinariaPage = () => {
                         <Trash2 size={16} />
                       </button>
                     </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <p className="text-gray-500">Peso:</p>
+                      <p>{pieza.peso} kg</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Precio Alquiler:</p>
+                      <p>S/ {pieza.precioAlquiler}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-gray-500 mb-1">Estado:</p>
+                      <button
+                        onClick={() => handleToggleEstado(pieza.idPieza, pieza.estado)}
+                        className="flex items-center gap-2"
+                      >
+                        <div className={`relative inline-flex h-5 w-9 items-center rounded-full ${
+                          pieza.estado ? 'bg-green-500' : 'bg-gray-300'
+                        }`}>
+                          <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition ${
+                            pieza.estado ? 'translate-x-5' : 'translate-x-1'
+                          }`} />
+                        </div>
+                        <span className="text-xs">
+                          {pieza.estado ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-4 text-gray-500">
+              No se encontraron piezas
+            </div>
+          )}
+        </div>
+
+        {/* Vista desktop - Tabla */}
+        <div className="hidden sm:block overflow-x-auto">
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeaderCell>Nombre</TableHeaderCell>
+                <TableHeaderCell>Stock</TableHeaderCell>
+                <TableHeaderCell>Peso (kg)</TableHeaderCell>
+                <TableHeaderCell>Precio Alquiler (S/.)</TableHeaderCell>
+                <TableHeaderCell>Estado</TableHeaderCell>
+                <TableHeaderCell>Acciones</TableHeaderCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredPiezas.length > 0 ? (
+                filteredPiezas.map((pieza) => (
+                  <TableRow key={pieza.idPieza}>
+                    <TableCell className="font-medium">{pieza.nombre}</TableCell>
+                    <TableCell>{pieza.stock}</TableCell>
+                    <TableCell>{pieza.peso}</TableCell>
+                    <TableCell>{pieza.precioAlquiler}</TableCell>
+                    <TableCell>
+                      <button
+                        onClick={() => handleToggleEstado(pieza.idPieza, pieza.estado)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full ${
+                          pieza.estado ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                            pieza.estado ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                      <span className="ml-2 text-xs">
+                        {pieza.estado ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleEdit(pieza)}
+                          className="p-1.5 bg-amber-100 text-amber-600 rounded hover:bg-amber-200"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(pieza.idPieza)}
+                          className="p-1.5 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-4">
+                    No se encontraron piezas
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
-                  No se encontraron piezas
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </Card>
 
       <MaquinariaModal

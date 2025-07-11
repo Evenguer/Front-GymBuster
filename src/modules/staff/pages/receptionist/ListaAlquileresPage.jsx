@@ -300,11 +300,14 @@ const ListaAlquileresPage = () => {
         return 'Fecha inválida';
       }
       
+      // Sumar un día para corregir el problema de zona horaria que muestra un día anterior
+      fecha.setDate(fecha.getDate() + 1);
+      
       // Normalizar la fecha a mediodía para evitar problemas de zona horaria
       fecha.setHours(12, 0, 0, 0);
       
       console.log('Fecha original:', fechaStr);
-      console.log('Fecha normalizada:', fecha);
+      console.log('Fecha corregida (+1 día):', fecha);
       
       return format(fecha, 'dd/MM/yyyy', { locale: es });
     } catch (error) {
@@ -379,8 +382,8 @@ const ListaAlquileresPage = () => {
           fecha = new Date(fechaStr);
         }
         
-        // Normalizar a mediodía
-        fecha.setHours(12, 0, 0, 0);
+        // Normalizar a medianoche para evitar problemas de zona horaria
+        fecha.setHours(0, 0, 0, 0);
         return fecha;
       };
       
@@ -393,13 +396,13 @@ const ListaAlquileresPage = () => {
         return 1;
       }
       
-      // Calcular la diferencia en días
+      // Calcular la diferencia en días incluyendo ambos días (inicio y fin)
       const diferenciaTiempo = fechaFin.getTime() - fechaInicio.getTime();
-      const diferenciaDias = Math.floor(diferenciaTiempo / (1000 * 60 * 60 * 24)) + 1;
+      const diferenciaDias = Math.ceil(diferenciaTiempo / (1000 * 60 * 60 * 24)) + 1;
       
       console.log('Resultado del cálculo:', {
-        fechaInicio: fechaInicio.toISOString(),
-        fechaFin: fechaFin.toISOString(),
+        fechaInicio: fechaInicio.toLocaleDateString('es-PE'),
+        fechaFin: fechaFin.toLocaleDateString('es-PE'),
         diferenciaTiempo,
         diferenciaDias
       });
@@ -738,16 +741,12 @@ const ListaAlquileresPage = () => {
                       </thead>
                       <tbody className="[&>tr]:border-b [&>tr]:border-gray-100">
                         {detalleAlquiler.detalles.map((detalle, index) => {
-                          // Calcular días del alquiler
-                          // Primero intentar usar el campo diasAlquiler del backend
-                          // Si no existe, calcularlo desde el subtotal: diasAlquiler = subtotal / (cantidad * precioUnitario)
-                          const diasAlquiler = detalle.diasAlquiler || (() => {
-                            if (detalle.cantidad > 0 && detalle.precioUnitario > 0) {
-                              const diasCalculados = Math.round(detalle.subtotal / (detalle.cantidad * detalle.precioUnitario));
-                              return diasCalculados > 0 ? diasCalculados : 1;
-                            }
-                            return calcularDiasAlquiler(detalleAlquiler.fechaInicio, detalleAlquiler.fechaFin);
-                          })();
+                          // Calcular días del alquiler usando la función principal
+                          const diasAlquiler = calcularDiasAlquiler(detalleAlquiler.fechaInicio, detalleAlquiler.fechaFin);
+                          
+                          // Si tenemos el subtotal del backend, verificar si coincide con el cálculo esperado
+                          const subtotalEsperado = detalle.cantidad * detalle.precioUnitario * diasAlquiler;
+                          const usarSubtotalBackend = Math.abs(detalle.subtotal - subtotalEsperado) < 0.01;
                           
                           return (
                             <tr key={detalle.idDetalleAlquiler || index} className="[&>td]:py-2">
@@ -755,7 +754,9 @@ const ListaAlquileresPage = () => {
                               <td>{detalle.pieza}</td>
                               <td className="text-right">S/ {detalle.precioUnitario.toFixed(2)}</td>
                               <td className="text-center">{diasAlquiler}</td>
-                              <td className="text-right">S/ {detalle.subtotal.toFixed(2)}</td>
+                              <td className="text-right">
+                                S/ {usarSubtotalBackend ? detalle.subtotal.toFixed(2) : subtotalEsperado.toFixed(2)}
+                              </td>
                             </tr>
                           );
                         })}
@@ -772,7 +773,19 @@ const ListaAlquileresPage = () => {
                   <div className="text-sm space-y-2 pt-2">
                     <div className="grid grid-cols-2 text-right gap-2 border-t pt-2">
                       <Text className="font-bold">SUBTOTAL:</Text>
-                      <Text className="font-bold">S/ {detalleAlquiler.total.toFixed(2)}</Text>
+                      <Text className="font-bold">
+                        S/ {(() => {
+                          // Calcular el subtotal recalculado basado en los días correctos
+                          const diasAlquiler = calcularDiasAlquiler(detalleAlquiler.fechaInicio, detalleAlquiler.fechaFin);
+                          const subtotalRecalculado = detalleAlquiler.detalles.reduce((total, detalle) => {
+                            return total + (detalle.cantidad * detalle.precioUnitario * diasAlquiler);
+                          }, 0);
+                          
+                          // Usar el subtotal recalculado si hay una diferencia significativa con el del backend
+                          const usarRecalculado = Math.abs(detalleAlquiler.total - subtotalRecalculado) > 0.01;
+                          return (usarRecalculado ? subtotalRecalculado : detalleAlquiler.total).toFixed(2);
+                        })()}
+                      </Text>
                       
                       {detalleAlquiler.mora > 0 && (
                         <>
@@ -780,11 +793,36 @@ const ListaAlquileresPage = () => {
                           <Text className="font-bold text-red-600">S/ {detalleAlquiler.mora.toFixed(2)}</Text>
                           
                           <Text className="font-bold">TOTAL CON MORA:</Text>
-                          <Text className="font-bold">S/ {detalleAlquiler.totalConMora.toFixed(2)}</Text>
+                          <Text className="font-bold">
+                            S/ {(() => {
+                              // Calcular el total con mora basado en el subtotal recalculado
+                              const diasAlquiler = calcularDiasAlquiler(detalleAlquiler.fechaInicio, detalleAlquiler.fechaFin);
+                              const subtotalRecalculado = detalleAlquiler.detalles.reduce((total, detalle) => {
+                                return total + (detalle.cantidad * detalle.precioUnitario * diasAlquiler);
+                              }, 0);
+                              
+                              const usarRecalculado = Math.abs(detalleAlquiler.total - subtotalRecalculado) > 0.01;
+                              const subtotalFinal = usarRecalculado ? subtotalRecalculado : detalleAlquiler.total;
+                              
+                              return (subtotalFinal + detalleAlquiler.mora).toFixed(2);
+                            })()}
+                          </Text>
                         </>
                       )}
                     </div>
-                    <Text>SON: {convertirNumeroALetras(detalleAlquiler.totalConMora || detalleAlquiler.total)}</Text>
+                    <Text>SON: {(() => {
+                      // Calcular el monto para convertir a letras usando el cálculo correcto
+                      const diasAlquiler = calcularDiasAlquiler(detalleAlquiler.fechaInicio, detalleAlquiler.fechaFin);
+                      const subtotalRecalculado = detalleAlquiler.detalles.reduce((total, detalle) => {
+                        return total + (detalle.cantidad * detalle.precioUnitario * diasAlquiler);
+                      }, 0);
+                      
+                      const usarRecalculado = Math.abs(detalleAlquiler.total - subtotalRecalculado) > 0.01;
+                      const subtotalFinal = usarRecalculado ? subtotalRecalculado : detalleAlquiler.total;
+                      const totalFinal = subtotalFinal + (detalleAlquiler.mora || 0);
+                      
+                      return convertirNumeroALetras(totalFinal);
+                    })()}</Text>
                   </div>
 
                   {/* Mostrar alerta de mora si existe */}

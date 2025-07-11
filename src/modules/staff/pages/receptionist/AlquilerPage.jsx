@@ -44,7 +44,7 @@ const AlquilerPage = () => {
   const [clienteEncontrado, setClienteEncontrado] = useState(null);
   const [formData, setFormData] = useState({
     clienteId: '',
-    fechaFin: new Date(new Date().setDate(new Date().getDate() + 7)) // Fecha por defecto: 7 días
+    fechaFin: null // Inicialmente null hasta llegar al paso 2
   });
   // Ya no necesitamos el estado de empleados
   // const [empleados, setEmpleados] = useState([]);
@@ -52,20 +52,20 @@ const AlquilerPage = () => {
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [alquilerCreado, setAlquilerCreado] = useState(null);
-  const [mostrarDetalles, setMostrarDetalles] = useState(false);
   const [piezas, setPiezas] = useState([]);
   const [detallesAlquiler, setDetallesAlquiler] = useState([]);
   const [piezaSeleccionada, setPiezaSeleccionada] = useState('');
+  const [piezaSeleccionadaObj, setPiezaSeleccionadaObj] = useState(null);
   const [cantidad, setCantidad] = useState(1);
+  const [busquedaPieza, setBusquedaPieza] = useState('');
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [montoPagado, setMontoPagado] = useState('');
   const [metodoPago, setMetodoPago] = useState('EFECTIVO');
-  const [mostrarPago, setMostrarPago] = useState(false);
   const [totalAlquiler, setTotalAlquiler] = useState(0);
   const [botonCrearBloqueado, setBotonCrearBloqueado] = useState(false);
-  const [pasoActual, setPasoActual] = useState(1); // 1: Datos básicos, 2: Detalles, 3: Pago, 4: Confirmación
+  const [pasoActual, setPasoActual] = useState(1); // 1: Datos básicos, 2: Equipos, 3: Pago, 4: Confirmación
 
   // Cargar empleados y clientes al montar el componente
   useEffect(() => {
@@ -117,13 +117,7 @@ const AlquilerPage = () => {
     if (!formData.clienteId) {
       errors.clienteId = 'Debe seleccionar un cliente';
     }
-    if (!formData.fechaFin) {
-      errors.fechaFin = 'Debe seleccionar una fecha de fin del alquiler';
-    } else if (formData.fechaFin && !validarFechaFutura(formData.fechaFin)) {
-      errors.fechaFin = 'La fecha de fin debe ser igual o posterior a la fecha actual';
-    } else if (!validarFechaFutura(formData.fechaFin)) {
-      errors.fechaFin = 'La fecha de fin debe ser igual o posterior a la fecha actual';
-    }
+    // No validamos fechaFin en el paso 1, se hará en el paso 2
     return errors;
   };
 
@@ -168,9 +162,12 @@ const AlquilerPage = () => {
     setAlquilerCreado(alquilerTemp);
     
     // Solo avanzamos al siguiente paso, sin guardar todavía en el backend
-    setMostrarDetalles(true);
+    setAlquilerCreado(alquilerTemp);
+    
+    // Avanzar al paso 2 y cargar piezas
+    setPasoActual(2);
     setBotonCrearBloqueado(true); 
-    setPasoActual(2); // Avanzar a la selección de detalles/piezas
+    
     // Cargar piezas para el siguiente paso
     await cargarPiezas();
     
@@ -219,17 +216,12 @@ const AlquilerPage = () => {
   };
 
   // Cargar piezas cuando se muestre el panel de detalles
-  useEffect(() => {
-    if (mostrarDetalles) {
-      cargarPiezas();
-    }
-  }, [mostrarDetalles]);
 
   // Función para agregar detalle
   const agregarDetalle = () => {
-    console.log('Intentando agregar detalle. Pieza seleccionada:', piezaSeleccionada);
+    console.log('Intentando agregar detalle. Pieza seleccionada:', piezaSeleccionadaObj);
 
-    if (!piezaSeleccionada) {
+    if (!piezaSeleccionadaObj) {
       setFormErrors(prev => ({
         ...prev,
         detalles: 'Seleccione una pieza'
@@ -237,44 +229,44 @@ const AlquilerPage = () => {
       return;
     }
 
-    // Buscar la pieza seleccionada
-    const pieza = piezas.find(p => p.id.toString() === piezaSeleccionada.toString());
-    console.log('Pieza encontrada:', pieza);
-
-    if (!pieza) {
-      setFormErrors(prev => ({
-        ...prev,
-        detalles: 'Pieza no encontrada'
-      }));
-      return;
-    }
-
     // Verificar stock disponible
-    if (cantidad > pieza.stock) {
+    if (cantidad > piezaSeleccionadaObj.stock) {
       setFormErrors(prev => ({
         ...prev,
-        detalles: `Stock insuficiente. Solo hay ${pieza.stock} disponibles.`
+        detalles: `Stock insuficiente. Solo hay ${piezaSeleccionadaObj.stock} disponibles.`
       }));
       return;
     }
 
     // Verificar si la pieza ya está en los detalles
-    const detalleExistente = detallesAlquiler.find(d => d.piezaId === parseInt(piezaSeleccionada));
+    const detalleExistente = detallesAlquiler.find(d => d.piezaId === piezaSeleccionadaObj.id);
     
     if (detalleExistente) {
-      setFormErrors(prev => ({
-        ...prev,
-        detalles: 'Esta pieza ya ha sido agregada. Puede modificar la cantidad.'
-      }));
+      // Si la pieza ya existe, verificar si la nueva cantidad total excede el stock
+      const cantidadTotal = detalleExistente.cantidad + cantidad;
+      if (cantidadTotal > piezaSeleccionadaObj.stock) {
+        setFormErrors(prev => ({
+          ...prev,
+          detalles: `La cantidad total excede el stock disponible (${piezaSeleccionadaObj.stock})`
+        }));
+        return;
+      }
+
+      // Actualizar la cantidad del detalle existente
+      setDetallesAlquiler(detallesAlquiler.map(d => 
+        d.piezaId === piezaSeleccionadaObj.id
+          ? { ...d, cantidad: cantidadTotal }
+          : d
+      ));
     } else {
       // Crear nuevo detalle
       const nuevoDetalle = {
-        piezaId: parseInt(piezaSeleccionada),
+        piezaId: piezaSeleccionadaObj.id,
         cantidad: parseInt(cantidad),
         pieza: {
-          id: pieza.id,
-          nombre: pieza.nombre,
-          precioAlquiler: pieza.precioAlquiler
+          id: piezaSeleccionadaObj.id,
+          nombre: piezaSeleccionadaObj.nombre,
+          precioAlquiler: piezaSeleccionadaObj.precioAlquiler
         }
       };
 
@@ -282,10 +274,37 @@ const AlquilerPage = () => {
       setDetallesAlquiler(prev => [...prev, nuevoDetalle]);
     }
 
+    setPiezaSeleccionadaObj(null);
     setPiezaSeleccionada('');
     setCantidad(1);
     setFormErrors(prev => ({ ...prev, detalles: '' }));
+    showNotification('Equipo agregado correctamente', 'success');
   };
+
+  // Función para seleccionar pieza
+  const seleccionarPieza = (piezaId) => {
+    try {
+      const pieza = piezas.find(p => p.id === piezaId);
+      if (!pieza) {
+        showNotification('Equipo no encontrado', 'error');
+        return;
+      }
+      
+      setPiezaSeleccionadaObj(pieza);
+      setPiezaSeleccionada(piezaId.toString());
+      setCantidad(1);
+      showNotification(`Equipo "${pieza.nombre}" seleccionado`, 'success');
+    } catch (error) {
+      console.error('Error al seleccionar pieza:', error);
+      showNotification('Error al seleccionar el equipo', 'error');
+    }
+  };
+
+  // Función para filtrar piezas
+  const piezasFiltradas = piezas.filter(pieza => {
+    const coincideBusqueda = pieza.nombre.toLowerCase().includes(busquedaPieza.toLowerCase());
+    return coincideBusqueda;
+  });
 
   // Eliminar un detalle del alquiler
   const eliminarDetalle = (piezaId) => {
@@ -301,6 +320,17 @@ const AlquilerPage = () => {
   // Actualizar cantidad de un detalle
   const actualizarCantidad = (piezaId, nuevaCantidad) => {
     if (nuevaCantidad <= 0) return;
+    
+    // Buscar la pieza para verificar stock
+    const pieza = piezas.find(p => p.id === piezaId);
+    if (!pieza) return;
+    
+    // Limitar la cantidad al stock disponible
+    if (nuevaCantidad > pieza.stock) {
+      showNotification(`Cantidad máxima disponible: ${pieza.stock}`, 'warning');
+      nuevaCantidad = pieza.stock;
+    }
+    
     setDetallesAlquiler(detallesAlquiler.map(d => 
       d.piezaId === piezaId ? { ...d, cantidad: nuevaCantidad } : d
     ));
@@ -313,6 +343,18 @@ const AlquilerPage = () => {
       return;
     }
 
+    if (!formData.fechaFin) {
+      setFormErrors({ fechaFin: 'Debe seleccionar una fecha de fin del alquiler' });
+      showNotification('Error: Debe seleccionar una fecha de fin del alquiler', 'error');
+      return;
+    }
+
+    if (!validarFechaFutura(formData.fechaFin)) {
+      setFormErrors({ fechaFin: 'La fecha de fin debe ser igual o posterior a la fecha actual' });
+      showNotification('Error: La fecha de fin debe ser igual o posterior a la fecha actual', 'error');
+      return;
+    }
+
     try {
       setLoading(true);
       
@@ -320,7 +362,6 @@ const AlquilerPage = () => {
       const total = await calcularPrecioConDias();
       
       setTotalAlquiler(total);
-      setMostrarPago(true);
       setPasoActual(3); // Avanzar al paso de pago
       
       showNotification('Elementos agregados. Continúe con el registro del pago', 'success');
@@ -354,19 +395,33 @@ const AlquilerPage = () => {
         
       console.log('Fecha fin formateada para pago:', formattedFechaFin);
 
-      // Formatear los detalles en el formato esperado por el backend
+      // Calcular días para incluir en el cálculo
+      const fechaInicio = new Date();
+      fechaInicio.setHours(0, 0, 0, 0);
+      const fechaFin = new Date(formData.fechaFin);
+      fechaFin.setHours(0, 0, 0, 0);
+      const diasAlquiler = calcularDias(fechaInicio, fechaFin);
+
+      // Formatear los detalles en el formato esperado por el backend incluyendo información de días y precio
       const detallesFormateados = detallesAlquiler.map(detalle => ({
         piezaId: detalle.piezaId,
-        cantidad: detalle.cantidad
+        cantidad: detalle.cantidad,
+        precioUnitario: detalle.pieza.precioAlquiler,
+        diasAlquiler: diasAlquiler,
+        subtotal: detalle.cantidad * detalle.pieza.precioAlquiler * diasAlquiler
       }));
+      
+      console.log('Detalles formateados con días:', detallesFormateados);
       
       // Preparar la estructura completa del alquiler para enviarla en una sola llamada
       const alquilerCompleto = {
         clienteId: parseInt(formData.clienteId.replace('cli-', '')),
         fechaFin: formattedFechaFin,
+        diasAlquiler: diasAlquiler, // Agregar días calculados
         detalles: detallesFormateados,
         montoPagado: parseFloat(montoPagado),
-        metodoPago: metodoPago
+        metodoPago: metodoPago,
+        totalCalculado: totalAlquiler // Agregar el total calculado en el frontend
       };
       
       console.log('Enviando alquiler completo al backend:', alquilerCompleto);
@@ -396,15 +451,17 @@ const AlquilerPage = () => {
         
         // Resetear todos los estados para un nuevo alquiler
         setDetallesAlquiler([]);
-        setMostrarDetalles(false);
-        setMostrarPago(false);
         setAlquilerCreado(null);
         setPiezaSeleccionada('');
-        setPiezaSeleccionada('');
-        setPiezaSeleccionada('');
+        setPiezaSeleccionadaObj(null);
         setCantidad(1);
+        setBusquedaPieza('');
         setFormData({
+          clienteId: '',
+          fechaFin: null
         });
+        setDni('');
+        setClienteEncontrado(null);
         setTotalAlquiler(0);
         setMontoPagado('');
         setFormErrors({});
@@ -468,40 +525,39 @@ const AlquilerPage = () => {
   // Función para reiniciar completamente el formulario
   const reiniciarFormulario = () => {
     // Mostrar confirmación antes de reiniciar
-    if (botonCrearBloqueado && (!mostrarPago || confirm('¿Está seguro que desea cancelar este alquiler y empezar uno nuevo?'))) {
-      // Desbloquear el botón "Crear alquiler y continuar"
-      setBotonCrearBloqueado(false);
-      
-      // Resetear todos los estados para un nuevo alquiler
-      setDetallesAlquiler([]);
-      setMostrarDetalles(false);
-      setMostrarPago(false);
-      setAlquilerCreado(null);
-      setPiezaSeleccionada('');
-      setCantidad(1);
-      setPiezaSeleccionada('');
-      setCantidad(1);
-      setFormData({
-
-        clienteId: '',
-        fechaFin: new Date(new Date().setDate(new Date().getDate() + 7))
-      });
-      setDni('');
-      setClienteEncontrado(null);
-      setTotalAlquiler(0);
-      setMontoPagado('');
-      setFormErrors({});
-      setPasoActual(1); // Volver al primer paso
-      
-      showNotification('Formulario reiniciado correctamente', 'info');
+    if (botonCrearBloqueado && (pasoActual < 4 && !confirm('¿Está seguro que desea cancelar este alquiler y empezar uno nuevo?'))) {
+      return;
     }
+    
+    // Desbloquear el botón "Crear alquiler y continuar"
+    setBotonCrearBloqueado(false);
+    
+    // Resetear todos los estados para un nuevo alquiler
+    setDetallesAlquiler([]);
+    setAlquilerCreado(null);
+    setPiezaSeleccionada('');
+    setPiezaSeleccionadaObj(null);
+    setCantidad(1);
+    setBusquedaPieza('');
+    setFormData({
+      clienteId: '',
+      fechaFin: null
+    });
+    setDni('');
+    setClienteEncontrado(null);
+    setTotalAlquiler(0);
+    setMontoPagado('');
+    setFormErrors({});
+    setPasoActual(1); // Volver al primer paso
+    
+    showNotification('Formulario reiniciado correctamente', 'info');
   };
 
   // Componente para mostrar el paso actual en el proceso
   const ProgresoAlquiler = ({ pasoActual }) => {
     const pasos = [
       { numero: 1, nombre: 'Datos cliente' },
-      { numero: 2, nombre: 'Elementos' },
+      { numero: 2, nombre: 'Equipamiento' },
       { numero: 3, nombre: 'Pago' },
       { numero: 4, nombre: 'Confirmación' }
     ];
@@ -617,13 +673,26 @@ const AlquilerPage = () => {
       fechaFin.setHours(0, 0, 0, 0);
       const fechaFinStr = fechaFin.toISOString().split('T')[0];
 
+      // Calcular días localmente para enviar al backend
+      const diasAlquiler = calcularDias(fechaInicio, fechaFin);
+
       const detallesParaCalculo = detallesAlquiler.map(detalle => ({
         piezaId: detalle.piezaId,
-        cantidad: detalle.cantidad
+        cantidad: detalle.cantidad,
+        precioUnitario: detalle.pieza.precioAlquiler,
+        diasAlquiler: diasAlquiler
       }));
+
+      console.log('Enviando al API para calcular precio:', {
+        fechaInicio: fechaInicioStr,
+        fechaFin: fechaFinStr,
+        diasAlquiler,
+        detalles: detallesParaCalculo
+      });
 
       const resultado = await alquilerAPI.calcularPrecio(fechaInicioStr, fechaFinStr, detallesParaCalculo);
       
+      console.log('Resultado del API:', resultado);
       return resultado.total;
     } catch (error) {
       console.error('Error al calcular precio:', error);
@@ -633,8 +702,17 @@ const AlquilerPage = () => {
       const fechaFin = new Date(formData.fechaFin);
       fechaFin.setHours(0, 0, 0, 0);
       const dias = calcularDias(fechaInicio, fechaFin);
+      
+      console.log('Usando cálculo local de fallback:', {
+        fechaInicio: fechaInicio.toLocaleDateString('es-PE'),
+        fechaFin: fechaFin.toLocaleDateString('es-PE'),
+        dias
+      });
+      
       return detallesAlquiler.reduce((sum, detalle) => {
-        return sum + (detalle.cantidad * detalle.pieza.precioAlquiler * dias);
+        const subtotal = detalle.cantidad * detalle.pieza.precioAlquiler * dias;
+        console.log(`${detalle.pieza.nombre}: ${detalle.cantidad} x S/${detalle.pieza.precioAlquiler} x ${dias} días = S/${subtotal}`);
+        return sum + subtotal;
       }, 0);
     }
   };
@@ -643,7 +721,7 @@ const AlquilerPage = () => {
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
         <Title>Registro de Alquiler</Title>
-        {botonCrearBloqueado && (
+        {botonCrearBloqueado && pasoActual === 1 && (
           <Button 
             onClick={reiniciarFormulario} 
             variant="secondary"
@@ -663,12 +741,14 @@ const AlquilerPage = () => {
         </Alert>
       )}
       
-      {/* Formulario para crear alquiler */}
-      <Card className="mb-6 shadow-sm">
-        <Title className="mb-4 flex items-center">
-          <User size={20} className="mr-2 text-blue-600" />
-          <span>Datos del alquiler</span>
-        </Title>
+      {/* Paso 1: Formulario para crear alquiler */}
+      {pasoActual === 1 && (
+        <Card className="mb-6 shadow-sm">
+          <div className="space-y-6">
+            <Title className="mb-4 flex items-center">
+              <User size={20} className="mr-2 text-blue-600" />
+              <span>Datos del alquiler</span>
+            </Title>
         
         {botonCrearBloqueado && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
@@ -723,58 +803,6 @@ const AlquilerPage = () => {
           </div>
         )}
         
-        <div className="mb-6">
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <Text className="mb-2 font-medium">Fecha de fin del alquiler</Text>
-            <div className="space-y-2 mb-4">
-              <label className="block text-sm font-semibold">Fecha Fin:</label>
-              <input
-                type="date"
-                className={`w-full p-2 border rounded ${formErrors.fechaFin ? 'border-red-500' : 'border-gray-300'}`}
-                value={formData.fechaFin instanceof Date ? formData.fechaFin.toISOString().split('T')[0] : formData.fechaFin}
-                onChange={(e) => {
-                  // Crear la fecha seleccionada en la zona horaria local
-                  const [year, month, day] = e.target.value.split('-').map(Number);
-                  const fechaSeleccionada = new Date(year, month - 1, day);
-                  
-                  // Crear la fecha de inicio (hoy) en la zona horaria local
-                  const fechaInicio = new Date();
-                  fechaInicio.setHours(0, 0, 0, 0);
-                  
-                  const diasAlquiler = calcularDias(fechaInicio, fechaSeleccionada);
-                  
-                  console.log('Selección de fecha:', {
-                    fechaInicio: fechaInicio.toLocaleDateString('es-PE'),
-                    fechaFin: fechaSeleccionada.toLocaleDateString('es-PE'),
-                    diasCalculados: diasAlquiler,
-                    fechaSeleccionadaOriginal: e.target.value
-                  });
-                  
-                  if (diasAlquiler > 30) {
-                    setFormErrors(prev => ({
-                      ...prev,
-                      fechaFin: 'El período de alquiler no puede exceder los 30 días'
-                    }));
-                    showNotification('El período de alquiler no puede exceder los 30 días', 'error');
-                    return;
-                  }
-                  
-                  setFormErrors(prev => ({ ...prev, fechaFin: '' }));
-                  setFormData(prev => ({
-                    ...prev,
-                    fechaFin: fechaSeleccionada
-                  }));
-                }}
-                min={new Date().toISOString().split('T')[0]}
-                max={new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0]}
-              />
-              {formErrors.fechaFin && (
-                <span className="text-red-500 text-xs">{formErrors.fechaFin}</span>
-              )}
-            </div>
-          </div>
-        </div>
-        
         {formErrors.submit && (
           <div className="mb-4 p-2 border border-red-200 bg-red-50 rounded">
             <Text className="text-red-600">
@@ -783,268 +811,449 @@ const AlquilerPage = () => {
           </div>
         )}
         
-        <Button 
-          onClick={handleSubmit}
-          disabled={loading || !clienteEncontrado || botonCrearBloqueado}
-          loading={loading}
-          loadingText="Procesando..."
-          className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white"
-          icon={ShoppingCart}
-          size="lg"
-        >
-          Crear alquiler y continuar
-        </Button>
-      </Card>
-
-      {/* Sección de detalles del alquiler - aparece cuando mostrarDetalles es true */}
-      {mostrarDetalles && (
-        <Card className="mb-6 shadow-sm">
-          <Title className="mb-2 flex items-center">
-            <Package size={20} className="mr-2 text-blue-600" />
-            <span>Agregar piezas al alquiler</span>
-          </Title>
-          {alquilerCreado && (
-            <div className="mb-4 p-2 bg-gray-50 border border-gray-200 rounded-md">
-            </div>
-          )}
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6 p-4 bg-gray-50 rounded-lg">
-            <div>
-              <Text className="mb-2 font-medium">Seleccionar pieza</Text>
-              <SearchSelect
-                value={piezaSeleccionada}
-                onValueChange={setPiezaSeleccionada}
-                disabled={loading || mostrarPago}
-                placeholder="Seleccione una pieza"
-                icon={Package}
-                className="bg-white"
-              >
-                {piezas.map(pieza => (
-                  <SearchSelectItem 
-                    key={pieza.id} 
-                    value={pieza.id.toString()}
-                    icon={Package}
-                  >
-                    {pieza.nombre} - S/ {pieza.precioAlquiler}/día (Stock: {pieza.stock})
-                  </SearchSelectItem>
-                ))}
-              </SearchSelect>
-            </div>
-            <div>
-              <Text className="mb-2 font-medium">Cantidad</Text>
-              <NumberInput
-                value={cantidad}
-                onValueChange={setCantidad}
-                min={1}
-                enableStepper
-                disabled={loading || mostrarPago}
-                className="bg-white"
-              />
-            </div>
-            <div className="flex items-end">
-              <Button 
-                onClick={agregarDetalle} 
-                disabled={loading || !piezaSeleccionada || mostrarPago}
-                icon={Plus}
-                className="w-full bg-red-600 hover:bg-red-700 text-white"
-              >
-                Agregar pieza
-              </Button>
-            </div>
+            <Button 
+              onClick={handleSubmit}
+              disabled={loading || !clienteEncontrado || botonCrearBloqueado}
+              loading={loading}
+              loadingText="Procesando..."
+              className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white"
+              icon={ShoppingCart}
+              size="lg"
+            >
+              Crear alquiler y continuar
+            </Button>
           </div>
-          
-          {formErrors.detalles && (
-            <div className="mb-4 p-2 border border-red-200 bg-red-50 rounded">
-              <Text className="text-red-600">
-                <AlertCircle className="inline-block mr-2" size={16} /> 
-                {formErrors.detalles}
-              </Text>
+        </Card>
+      )}
+
+      {/* Paso 2: Selección de equipamiento */}
+      {pasoActual === 2 && (
+        <Card className="mb-6 shadow-sm">
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <Title className="flex items-center">
+                <Package size={20} className="mr-2 text-blue-600" />
+                <span>Seleccionar Equipamiento</span>
+              </Title>
             </div>
-          )}
-          
-          {detallesAlquiler.length > 0 ? (
-            <>
-              <Title className="text-lg mb-2">Piezas seleccionadas</Title>
-              <Table className="mb-4">
-                <TableHead>
-                  <TableRow>
-                    <TableHeaderCell>Pieza</TableHeaderCell>
-                    <TableHeaderCell>Precio Diario</TableHeaderCell>
-                    <TableHeaderCell>Cantidad</TableHeaderCell>
-                    <TableHeaderCell>Días</TableHeaderCell>
-                    <TableHeaderCell>Subtotal</TableHeaderCell>
-                    <TableHeaderCell>Opciones</TableHeaderCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {detallesAlquiler.map((detalle) => {
+
+            {clienteEncontrado && (
+              <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded">
+                <Text className="text-blue-700">
+                  Cliente: <strong>{clienteEncontrado.nombreCompleto}</strong>
+                  {formData.fechaFin && (
+                    <span> | Periodo: <strong>{(() => {
+                      const fechaInicio = new Date();
+                      const fechaFin = new Date(formData.fechaFin);
+                      const dias = calcularDias(fechaInicio, fechaFin);
+                      return `${dias} días`;
+                    })()}</strong></span>
+                  )}
+                </Text>
+              </div>
+            )}
+
+            {/* Selección de fecha de fin */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <Text className="mb-2 font-medium">Fecha de fin del alquiler</Text>
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold">Fecha Fin:</label>
+                <input
+                  type="date"
+                  className={`w-full p-2 border rounded ${formErrors.fechaFin ? 'border-red-500' : 'border-gray-300'}`}
+                  value={formData.fechaFin instanceof Date ? formData.fechaFin.toISOString().split('T')[0] : (formData.fechaFin || '')}
+                  onChange={(e) => {
+                    if (!e.target.value) {
+                      setFormData(prev => ({ ...prev, fechaFin: null }));
+                      return;
+                    }
+                    
+                    // Crear la fecha seleccionada en la zona horaria local
+                    const [year, month, day] = e.target.value.split('-').map(Number);
+                    const fechaSeleccionada = new Date(year, month - 1, day);
+                    
+                    // Crear la fecha de inicio (hoy) en la zona horaria local
                     const fechaInicio = new Date();
                     fechaInicio.setHours(0, 0, 0, 0);
-                    const fechaFin = new Date(formData.fechaFin);
-                    fechaFin.setHours(0, 0, 0, 0);
-                    const dias = calcularDias(fechaInicio, fechaFin);
-                    const subtotal = detalle.cantidad * detalle.pieza.precioAlquiler * dias;
-                    return (
-                      <TableRow key={detalle.piezaId}>
-                        <TableCell>{detalle.pieza.nombre}</TableCell>
-                        <TableCell>S/ {detalle.pieza.precioAlquiler}/día</TableCell>
-                        <TableCell>
-                          {!mostrarPago ? (
+                    
+                    const diasAlquiler = calcularDias(fechaInicio, fechaSeleccionada);
+                    
+                    console.log('Selección de fecha:', {
+                      fechaInicio: fechaInicio.toLocaleDateString('es-PE'),
+                      fechaFin: fechaSeleccionada.toLocaleDateString('es-PE'),
+                      diasCalculados: diasAlquiler,
+                      fechaSeleccionadaOriginal: e.target.value
+                    });
+                    
+                    if (diasAlquiler > 30) {
+                      setFormErrors(prev => ({
+                        ...prev,
+                        fechaFin: 'El período de alquiler no puede exceder los 30 días'
+                      }));
+                      showNotification('El período de alquiler no puede exceder los 30 días', 'error');
+                      return;
+                    }
+                    
+                    setFormErrors(prev => ({ ...prev, fechaFin: '' }));
+                    setFormData(prev => ({
+                      ...prev,
+                      fechaFin: fechaSeleccionada
+                    }));
+                  }}
+                  min={new Date().toISOString().split('T')[0]}
+                  max={new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0]}
+                />
+                {formErrors.fechaFin && (
+                  <span className="text-red-500 text-xs">{formErrors.fechaFin}</span>
+                )}
+              </div>
+            </div>
+
+            {/* Buscador */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <div>
+                <Text className="mb-2 font-medium">Buscar equipamiento</Text>
+                <TextInput
+                  placeholder="Buscar por nombre del equipamiento..."
+                  value={busquedaPieza || ''}
+                  onChange={(e) => setBusquedaPieza(e.target.value)}
+                  icon={Search}
+                  className="bg-white"
+                />
+              </div>
+              
+              {/* Contador de resultados */}
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <Text className="text-sm text-gray-600">
+                  Mostrando {piezasFiltradas.length} de {piezas.length} equipos
+                  {busquedaPieza && ` que contienen "${busquedaPieza}"`}
+                </Text>
+              </div>
+            </div>
+
+            {/* Equipo seleccionado */}
+            {piezaSeleccionadaObj && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <Text className="font-semibold text-lg text-green-800">
+                      {piezaSeleccionadaObj.nombre}
+                    </Text>
+                    <Text className="text-green-600">
+                      Precio: S/ {piezaSeleccionadaObj.precioAlquiler} | Stock: {piezaSeleccionadaObj.stock}
+                    </Text>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    onClick={() => {
+                      setPiezaSeleccionadaObj(null);
+                      setPiezaSeleccionada('');
+                    }}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    ✕
+                  </Button>
+                </div>
+                
+                <div className="flex gap-4 items-end">
+                  <div className="flex-1">
+                    <Text className="mb-2 font-medium">Cantidad</Text>
+                    <NumberInput
+                      value={cantidad}
+                      onValueChange={(value) => {
+                        if (value > piezaSeleccionadaObj.stock) {
+                          showNotification(`Cantidad máxima disponible: ${piezaSeleccionadaObj.stock}`, 'warning');
+                          setCantidad(piezaSeleccionadaObj.stock);
+                        } else {
+                          setCantidad(value);
+                        }
+                      }}
+                      min={1}
+                      max={piezaSeleccionadaObj.stock}
+                      className="w-32"
+                    />
+                  </div>
+                  <Button
+                    icon={Plus}
+                    variant="primary"
+                    onClick={agregarDetalle}
+                    disabled={!piezaSeleccionadaObj || cantidad <= 0}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    Agregar al Alquiler
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Lista de equipos filtrados */}
+            {piezasFiltradas.length === 0 ? (
+              <div className="p-8 text-center border border-gray-200 rounded-lg">
+                <Package size={48} className="mx-auto mb-4 text-gray-300" />
+                <Text className="text-gray-500 mb-2">No se encontraron equipos</Text>
+                <Text className="text-sm text-gray-400">
+                  {busquedaPieza 
+                    ? 'Intenta ajustar la búsqueda'
+                    : 'No hay equipos disponibles en este momento'
+                  }
+                </Text>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                {piezasFiltradas.map(pieza => (
+                  <div 
+                    key={pieza.id}
+                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                      piezaSeleccionadaObj?.id === pieza.id 
+                        ? 'border-green-500 bg-green-50' 
+                        : 'hover:border-red-500 hover:bg-red-50'
+                    } ${pieza.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => pieza.stock > 0 && seleccionarPieza(pieza.id)}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-semibold text-lg">{pieza.nombre}</h3>
+                      <span className={`px-2 py-1 text-xs rounded ${
+                        pieza.stock > 5 ? 'bg-green-100 text-green-700' : 
+                        pieza.stock > 0 ? 'bg-yellow-100 text-yellow-700' : 
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        Stock: {pieza.stock}
+                      </span>
+                    </div>
+                    <div className="space-y-1 text-sm text-gray-600">
+                      <p>💰 Precio: S/ {pieza.precioAlquiler}</p>
+                      <p>🏋️ Equipamiento deportivo</p>
+                    </div>
+                    <Button 
+                      className={`w-full mt-3 ${
+                        pieza.stock === 0 
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-red-600 hover:bg-red-700 text-white'
+                      }`}
+                      size="sm"
+                      disabled={loading || pieza.stock === 0}
+                    >
+                      {pieza.stock === 0 ? 'Sin Stock' : 'Seleccionar'}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {formErrors.detalles && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <Text color="red">{formErrors.detalles}</Text>
+              </div>
+            )}
+            
+            {detallesAlquiler.length > 0 && (
+              <div>
+                <Text className="mb-4 font-medium text-lg">Equipos Agregados:</Text>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableHeaderCell>Equipo</TableHeaderCell>
+                      <TableHeaderCell>Stock Disponible</TableHeaderCell>
+                      <TableHeaderCell>Cantidad</TableHeaderCell>
+                      <TableHeaderCell>Precio</TableHeaderCell>
+                      <TableHeaderCell>Días</TableHeaderCell>
+                      <TableHeaderCell>Subtotal</TableHeaderCell>
+                      <TableHeaderCell className="text-right">Acciones</TableHeaderCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {detallesAlquiler.map((detalle) => {
+                      if (!formData.fechaFin) {
+                        return (
+                          <TableRow key={detalle.piezaId}>
+                            <TableCell>{detalle.pieza.nombre}</TableCell>
+                            <TableCell>
+                              {piezas.find(p => p.id === detalle.piezaId)?.stock || 0}
+                            </TableCell>
+                            <TableCell>
+                              <NumberInput
+                                value={detalle.cantidad}
+                                onValueChange={(value) => actualizarCantidad(detalle.piezaId, value)}
+                                min={1}
+                                max={piezas.find(p => p.id === detalle.piezaId)?.stock || 1}
+                                className="w-24"
+                              />
+                            </TableCell>
+                            <TableCell>S/ {detalle.pieza.precioAlquiler}</TableCell>
+                            <TableCell>-</TableCell>
+                            <TableCell>-</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="light"
+                                color="red"
+                                icon={Trash2}
+                                onClick={() => eliminarDetalle(detalle.piezaId)}
+                              >
+                                Eliminar
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
+                      
+                      const fechaInicio = new Date();
+                      fechaInicio.setHours(0, 0, 0, 0);
+                      const fechaFin = new Date(formData.fechaFin);
+                      fechaFin.setHours(0, 0, 0, 0);
+                      const dias = calcularDias(fechaInicio, fechaFin);
+                      const subtotal = detalle.cantidad * detalle.pieza.precioAlquiler * dias;
+                      return (
+                        <TableRow key={detalle.piezaId}>
+                          <TableCell>{detalle.pieza.nombre}</TableCell>
+                          <TableCell>
+                            {piezas.find(p => p.id === detalle.piezaId)?.stock || 0}
+                          </TableCell>
+                          <TableCell>
                             <NumberInput
                               value={detalle.cantidad}
                               onValueChange={(value) => actualizarCantidad(detalle.piezaId, value)}
                               min={1}
-                              enableStepper
-                              disabled={loading}
-                              className="w-20"
+                              max={piezas.find(p => p.id === detalle.piezaId)?.stock || 1}
+                              className="w-24"
                             />
-                          ) : (
-                            detalle.cantidad
-                          )}
-                        </TableCell>
-                        <TableCell>{dias}</TableCell>
-                        <TableCell>S/ {subtotal.toFixed(2)}</TableCell>
-                        <TableCell>
-                          {!mostrarPago && (
-                            <Button 
-                              onClick={() => eliminarDetalle(detalle.piezaId)}
-                              size="xs"
+                          </TableCell>
+                          <TableCell>S/ {detalle.pieza.precioAlquiler}</TableCell>
+                          <TableCell>{dias}</TableCell>
+                          <TableCell>S/ {subtotal.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
                               variant="light"
                               color="red"
                               icon={Trash2}
-                              disabled={loading}
+                              onClick={() => eliminarDetalle(detalle.piezaId)}
                             >
                               Eliminar
                             </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-              
-              <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg border border-blue-100 mb-4">
-                <div>
-                  {detallesAlquiler.length > 0 && (
-                    <>
-                      <Text className="text-lg font-semibold text-blue-800">
-                        {(() => {
-                          const fechaInicio = new Date();
-                          fechaInicio.setHours(0, 0, 0, 0);
-                          const fechaFin = new Date(formData.fechaFin);
-                          fechaFin.setHours(0, 0, 0, 0);
-                          const dias = calcularDias(fechaInicio, fechaFin);
-                          const total = detallesAlquiler.reduce((sum, detalle) => {
-                            return sum + (detalle.cantidad * detalle.pieza.precioAlquiler * dias);
-                          }, 0);
-                          return `Total (por ${dias} días): S/ ${total.toFixed(2)}`;
-                        })()}
-                      </Text>
-                      <Text className="text-sm text-gray-600">
-                        {(() => {
-                          const formatDate = (date) => {
-                            if (!date) return '';
-                            const d = new Date(date);
-                            d.setHours(12, 0, 0, 0); // Usar mediodía para evitar problemas de zona horaria
-                            return d.toLocaleDateString('es-PE', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric'
-                            });
-                          };
-                          const fechaInicio = new Date();
-                          fechaInicio.setHours(12, 0, 0, 0);
-                          const fechaFin = new Date(formData.fechaFin);
-                          return `Desde: ${formatDate(fechaInicio)} - Hasta: ${formatDate(fechaFin)}`;
-                        })()}
-                      </Text>
-                    </>
-                  )}
-                </div>
-                {!mostrarPago && (
-                  <Button 
-                    onClick={guardarDetalles} 
-                    disabled={loading || detallesAlquiler.length === 0}
-                    loading={loading}
-                    icon={CreditCard}
-                    className="bg-red-600 hover:bg-red-700 text-white"
-                    size="lg"
-                  >
-                    Guardar y continuar al pago
-                  </Button>
-                )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-right font-medium">
+                        Total:
+                      </TableCell>
+                      <TableCell className="font-medium" colSpan={2}>
+                        {formData.fechaFin ? (
+                          <>S/ {(() => {
+                            const fechaInicio = new Date();
+                            fechaInicio.setHours(0, 0, 0, 0);
+                            const fechaFin = new Date(formData.fechaFin);
+                            fechaFin.setHours(0, 0, 0, 0);
+                            const dias = calcularDias(fechaInicio, fechaFin);
+                            const total = detallesAlquiler.reduce((sum, detalle) => {
+                              return sum + (detalle.cantidad * detalle.pieza.precioAlquiler * dias);
+                            }, 0);
+                            return total.toFixed(2);
+                          })()}</>
+                        ) : (
+                          <Text className="text-gray-500">Seleccione fecha para ver el total</Text>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
               </div>
-            </>
-          ) : (
-            <div className="p-4 text-center border border-gray-200 rounded">
-              <Text>No hay piezas agregadas al alquiler</Text>
+            )}
+            
+            <div className="flex justify-end">
+              <Button
+                variant="primary"
+                icon={loading ? Loader2 : CreditCard}
+                disabled={loading || detallesAlquiler.length === 0 || !formData.fechaFin}
+                onClick={guardarDetalles}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {loading ? 'Guardando...' : 'Proceder al Pago'}
+              </Button>
             </div>
-          )}
+          </div>
         </Card>
       )}
-      
-      {/* Panel de registro de pago */}
-      {mostrarPago && (
+      {/* Paso 3: Pago */}
+      {pasoActual === 3 && (
         <Card className="mb-6 shadow-sm">
-          <Title className="mb-4 flex items-center">
-            <CreditCard size={20} className="mr-2 text-blue-600" />
-            <span>Registrar pago</span>
-          </Title>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <Text className="mb-2 font-medium">Método de pago</Text>
-              <SearchSelect
-                value={metodoPago}
-                onValueChange={setMetodoPago}
-                disabled={loading}
-                icon={CreditCard}
-                className="bg-white"
-              >
-                <SearchSelectItem value="EFECTIVO">Efectivo</SearchSelectItem>
-                <SearchSelectItem value="TARJETA">Tarjeta</SearchSelectItem>
-                <SearchSelectItem value="YAPE">Yape</SearchSelectItem>
-                <SearchSelectItem value="PLIN">Plin</SearchSelectItem>
-              </SearchSelect>
+          <div className="space-y-6">
+            <Title className="mb-4 flex items-center">
+              <CreditCard size={20} className="mr-2 text-blue-600" />
+              <span>Procesar Pago</span>
+            </Title>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <Text className="mb-2 font-medium">Método de pago</Text>
+                <SearchSelect
+                  value={metodoPago}
+                  onValueChange={setMetodoPago}
+                  disabled={loading}
+                  icon={CreditCard}
+                  className="bg-white"
+                >
+                  <SearchSelectItem value="EFECTIVO">Efectivo</SearchSelectItem>
+                  <SearchSelectItem value="TARJETA">Tarjeta</SearchSelectItem>
+                  <SearchSelectItem value="YAPE">Yape</SearchSelectItem>
+                  <SearchSelectItem value="PLIN">Plin</SearchSelectItem>
+                </SearchSelect>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <Text className="mb-2 font-medium">Monto recibido (S/)</Text>
+                <TextInput
+                  value={montoPagado}
+                  onChange={(e) => setMontoPagado(e.target.value)}
+                  disabled={loading}
+                  type="number"
+                  step="0.01"
+                  min={totalAlquiler}
+                  placeholder={`Mínimo: S/ ${totalAlquiler.toFixed(2)}`}
+                  className="bg-white"
+                />
+              </div>
             </div>
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <Text className="mb-2 font-medium">Monto recibido (S/)</Text>
-              <TextInput
-                value={montoPagado}
-                onChange={(e) => setMontoPagado(e.target.value)}
-                disabled={loading}
-                type="number"
-                step="0.01"
-                min={totalAlquiler}
-                placeholder={`Mínimo: S/ ${totalAlquiler.toFixed(2)}`}
-                className="bg-white"
-              />
-            </div>
-          </div>
-          
-          <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg border border-blue-100">
-            <div>
-              <Text className="text-lg font-semibold text-blue-800">
-                Total a pagar: S/ {totalAlquiler.toFixed(2)}
-              </Text>
-              {montoPagado && parseFloat(montoPagado) > totalAlquiler && (
-                <Text className="text-green-600 font-medium">
-                  Vuelto: S/ {(parseFloat(montoPagado) - totalAlquiler).toFixed(2)}
+            
+            <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg border border-blue-100">
+              <div>
+                <Text className="text-lg font-semibold text-blue-800">
+                  Total a pagar: S/ {totalAlquiler.toFixed(2)}
                 </Text>
-              )}
+                {montoPagado && parseFloat(montoPagado) > totalAlquiler && (
+                  <Text className="text-green-600 font-medium">
+                    Vuelto: S/ {(parseFloat(montoPagado) - totalAlquiler).toFixed(2)}
+                  </Text>
+                )}
+              </div>
+              <Button 
+                onClick={registrarPago} 
+                disabled={loading || !montoPagado || parseFloat(montoPagado) < totalAlquiler}
+                loading={loading}
+                icon={CheckCircle}
+                className="bg-red-600 hover:bg-red-700 text-white"
+                size="lg"
+              >
+                Finalizar alquiler
+              </Button>
             </div>
-            <Button 
-              onClick={registrarPago} 
-              disabled={loading || !montoPagado || parseFloat(montoPagado) < totalAlquiler}
-              loading={loading}
-              icon={CheckCircle}
-              className="bg-red-600 hover:bg-red-700 text-white"
-              size="lg"
-            >
-              Finalizar alquiler
-            </Button>
           </div>
+        </Card>
+      )}
+
+      {/* Paso 4: Confirmación */}
+      {pasoActual === 4 && (
+        <Card className="p-8 text-center">
+          <CheckCircle className="mx-auto mb-4 text-green-500" size={48} />
+          <Title>¡Alquiler registrado exitosamente!</Title>
+          <Text>El alquiler ha sido registrado y procesado correctamente.</Text>
+          <Button 
+            className="mt-6 bg-red-600 hover:bg-red-700 text-white" 
+            variant="primary" 
+            onClick={reiniciarFormulario}
+          >
+            Registrar otro alquiler
+          </Button>
         </Card>
       )}
       

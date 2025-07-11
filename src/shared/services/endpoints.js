@@ -126,4 +126,7 @@ export const ENDPOINTS = {
   GET_INSCRIPTION_DETAIL: (id) => `${BASE_URL}/inscripciones/inscripciones/${id}/detalle`,
   LIST_ALL_INSCRIPTIONS: `${BASE_URL}/inscripciones/listar`,
   CANCEL_INSCRIPTION: (id) => `${BASE_URL}/inscripciones/cancelar/${id}`,
+
+  // Dashboard Recepcionista
+  DASHBOARD_RECEPCIONISTA: `${BASE_URL}/dashboard-recepcionista`,
 };
