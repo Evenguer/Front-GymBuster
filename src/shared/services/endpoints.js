@@ -129,4 +129,12 @@ export const ENDPOINTS = {
 
   // Dashboard Recepcionista
   DASHBOARD_RECEPCIONISTA: `${BASE_URL}/dashboard-recepcionista`,
+  
+  // Dashboard Admin
+  DASHBOARD_ADMIN: `${BASE_URL}/dashboard-admin`,
+  DASHBOARD_ADMIN_ESTADISTICAS_VENTAS: `${BASE_URL}/dashboard-admin/estadisticas-ventas`,
+  DASHBOARD_ADMIN_ESTADISTICAS_CLIENTES: `${BASE_URL}/dashboard-admin/estadisticas-clientes`,
+  DASHBOARD_ADMIN_PRODUCTOS_BAJO_STOCK: `${BASE_URL}/dashboard-admin/productos-bajo-stock`,
+  DASHBOARD_ADMIN_ACTIVIDADES_RECIENTES: `${BASE_URL}/dashboard-admin/actividades-recientes`,
+  DASHBOARD_ADMIN_HORARIOS_HOY: `${BASE_URL}/dashboard-admin/horarios-hoy`,
 };
