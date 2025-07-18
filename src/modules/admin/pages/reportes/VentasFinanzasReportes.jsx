@@ -30,7 +30,12 @@ import {
 import reporteVentasAPI from '../../../../shared/services/reporteVentasAPI';
 
 const formatoPeso = (valor) => {
-  return `S/ ${valor.toLocaleString('es-PE')}`;
+  // Redondear a 2 decimales para moneda peruana
+  const valorRedondeado = Math.round(valor * 100) / 100;
+  return `S/ ${valorRedondeado.toLocaleString('es-PE', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
 };
 
 // Función para exportar el reporte actual como PDF
@@ -204,12 +209,15 @@ const ReportesVentasFinanzas = () => {
         analisisRentabilidad: Array.isArray(datosBackend.rentabilidad?.rentabilidadProductos) && datosBackend.rentabilidad.rentabilidadProductos.length > 0
           ? datosBackend.rentabilidad.rentabilidadProductos.map(rent => ({
               producto: rent.nombreProducto || 'Producto sin nombre',
-              costo: parseFloat(rent.costos) || 0,
-              precio: parseFloat(rent.ingresos) || 0,
-              margen: parseFloat(rent.margenPorcentaje) || 0
+              costo: parseFloat(rent.precioCompra) || 0,      // Precio unitario de compra
+              precio: parseFloat(rent.precioVenta) || 0,      // Precio unitario de venta
+              margen: parseFloat(rent.margenPorcentaje) || 0,
+              ingresosTotales: parseFloat(rent.ingresos) || 0, // Total de ingresos calculado
+              costosTotales: parseFloat(rent.costos) || 0,     // Total de costos calculado
+              cantidadVendida: parseInt(rent.cantidadVendida) || 0 // Cantidad vendida
             }))
           : [
-              { producto: 'Sin datos', costo: 0, precio: 0, margen: 0 }
+              { producto: 'Sin datos', costo: 0, precio: 0, margen: 0, ingresosTotales: 0, costosTotales: 0, cantidadVendida: 0 }
             ],
         
         // Métricas adicionales
@@ -273,7 +281,7 @@ const ReportesVentasFinanzas = () => {
           { mes: 'Marzo', ventas: 0 }
         ],
         analisisRentabilidad: [
-          { producto: 'Sin datos', costo: 0, precio: 0, margen: 0 }
+          { producto: 'Sin datos', costo: 0, precio: 0, margen: 0, ingresosTotales: 0, costosTotales: 0, cantidadVendida: 0 }
         ]
       };
     }
@@ -372,9 +380,6 @@ const ReportesVentasFinanzas = () => {
     value: item.valor
   }));
 
-  // Calcular el total correcto para porcentajes de categorías
-  const totalCategorias = datosFinancieros.ventasPorCategoria.reduce((sum, item) => sum + item.valor, 0);
-  
   // Ajustar el desglose para que coincida con ingresos totales
   const totalDesglose = datosGraficaDesglose.reduce((sum, item) => sum + item.value, 0);
   const factorAjuste = totalDesglose > 0 ? datosFinancieros.ingresosTotales / totalDesglose : 1;
@@ -385,10 +390,11 @@ const ReportesVentasFinanzas = () => {
     value: Math.round(item.value * factorAjuste * 100) / 100
   }));
 
-  const datosGraficaCategorias = datosFinancieros.ventasPorCategoria.map(item => ({
-    name: item.categoria,
-    value: item.valor
-  }));
+  // Usar los mismos datos ajustados para ambos gráficos (consistencia total)
+  const datosGraficaCategorias = datosGraficaDesgloseAjustado;
+
+  // Calcular el total correcto para porcentajes de categorías (usar datos consistentes)
+  const totalCategorias = datosGraficaCategorias.reduce((sum, item) => sum + item.value, 0);
 
   const datosTendencia = datosFinancieros.tendenciaVentas.map(item => ({
     date: item.mes,
