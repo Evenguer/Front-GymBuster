@@ -27,7 +27,7 @@ import {
   PieChart,
   AlertTriangle
 } from 'react-feather';
-import { obtenerDatosFinancieros } from '../../services/reportes/reportesFinancierosAPI';
+import reporteVentasAPI from '../../../../shared/services/reporteVentasAPI';
 
 const formatoPeso = (valor) => {
   return `S/ ${valor.toLocaleString('es-PE')}`;
@@ -121,18 +121,182 @@ const ReportesVentasFinanzas = () => {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [recargando, setRecargando] = useState(false);
-    const cargarDatos = async (periodoParam = periodo) => {
+
+  // Función para transformar los datos del backend al formato esperado por los gráficos
+  const transformarDatosParaGraficos = (datosBackend) => {
+    try {
+      console.log('Transformando datos del backend:', datosBackend);
+      
+      const datos = {
+        periodo: datosBackend.periodo || 'mensual',
+        
+        // Ingresos totales
+        ingresosTotales: datosBackend.ingresosTotales?.ingresosTotales || 0,
+        ingresosEsteMes: datosBackend.ingresosTotales?.ingresosEsteMes || 0,
+        
+        // Crecimiento
+        porcentajeCrecimiento: datosBackend.crecimiento?.porcentajeCrecimiento || 0,
+        tendencia: datosBackend.crecimiento?.tendencia || 'neutral',
+        tieneHistorial: datosBackend.crecimiento?.tieneHistorial || false,
+        mensajeComparativa: datosBackend.crecimiento?.mensaje || 'Sin datos de comparación',
+        fechaPrimeraVenta: datosBackend.crecimiento?.fechaPrimeraVenta || null,
+        
+        // Comparativa mensual
+        comparativaMensual: Array.isArray(datosBackend.crecimiento?.comparativaMensual) && datosBackend.crecimiento.comparativaMensual.length > 0
+          ? datosBackend.crecimiento.comparativaMensual.map(comp => ({
+              mes: comp.nombreMes || comp.mes || 'Mes',
+              cambio: comp.porcentajeCrecimiento || 0,
+              positivo: (comp.porcentajeCrecimiento || 0) >= 0,
+              ventasActuales: parseFloat(comp.ventasActuales) || 0,
+              ventasAnteriores: parseFloat(comp.ventasAnteriores) || 0
+            }))
+          : [],
+        
+        // Transacciones
+        totalTransacciones: datosBackend.totalTransacciones?.totalTransacciones || 0,
+        ticketPromedio: datosBackend.totalTransacciones?.ticketPromedio || 0,
+        
+        // Datos para gráficos - Verificar si los arrays existen y tienen datos
+        datosDesglosados: Array.isArray(datosBackend.analisisCategoria?.ventasPorCategoria) && datosBackend.analisisCategoria.ventasPorCategoria.length > 0
+          ? datosBackend.analisisCategoria.ventasPorCategoria.map(cat => ({
+              categoria: cat.categoria || cat.nombre || 'Sin categoría',
+              valor: parseFloat(cat.totalVentas) || 0
+            }))
+          : [
+              { categoria: 'Productos', valor: 0 },
+              { categoria: 'Servicios', valor: 0 },
+              { categoria: 'Membresías', valor: 0 }
+            ],
+        
+        ventasPorCategoria: Array.isArray(datosBackend.analisisCategoria?.ventasPorCategoria) && datosBackend.analisisCategoria.ventasPorCategoria.length > 0
+          ? datosBackend.analisisCategoria.ventasPorCategoria.map(cat => ({
+              categoria: cat.categoria || cat.nombre || 'Sin categoría',
+              valor: parseFloat(cat.totalVentas) || 0,
+              porcentaje: parseFloat(cat.porcentajeContribucion) || 0
+            }))
+          : [
+              { categoria: 'Productos', valor: 0, porcentaje: 0 },
+              { categoria: 'Servicios', valor: 0, porcentaje: 0 },
+              { categoria: 'Membresías', valor: 0, porcentaje: 0 }
+            ],
+        
+        productosMasVendidos: Array.isArray(datosBackend.productosMasVendidos?.top10Productos) && datosBackend.productosMasVendidos.top10Productos.length > 0
+          ? datosBackend.productosMasVendidos.top10Productos.map(prod => ({
+              nombre: prod.nombreProducto || 'Producto sin nombre',
+              unidades: parseInt(prod.cantidadVendida) || 0,
+              ingresos: parseFloat(prod.totalVentas) || 0
+            }))
+          : [
+              { nombre: 'Sin datos', unidades: 0, ingresos: 0 }
+            ],
+        
+        tendenciaVentas: Array.isArray(datosBackend.tendencias?.evolucionVentas) && datosBackend.tendencias.evolucionVentas.length > 0
+          ? datosBackend.tendencias.evolucionVentas.map(ev => ({
+              mes: ev.nombreMes || ev.mes || 'Mes',
+              ventas: parseFloat(ev.totalVentas) || 0
+            }))
+          : [
+              { mes: 'Enero', ventas: 0 },
+              { mes: 'Febrero', ventas: 0 },
+              { mes: 'Marzo', ventas: 0 }
+            ],
+        
+        analisisRentabilidad: Array.isArray(datosBackend.rentabilidad?.rentabilidadProductos) && datosBackend.rentabilidad.rentabilidadProductos.length > 0
+          ? datosBackend.rentabilidad.rentabilidadProductos.map(rent => ({
+              producto: rent.nombreProducto || 'Producto sin nombre',
+              costo: parseFloat(rent.costos) || 0,
+              precio: parseFloat(rent.ingresos) || 0,
+              margen: parseFloat(rent.margenPorcentaje) || 0
+            }))
+          : [
+              { producto: 'Sin datos', costo: 0, precio: 0, margen: 0 }
+            ],
+        
+        // Métricas adicionales
+        prediccionProximoMes: datosBackend.tendencias?.prediccion?.prediccionProximoMes || 0,
+        prediccionesMeses: Array.isArray(datosBackend.tendencias?.prediccion?.prediccionesMeses) && datosBackend.tendencias.prediccion.prediccionesMeses.length > 0
+          ? datosBackend.tendencias.prediccion.prediccionesMeses.map(pred => ({
+              mes: pred.mes || 'Mes',
+              prediccion: parseFloat(pred.prediccion) || 0,
+              confianza: pred.confianza || 'Baja',
+              tendencia: pred.tendencia || 'Estable'
+            }))
+          : [
+              { mes: 'Agosto', prediccion: 0, confianza: 'Baja', tendencia: 'Estable' },
+              { mes: 'Septiembre', prediccion: 0, confianza: 'Baja', tendencia: 'Estable' },
+              { mes: 'Octubre', prediccion: 0, confianza: 'Baja', tendencia: 'Estable' }
+            ],
+        confiabilidadPrediccion: datosBackend.tendencias?.prediccion?.confiabilidad || 'Muy Baja',
+        analisisTendencia: datosBackend.tendencias?.analisisTendencia || 'Sin datos',
+        margenBruto: datosBackend.rentabilidad?.resumenRentabilidad?.margenBruto || 0,
+        utilidadBruta: datosBackend.rentabilidad?.resumenRentabilidad?.utilidadBruta || 0
+      };
+      
+      console.log('Datos transformados:', datos);
+      return datos;
+    } catch (error) {
+      console.error('Error al transformar datos:', error);
+      return {
+        periodo: 'mensual',
+        ingresosTotales: 0,
+        ingresosEsteMes: 0,
+        porcentajeCrecimiento: 0,
+        tendencia: 'neutral',
+        tieneHistorial: false,
+        mensajeComparativa: 'Sin datos disponibles',
+        fechaPrimeraVenta: null,
+        comparativaMensual: [],
+        prediccionesMeses: [
+          { mes: 'Agosto', prediccion: 0, confianza: 'Muy Baja', tendencia: 'Estable' },
+          { mes: 'Septiembre', prediccion: 0, confianza: 'Muy Baja', tendencia: 'Estable' },
+          { mes: 'Octubre', prediccion: 0, confianza: 'Muy Baja', tendencia: 'Estable' }
+        ],
+        confiabilidadPrediccion: 'Muy Baja',
+        totalTransacciones: 0,
+        ticketPromedio: 0,
+        datosDesglosados: [
+          { categoria: 'Productos', valor: 0 },
+          { categoria: 'Servicios', valor: 0 },
+          { categoria: 'Membresías', valor: 0 }
+        ],
+        ventasPorCategoria: [
+          { categoria: 'Productos', valor: 0, porcentaje: 0 },
+          { categoria: 'Servicios', valor: 0, porcentaje: 0 },
+          { categoria: 'Membresías', valor: 0, porcentaje: 0 }
+        ],
+        productosMasVendidos: [
+          { nombre: 'Sin datos', unidades: 0, ingresos: 0 }
+        ],
+        tendenciaVentas: [
+          { mes: 'Enero', ventas: 0 },
+          { mes: 'Febrero', ventas: 0 },
+          { mes: 'Marzo', ventas: 0 }
+        ],
+        analisisRentabilidad: [
+          { producto: 'Sin datos', costo: 0, precio: 0, margen: 0 }
+        ]
+      };
+    }
+  };
+  const cargarDatos = async (periodoParam = periodo) => {
     if (!recargando) setRecargando(true);
     if (!cargando) setCargando(true);
     setError(null);
     
     try {
-      const datos = await obtenerDatosFinancieros(periodoParam);
-      setDatosFinancieros(datos);
-      console.log('Datos financieros cargados correctamente');
+      console.log(`Cargando datos financieros para período: ${periodoParam}`);
+      
+      // Obtener todos los datos usando el nuevo API
+      const datos = await reporteVentasAPI.obtenerDatosCompletos(periodoParam);
+      
+      // Transformar los datos para que coincidan con el formato esperado por los gráficos
+      const datosTransformados = transformarDatosParaGraficos(datos);
+      
+      setDatosFinancieros(datosTransformados);
+      console.log('Datos financieros cargados correctamente:', datosTransformados);
     } catch (error) {
       console.error('Error al cargar datos financieros:', error);
-      setError('Ocurrió un error al cargar los datos. Por favor intente nuevamente.');
+      setError(`Error al cargar los datos: ${error.message}`);
     } finally {
       setCargando(false);
       setRecargando(false);
@@ -202,9 +366,23 @@ const ReportesVentasFinanzas = () => {
   }
 
   // Datos para gráficos
+  // Datos para gráficos con ajuste proporcional para el desglose
   const datosGraficaDesglose = datosFinancieros.datosDesglosados.map(item => ({
     name: item.categoria,
     value: item.valor
+  }));
+
+  // Calcular el total correcto para porcentajes de categorías
+  const totalCategorias = datosFinancieros.ventasPorCategoria.reduce((sum, item) => sum + item.valor, 0);
+  
+  // Ajustar el desglose para que coincida con ingresos totales
+  const totalDesglose = datosGraficaDesglose.reduce((sum, item) => sum + item.value, 0);
+  const factorAjuste = totalDesglose > 0 ? datosFinancieros.ingresosTotales / totalDesglose : 1;
+  
+  // Aplicar ajuste proporcional al desglose
+  const datosGraficaDesgloseAjustado = datosGraficaDesglose.map(item => ({
+    name: item.name,
+    value: Math.round(item.value * factorAjuste * 100) / 100
   }));
 
   const datosGraficaCategorias = datosFinancieros.ventasPorCategoria.map(item => ({
@@ -331,7 +509,9 @@ const ReportesVentasFinanzas = () => {
                     <TrendingUp size={28} className="text-emerald-500" />
                     <div>
                       <Text>Crecimiento vs. Periodo Anterior</Text>
-                      <Metric>+8.2%</Metric>
+                      <Metric className={datosFinancieros.porcentajeCrecimiento >= 0 ? 'text-emerald-500' : 'text-red-500'}>
+                        {datosFinancieros.porcentajeCrecimiento >= 0 ? '+' : ''}{datosFinancieros.porcentajeCrecimiento?.toFixed(1)}%
+                      </Metric>
                     </div>
                   </Flex>
                 </Card>
@@ -341,7 +521,7 @@ const ReportesVentasFinanzas = () => {
                     <ShoppingBag size={28} className="text-amber-500" />
                     <div>
                       <Text>Total de Transacciones</Text>
-                      <Metric>862</Metric>
+                      <Metric>{datosFinancieros.totalTransacciones?.toLocaleString('es-PE') || '0'}</Metric>
                     </div>
                   </Flex>
                 </Card>
@@ -351,7 +531,7 @@ const ReportesVentasFinanzas = () => {
               <Title>Desglose de Ingresos</Title>
               <Text>Distribución de ingresos por tipo de operación</Text>
               <DonutChart
-                data={datosGraficaDesglose}
+                data={datosGraficaDesgloseAjustado}
                 category="value"
                 index="name"
                 valueFormatter={formatoPeso}
@@ -393,7 +573,7 @@ const ReportesVentasFinanzas = () => {
                   data={datosGraficaCategorias}
                   category="value"
                   index="name"
-                  valueFormatter={(value) => `${((value / datosFinancieros.ingresosTotales) * 100).toFixed(1)}%`}
+                  valueFormatter={(value) => `${((value / totalCategorias) * 100).toFixed(1)}%`}
                   colors={["indigo", "violet", "emerald", "amber"]}
                   className="h-60 mt-6"
                 />
@@ -406,10 +586,10 @@ const ReportesVentasFinanzas = () => {
                   <div key={index} className="mt-4">
                     <Flex>
                       <Text>{item.categoria}</Text>
-                      <Text>{Math.round((item.valor / datosFinancieros.ingresosTotales) * 100)}%</Text>
+                      <Text>{Math.round((item.valor / totalCategorias) * 100)}%</Text>
                     </Flex>
                     <ProgressBar
-                      value={(item.valor / datosFinancieros.ingresosTotales) * 100}
+                      value={(item.valor / totalCategorias) * 100}
                       color={["indigo", "violet", "emerald", "amber"][index % 4]}
                       className="mt-2"
                     />
@@ -489,40 +669,130 @@ const ReportesVentasFinanzas = () => {
               <Card>
                 <Title>Comparativa con Periodo Anterior</Title>
                 <Text>Diferencia porcentual respecto al periodo anterior</Text>
-                <div className="mt-6">
-                  {[
-                    { mes: "Febrero", cambio: "+6.7%", positivo: true },
-                    { mes: "Marzo", cambio: "-12.5%", positivo: false },
-                    { mes: "Abril", cambio: "+25.0%", positivo: true },
-                    { mes: "Mayo", cambio: "+11.4%", positivo: true },
-                    { mes: "Junio", cambio: "+7.7%", positivo: true }
-                  ].map((item, index) => (
-                    <div key={index} className="mb-4 flex items-center justify-between">
-                      <Text>{item.mes}</Text>
-                      <Text className={`font-medium ${item.positivo ? 'text-emerald-500' : 'text-red-500'}`}>
-                        {item.cambio}
-                      </Text>
+                
+                {datosFinancieros?.tieneHistorial ? (
+                  <div className="mt-6">
+                    {datosFinancieros.comparativaMensual.length > 0 ? (
+                      datosFinancieros.comparativaMensual.map((item, index) => (
+                        <div key={index} className="mb-4 flex items-center justify-between">
+                          <Text>{item.mes}</Text>
+                          <div className="text-right">
+                            <Text className={`font-medium ${item.positivo ? 'text-emerald-500' : 'text-red-500'}`}>
+                              {item.positivo ? '+' : ''}{item.cambio.toFixed(1)}%
+                            </Text>
+                            <Text className="text-xs text-gray-500">
+                              ${formatoPeso(item.ventasActuales)} vs ${formatoPeso(item.ventasAnteriores)}
+                            </Text>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="mt-6 text-center py-8">
+                        <Text className="text-gray-500">
+                          Datos de comparación en proceso de cálculo
+                        </Text>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-6 text-center py-8">
+                    <div className="mb-4">
+                      <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
                     </div>
-                  ))}
-                </div>
+                    <Text className="text-gray-600 font-medium mb-2">
+                      {datosFinancieros?.mensajeComparativa || 'Sin datos de comparación disponibles'}
+                    </Text>
+                    {datosFinancieros?.fechaPrimeraVenta && (
+                      <Text className="text-sm text-gray-500">
+                        Primera venta registrada: {new Date(datosFinancieros.fechaPrimeraVenta).toLocaleDateString('es-ES')}
+                      </Text>
+                    )}
+                    <Text className="text-sm text-gray-500 mt-2">
+                      Se necesitan datos de al menos 2 períodos para mostrar comparativas
+                    </Text>
+                  </div>
+                )}
               </Card>
 
               <Card>
                 <Title>Predicción Próximo Periodo</Title>
                 <Text>Proyección de ventas para los próximos meses</Text>
-                <LineChart
-                  data={[
-                    ...datosTendencia,
-                    { date: "Jul", "Ventas": 45000 },
-                    { date: "Ago", "Ventas": 48000 },
-                    { date: "Sep", "Ventas": 52000 }
-                  ]}
-                  index="date"
-                  categories={["Ventas"]}
-                  colors={["indigo"]}
-                  valueFormatter={formatoPeso}
-                  className="h-60 mt-6"
-                />
+                
+                {datosFinancieros?.prediccionesMeses && datosFinancieros.prediccionesMeses.length > 0 ? (
+                  <div>
+                    {/* Información de confiabilidad */}
+                    <div className="mt-4 mb-6 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <Text className="text-sm font-medium">Confiabilidad de la predicción:</Text>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          datosFinancieros.confiabilidadPrediccion === 'Alta' ? 'bg-green-100 text-green-800' :
+                          datosFinancieros.confiabilidadPrediccion === 'Media' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {datosFinancieros.confiabilidadPrediccion}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Predicciones detalladas */}
+                    <div className="mb-6 space-y-3">
+                      {datosFinancieros.prediccionesMeses.map((prediccion, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                          <div>
+                            <Text className="font-medium">{prediccion.mes}</Text>
+                            <Text className="text-xs text-gray-500">{prediccion.tendencia}</Text>
+                          </div>
+                          <div className="text-right">
+                            <Text className="font-semibold text-blue-600">
+                              {formatoPeso(prediccion.prediccion)}
+                            </Text>
+                            <Text className={`text-xs ${
+                              prediccion.confianza === 'Alta' ? 'text-green-600' :
+                              prediccion.confianza === 'Media' ? 'text-yellow-600' :
+                              'text-red-600'
+                            }`}>
+                              Confianza: {prediccion.confianza}
+                            </Text>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Gráfico de predicción */}
+                    <LineChart
+                      data={[
+                        ...datosTendencia,
+                        ...datosFinancieros.prediccionesMeses.map(pred => ({
+                          date: pred.mes.substring(0, 3),
+                          "Ventas": pred.prediccion,
+                          "Predicción": pred.prediccion
+                        }))
+                      ]}
+                      index="date"
+                      categories={["Ventas", "Predicción"]}
+                      colors={["indigo", "amber"]}
+                      valueFormatter={formatoPeso}
+                      className="h-60 mt-4"
+                      connectNulls={false}
+                    />
+                  </div>
+                ) : (
+                  <div className="mt-6 text-center py-8">
+                    <div className="mb-4">
+                      <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    </div>
+                    <Text className="text-gray-600 font-medium mb-2">
+                      Predicciones no disponibles
+                    </Text>
+                    <Text className="text-sm text-gray-500">
+                      Se necesitan al menos 2 meses de datos históricos para generar predicciones confiables
+                    </Text>
+                  </div>
+                )}
               </Card>
             </Grid>
             </div>
