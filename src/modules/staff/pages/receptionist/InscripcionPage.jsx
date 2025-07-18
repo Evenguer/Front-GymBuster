@@ -9,15 +9,14 @@ import {
   TableHeaderCell,
   TableBody,
   TableCell,
-  Button,
-  TextInput,
-  Title,
-  Flex,
-  Text,
-  SearchSelect,
-  SearchSelectItem,
   NumberInput,
-  DatePicker
+  DatePicker,
+  Title,
+  Text,
+  TextInput,
+  Button,
+  SearchSelect,
+  SearchSelectItem
 } from '@tremor/react';
 import { 
   Search, 
@@ -145,7 +144,6 @@ const InscripcionPage = () => {
       if (cliente) {
         setClienteEncontrado(cliente);
         setFormData(prev => ({ ...prev, idCliente: cliente.id }));
-        setPasoActual(2); // Avanzar al paso de selección de plan
         showSnackbar('Cliente encontrado exitosamente', 'success');
       } else {
         setFormErrors({ dni: 'No se encontró un cliente con ese DNI' });
@@ -231,13 +229,22 @@ const InscripcionPage = () => {
     try {
       setLoading(true);
       
+      // Formatear fecha de inicio como YYYY-MM-DD en local, forzando hora 00:00:00
+      const formatDateLocal = (date) => {
+        if (!(date instanceof Date)) return date;
+        // Forzar hora local a 00:00:00 para evitar desfase
+        const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+        const year = localDate.getFullYear();
+        const month = String(localDate.getMonth() + 1).padStart(2, '0');
+        const day = String(localDate.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
       const inscripcionData = {
         idCliente: formData.idCliente,
         idPlan: formData.idPlan,
         idInstructor: formData.idInstructor,
-        fechaInicio: formData.fechaInicio instanceof Date 
-          ? formData.fechaInicio.toISOString().split('T')[0]
-          : formData.fechaInicio,
+        fechaInicio: formatDateLocal(formData.fechaInicio),
         monto: formData.monto
       };
 
@@ -250,7 +257,16 @@ const InscripcionPage = () => {
       showSnackbar('Inscripción registrada exitosamente', 'success');
     } catch (error) {
       console.error('Error al registrar inscripción:', error);
-      showSnackbar(error.message || 'Error al registrar la inscripción', 'error');
+      // Manejar diferentes tipos de errores
+      let errorMessage;
+      if (error.response?.data?.message === '[object Object]' || 
+          error.message?.includes('[object Object]') ||
+          error.response?.data?.error === 'El cliente ya tiene una inscripción activa') {
+        errorMessage = 'Este cliente ya tiene una inscripción activa';
+      } else {
+        errorMessage = error.message || 'Error al registrar la inscripción';
+      }
+      showSnackbar(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -429,7 +445,14 @@ const InscripcionPage = () => {
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
-        <Title>Registro de Inscripción</Title>
+        
+
+        <div className="flex flex-col items-start">
+          <h1 className="text-2xl font-bold text-gray-900">Nueva Inscripción</h1>
+          <p className="text-gray-500 mt-1">Registra una nueva inscripción</p>
+        </div>
+                  
+                  
         {pasoActual > 1 && pasoActual < 7 && (
           <div className="flex gap-2">
             {pasoActual !== 6 && (
@@ -462,47 +485,91 @@ const InscripcionPage = () => {
         </Alert>
       )}
 
-      {/* Paso 1: Búsqueda de Cliente */}
+      {/* Paso 1: Búsqueda de Cliente (diseño igual a AlquilerPage.jsx) */}
       {pasoActual === 1 && (
         <Card className="mb-6 shadow-sm">
           <Title className="mb-4 flex items-center">
             <User size={20} className="mr-2 text-red-600" />
-            <span>Buscar Cliente</span>
+            <span>Datos del Cliente</span>
           </Title>
-          
-          <div className="mb-5 p-4 bg-gray-50 rounded-lg">
-            <Text className="mb-2 font-medium">Buscar cliente por DNI</Text>
-            <div className="flex gap-2">
-              <TextInput
-                placeholder="Ingrese DNI del cliente"
-                value={dni}
-                onChange={(e) => setDni(e.target.value)}
-                error={!!formErrors.dni}
-                errorMessage={formErrors.dni}
-                icon={User}
-                className="flex-1 bg-white"
-                onKeyPress={(e) => e.key === 'Enter' && buscarClientePorDNI()}
-              />
-              <Button 
-                onClick={buscarClientePorDNI} 
-                disabled={loading || !dni.trim()}
-                loading={loading}
-                icon={Search}
-                className="bg-red-600 hover:bg-red-700 text-white"
+          <div className="mb-5">
+            <Text className="mb-2 font-medium">Busca y selecciona el cliente para la inscripción</Text>
+            <form
+              className="flex flex-col sm:flex-row gap-2"
+              onSubmit={e => {
+                e.preventDefault();
+                if (!dni.trim()) return;
+                buscarClientePorDNI();
+              }}
+            >
+              <div className="flex-1 relative">
+                <TextInput
+                  placeholder="Ingrese DNI del cliente"
+                  value={dni}
+                  onChange={e => {
+                    const value = e.target.value;
+                    // Permitir pegar, pero solo aceptar números y máximo 8 dígitos
+                    if (/^\d{0,8}$/.test(value)) setDni(value);
+                  }}
+                  maxLength={8}
+                  icon={User}
+                  className="pr-8 bg-white"
+                  error={!!formErrors.dni}
+                  errorMessage={formErrors.dni}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (!dni.trim()) return;
+                      buscarClientePorDNI();
+                    }
+                    // Ya no se bloquean otros caracteres para permitir pegar
+                  }}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                />
+                {dni && (
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                    onClick={() => setDni('')}
+                    aria-label="Limpiar filtro DNI"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+                <Button 
+                  type="submit"
+                  icon={Search}
+                  disabled={loading || !dni.trim()}
+                  loading={loading}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Buscar
+                </Button>
+            </form>
+          </div>
+          <>
+            {clienteEncontrado && (
+              <div className="mb-4 p-3 border border-green-200 bg-green-50 rounded flex items-center gap-2">
+                <CheckCircle className="text-green-600" size={18} />
+                <Text>
+                  Cliente encontrado: <strong>{clienteEncontrado.nombreCompleto}</strong> (DNI: {clienteEncontrado.dni})
+                </Text>
+              </div>
+            )}
+            <div className="mt-4">
+              <Button
+                className="bg-red-600 hover:bg-red-700 text-white w-full py-2 text-sm font-medium rounded-lg shadow-sm"
+                icon={CheckCircle}
+                onClick={() => setPasoActual(2)}
+                size="lg"
+                disabled={!clienteEncontrado}
               >
-                Buscar
+                Crear Inscripción
               </Button>
             </div>
-          </div>
-          
-          {clienteEncontrado && (
-            <div className="mb-4 p-3 border border-green-200 bg-green-50 rounded">
-              <Text>
-                <CheckCircle className="inline-block mr-2 text-green-600" size={16} /> 
-                Cliente encontrado: <strong>{clienteEncontrado.nombreCompleto}</strong> (DNI: {clienteEncontrado.dni})
-              </Text>
-            </div>
-          )}
+          </>
         </Card>
       )}
 
@@ -864,7 +931,10 @@ const InscripcionPage = () => {
             </div>
             
             <Button 
-              onClick={reiniciarFormulario}
+              onClick={() => {
+                reiniciarFormulario();
+                showSnackbar('Listo para registrar una nueva inscripción', 'info');
+              }}
               className="bg-red-600 hover:bg-red-700 text-white"
               size="lg"
             >
@@ -874,15 +944,24 @@ const InscripcionPage = () => {
         </Card>
       )}
       
+      {/* Notificaciones arriba, igual que en AlquilerPage.jsx */}
       <Snackbar 
         open={openSnackbar} 
         autoHideDuration={5000} 
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} variant="filled">
-          {snackbarMessage}
-        </Alert>
+        {/* Patrón verde para success y para el mensaje especial de info */}
+        {(snackbarSeverity === 'success' || snackbarMessage === 'Listo para registrar una nueva inscripción') ? (
+          <div className="flex items-center gap-2 p-4 bg-green-50 border border-green-200 rounded-lg shadow text-green-700 font-medium min-w-[300px]">
+            <CheckCircle className="text-green-600" />
+            <span className="text-green-700 font-medium">{snackbarMessage}</span>
+          </div>
+        ) : (
+          <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} variant="filled">
+            {snackbarMessage}
+          </Alert>
+        )}
       </Snackbar>
     </div>
   );

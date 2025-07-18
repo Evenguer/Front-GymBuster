@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { alquilerAPI } from '../../services/alquilerAPI';
 import { ESTADO_ALQUILER, ESTADO_ALQUILER_INFO } from '../../constants/alquilerEstados';
+import { DatePicker, TextInput } from '@tremor/react';
 import {
   Card,
   Title,
@@ -69,6 +70,15 @@ const ListaAlquileresPage = () => {
   const [detalleAlquiler, setDetalleAlquiler] = useState(null);
   const [modalDetalle, setModalDetalle] = useState(false);
 
+  // Filtros
+  const [filtroNombre, setFiltroNombre] = useState('');
+  const [filtroFecha, setFiltroFecha] = useState(() => {
+    // Por defecto, la fecha actual (Lima, Perú)
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    return hoy;
+  });
+
   const cargarAlquileres = async () => {
     try {
       setLoading(true);
@@ -99,24 +109,29 @@ const ListaAlquileresPage = () => {
       
       // Formatear los datos para mostrarlos en la tabla
       const alquileresFormateados = response.map(alquiler => {
-        // Normalizar las fechas
-        const fechaInicio = alquiler.fechaInicio ? new Date(alquiler.fechaInicio) : null;
-        const fechaFin = alquiler.fechaFin ? new Date(alquiler.fechaFin) : null;
-        
-        if (fechaInicio) fechaInicio.setHours(12, 0, 0, 0);
-        if (fechaFin) fechaFin.setHours(12, 0, 0, 0);
-        
+        // Normalizar las fechas a medianoche local y sumar +1 día para corregir desfase
+        let fechaInicio = alquiler.fechaInicio ? new Date(alquiler.fechaInicio) : null;
+        let fechaFin = alquiler.fechaFin ? new Date(alquiler.fechaFin) : null;
+        if (fechaInicio) {
+          fechaInicio.setHours(0, 0, 0, 0);
+          fechaInicio.setDate(fechaInicio.getDate() + 1);
+        }
+        if (fechaFin) {
+          fechaFin.setHours(0, 0, 0, 0);
+          fechaFin.setDate(fechaFin.getDate() + 1);
+        }
+
         // Calcular días solo si ambas fechas son válidas
         const diasAlquiler = (fechaInicio && fechaFin) ? 
           calcularDiasAlquiler(
             format(fechaInicio, 'yyyy-MM-dd'),
             format(fechaFin, 'yyyy-MM-dd')
           ) : 1;
-        
+
         // Determinar si hay devolución pendiente
         const tienePiezasPendientes = Array.isArray(alquiler.detalles) && 
           alquiler.detalles.some(detalle => !detalle.devuelto);
-        
+
         return {
           idAlquiler: alquiler.idAlquiler,
           cliente: `${alquiler.clienteNombre} ${alquiler.clienteApellido}`,
@@ -175,9 +190,11 @@ const ListaAlquileresPage = () => {
       const estaVencido = alquiler.fechaFinObj && new Date() > alquiler.fechaFinObj && 
                          alquiler.estado === ESTADO_ALQUILER.ACTIVO;
 
-      // Usar los datos existentes
+      // Usar los datos existentes, manteniendo el formato de fecha de la tabla
       const detalleValidado = {
         ...alquiler,
+        fechaInicio: alquiler.fechaInicio,  // Usar la fecha ya formateada de la tabla
+        fechaFin: alquiler.fechaFin,        // Usar la fecha ya formateada de la tabla
         detalles: alquiler.detalles || [],
         pagado: alquiler.idPago != null,
         estaVencido: estaVencido
@@ -300,14 +317,11 @@ const ListaAlquileresPage = () => {
         return 'Fecha inválida';
       }
       
-      // Sumar un día para corregir el problema de zona horaria que muestra un día anterior
-      fecha.setDate(fecha.getDate() + 1);
-      
-      // Normalizar la fecha a mediodía para evitar problemas de zona horaria
-      fecha.setHours(12, 0, 0, 0);
+      // Normalizar la fecha a medianoche local para evitar problemas de zona horaria
+      fecha.setHours(0, 0, 0, 0);
       
       console.log('Fecha original:', fechaStr);
-      console.log('Fecha corregida (+1 día):', fecha);
+      console.log('Fecha normalizada:', fecha);
       
       return format(fecha, 'dd/MM/yyyy', { locale: es });
     } catch (error) {
@@ -431,42 +445,126 @@ const ListaAlquileresPage = () => {
     }
   }, [detalleAlquiler]);
   
+  // --- FILTRADO ---
+  // Filtrar alquileres por nombre y SOLO por la fecha de inicio exacta
+  const alquileresFiltrados = alquileres.filter(alquiler => {
+    const nombreMatch = filtroNombre.trim() === '' || alquiler.cliente.toLowerCase().includes(filtroNombre.trim().toLowerCase());
+    let fechaMatch = true;
+    if (filtroFecha) {
+      const fechaInicio = alquiler.fechaInicioObj;
+      if (fechaInicio) {
+        // Normalizar ambas fechas a 00:00:00 local
+        const filtroDate = new Date(filtroFecha);
+        filtroDate.setHours(0, 0, 0, 0);
+        const inicioDate = new Date(fechaInicio);
+        inicioDate.setHours(0, 0, 0, 0);
+        const filtroStr = format(filtroDate, 'yyyy-MM-dd');
+        const inicioStr = format(inicioDate, 'yyyy-MM-dd');
+        // LOG para depuración de fechas
+        console.log('[DEBUG FILTRO FECHA]', {
+          filtroFecha: filtroDate,
+          filtroStr,
+          fechaInicioObj: inicioDate,
+          inicioStr,
+          resultadoComparacion: filtroStr === inicioStr
+        });
+        fechaMatch = filtroStr === inicioStr;
+      } else {
+        fechaMatch = false;
+      }
+    }
+    return nombreMatch && fechaMatch;
+  });
+
   return (
     <div className="p-4">
       <style>{printStyles}</style>
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Historial de Alquileres</h1>
+          <p className="text-gray-500">Registro de todos los alquileres realizados</p>
+        </div>
+      </div>
       <Card>
-        <Flex justifyContent="between" alignItems="center" className="mb-2">
-          <Title>Historial de alquileres</Title>
-          <Button 
-            onClick={cargarAlquileres} 
-            variant="secondary"
-            size="xs"
-            disabled={loading}
-            className="px-2 py-1"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="animate-spin mr-1" size={14} />
-                Cargando...
-              </>
-            ) : (
-              'Actualizar'
+
+        <div className="flex flex-col sm:flex-row gap-2 mb-4">
+          <div className="flex-1 relative">
+            <TextInput
+              placeholder="Buscar por nombre de cliente..."
+              value={filtroNombre}
+              onChange={e => setFiltroNombre(e.target.value)}
+              className="pr-8"
+            />
+            {filtroNombre && (
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                onClick={() => setFiltroNombre('')}
+                aria-label="Limpiar filtro nombre"
+              >
+                ×
+              </button>
             )}
-          </Button>
-        </Flex>
-        
+          </div>
+          <div className="flex-1 relative flex items-center gap-2">
+            <div className="flex-1 relative">
+              <DatePicker
+                value={filtroFecha}
+                onValueChange={date => {
+                  // No permitir fechas futuras
+                  const hoy = new Date();
+                  hoy.setHours(0, 0, 0, 0);
+                  if (date && date > hoy) return;
+                  setFiltroFecha(date);
+                }}
+                locale={es}
+                className="w-full pr-8"
+                maxDate={new Date()}
+                placeholder="Filtrar por fecha"
+                enableClear={false}
+              />
+              {filtroFecha && (
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                  onClick={() => setFiltroFecha(null)}
+                  aria-label="Limpiar filtro fecha"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            <Button 
+              onClick={cargarAlquileres} 
+              variant="secondary"
+              size="xs"
+              disabled={loading}
+              className="px-2 py-1 whitespace-nowrap"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin mr-1" size={14} />
+                  Cargando...
+                </>
+              ) : (
+                'Actualizar'
+              )}
+            </Button>
+          </div>
+        </div>
+
         <div className="mb-2 bg-gray-50 p-1 rounded text-center">
           <Text className="text-gray-600 text-xs">
             <span className="font-medium">Leyenda:</span> La columna <span className="font-medium">Estado</span> muestra el estado principal del alquiler y el estado de devolución de los productos.
           </Text>
         </div>
-        
+
         {error && (
           <div className="mb-4 p-2 border border-red-200 bg-red-50 rounded">
             <Text className="text-red-600">{error}</Text>
           </div>
         )}
-        
+
         {loading && !alquileres.length ? (
           <div className="flex justify-center items-center py-4">
             <Loader2 className="animate-spin mr-2" size={20} />
@@ -487,14 +585,13 @@ const ListaAlquileresPage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {alquileres.map((alquiler) => {
-                // Obtenemos la información del estado actual
+              {alquileresFiltrados.map((alquiler) => {
+                // ...existing code...
                 const estadoInfo = ESTADO_ALQUILER_INFO[alquiler.estado] || {
                   label: 'Desconocido',
                   color: 'gray'
                 };
-                
-                // Decidimos qué icono mostrar según el estado
+                // ...existing code...
                 let EstadoIcon;
                 switch(alquiler.estado) {
                   case ESTADO_ALQUILER.ACTIVO:
@@ -512,7 +609,7 @@ const ListaAlquileresPage = () => {
                   default:
                     EstadoIcon = null;
                 }
-                
+                // ...existing code...
                 return (
                   <TableRow key={alquiler.idAlquiler} className="[&>*]:p-1 border-t border-gray-100 hover:bg-gray-50">
                     <TableCell className="text-center">{alquiler.idAlquiler}</TableCell>
@@ -540,7 +637,6 @@ const ListaAlquileresPage = () => {
                         >
                           {estadoInfo.label}
                         </Badge>
-                        
                         {/* Estado de devolución dependiendo del estado actual */}
                         {(alquiler.estado === ESTADO_ALQUILER.ACTIVO || 
                           alquiler.estado === ESTADO_ALQUILER.VENCIDO) && (
@@ -553,7 +649,6 @@ const ListaAlquileresPage = () => {
                             {alquiler.devolucionPendiente ? 'Por devolver' : 'Devuelto'}
                           </Badge>
                         )}
-                        
                         {/* Si está finalizado, mostrar siempre "Devuelto" */}
                         {alquiler.estado === ESTADO_ALQUILER.FINALIZADO && (
                           <Badge
@@ -565,7 +660,6 @@ const ListaAlquileresPage = () => {
                             Devuelto
                           </Badge>
                         )}
-
                         {/* Si está cancelado, mostrar "No aplica" como estado de devolución */}
                         {alquiler.estado === ESTADO_ALQUILER.CANCELADO && (
                           <Badge
@@ -605,8 +699,7 @@ const ListaAlquileresPage = () => {
                   </TableRow>
                 );
               })}
-              
-              {alquileres.length === 0 && !loading && (
+              {alquileresFiltrados.length === 0 && !loading && (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-4 text-gray-500">
                     No hay alquileres registrados
@@ -632,7 +725,7 @@ const ListaAlquileresPage = () => {
                       alt="Logo Busster Gym" 
                       className="h-16 mx-auto mb-2"
                     />
-                    <Text className="font-bold text-xl">BUSSTER GYM S.A.C</Text>
+                    <Text className="font-bold text-xl">BUSTER GYM S.A.C</Text>
                     <Text className="text-gray-600">R.U.C. 20100100100</Text>
                     <Text className="text-gray-600">Jr. Las Palmeras 123 - Lima</Text>
                     <Text className="text-gray-600">Telf: (01) 123-4567</Text>
@@ -697,11 +790,11 @@ const ListaAlquileresPage = () => {
                   <div className="text-sm space-y-2 border-b pb-4">
                     <div className="grid grid-cols-[auto_1fr] gap-2">
                       <Text className="font-medium">Fecha inicio:</Text>
-                      <Text>{formatearFecha(detalleAlquiler.fechaInicio)}</Text>
+                      <Text>{detalleAlquiler.fechaInicio}</Text>
                     </div>
                     <div className="grid grid-cols-[auto_1fr] gap-2">
                       <Text className="font-medium">Fecha fin:</Text>
-                      <Text>{formatearFecha(detalleAlquiler.fechaFin)}</Text>
+                      <Text>{detalleAlquiler.fechaFin}</Text>
                     </div>
                     <div className="grid grid-cols-[auto_1fr] gap-2">
                       <Text className="font-medium">Cliente:</Text>
@@ -915,12 +1008,16 @@ const ListaAlquileresPage = () => {
                         </Button>
                       )}
                       
-                      {/* Botón para cancelar - Solo en ACTIVO */}
-                      {detalleAlquiler.estado === ESTADO_ALQUILER.ACTIVO && (
+                      {/* Botón para cancelar - Solo en ACTIVO o ACTIVA */}
+                      {(detalleAlquiler.estado === ESTADO_ALQUILER.ACTIVO || detalleAlquiler.estado === 'ACTIVA' || detalleAlquiler.estado === ESTADO_ALQUILER.VENCIDO) && (
                         <Button
                           variant="secondary"
                           color="red"
-                          onClick={() => cambiarEstadoAlquiler(detalleAlquiler.idAlquiler, ESTADO_ALQUILER.CANCELADO)}
+                          onClick={() => {
+                            if (window.confirm('¿Estás seguro de que deseas cancelar este alquiler?')) {
+                              cambiarEstadoAlquiler(detalleAlquiler.idAlquiler, ESTADO_ALQUILER.CANCELADO);
+                            }
+                          }}
                           disabled={loading}
                           className="justify-start"
                         >
@@ -939,17 +1036,18 @@ const ListaAlquileresPage = () => {
                     <div className="flex justify-end space-x-4">
                       <Button
                         variant="secondary"
-                        color="gray"
                         onClick={() => {
                           window.print();
                         }}
                         icon={Printer}
+                        className="border border-gray-400 text-gray-700 bg-transparent hover:bg-gray-100 hover:text-gray-900"
                       >
                         Imprimir comprobante
                       </Button>
                       <Button
-                        variant="primary"
+                        variant="secondary"
                         onClick={cerrarDetalle}
+                        className="border border-gray-400 text-gray-700 bg-transparent hover:bg-gray-100 hover:text-gray-900"
                       >
                         Cerrar
                       </Button>

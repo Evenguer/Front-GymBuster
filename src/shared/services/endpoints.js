@@ -11,6 +11,7 @@ export const ENDPOINTS = {
   VENTAS: {
     LISTAR: `${BASE_URL}/venta/listar`,
     DETALLE: `${BASE_URL}/venta/detalle`,
+    CANCELAR: (id) => `${BASE_URL}/venta/cancelar/${id}`,
   },
   
   // Piezas

@@ -199,7 +199,17 @@ const DashboardRecepcion = () => {
                     }
                   </p>
                   <p className="text-xs text-gray-400">
-                    {new Date(venta.fecha).toLocaleDateString('es-PE')}
+                    {(() => {
+                      // Mostrar la fecha exactamente como viene de la base de datos (YYYY-MM-DD)
+                      if (typeof venta.fecha === 'string' && venta.fecha.length >= 10) {
+                        // Extraer solo la parte de la fecha (YYYY-MM-DD)
+                        const fechaStr = venta.fecha.substring(0, 10);
+                        // Formatear a DD/MM/YYYY para Perú
+                        const [year, month, day] = fechaStr.split('-');
+                        return `${day}/${month}/${year}`;
+                      }
+                      return venta.fecha;
+                    })()}
                   </p>
                 </div>
                 <Badge color="emerald">

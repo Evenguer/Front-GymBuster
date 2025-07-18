@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ventasAPI } from '../../services/ventaAPI';
+
 import {
   Card,
   Table,
@@ -10,8 +11,11 @@ import {
   TableCell,
   Title,
   Text,
-  Button,  Badge,
-  Flex
+  Button,  
+  Badge,
+  Flex,
+  TextInput,
+  DatePicker
 } from '@tremor/react';
 import { 
   Receipt,
@@ -24,21 +28,54 @@ import {
   Calendar,
   AlertCircle,
   Loader2,
-  X
+  X,
+  Filter
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+
+
 const ListaPage = () => {
+  // Fecha actual local (del navegador)
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
   const [ventas, setVentas] = useState([]);
+  const [ventasFiltradas, setVentasFiltradas] = useState([]);
+  const [busqueda, setBusqueda] = useState('');
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(hoy);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [detalleVentaSeleccionada, setDetalleVentaSeleccionada] = useState(null);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [cancelandoVenta, setCancelandoVenta] = useState(false);
+  // Cancelar venta
+  const cancelarVenta = async (idVenta) => {
+    if (!idVenta) return;
+    if (!window.confirm('¿Estás seguro de que deseas cancelar esta venta?')) return;
+    setCancelandoVenta(true);
+    setError(null);
+    try {
+      await ventasAPI.cancelarVenta(idVenta);
+      await cargarVentas();
+      setModalAbierto(false);
+    } catch (err) {
+      setError(err.message || 'Error al cancelar la venta');
+    } finally {
+      setCancelandoVenta(false);
+    }
+  };
 
   useEffect(() => {
     cargarVentas();
-  }, []);  const cargarVentas = async () => {
+  }, []);
+
+  useEffect(() => {
+    filtrarVentas();
+  }, [ventas, busqueda, fechaSeleccionada]);
+
+  const cargarVentas = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -64,30 +101,39 @@ const ListaPage = () => {
           Detalles: venta.detalles
         });
       });
-        const ventasFormateadas = response.map(venta => ({
-        idVenta: venta.idVenta,
-        fecha: venta.fecha,
-        hora: venta.hora,
-        clienteNombre: venta.clienteNombre || 'Sin nombre',
-        clienteApellido: venta.clienteApellido || '',
-        clienteDni: venta.clienteDni || '(Sin DNI)',
-        empleadoNombre: venta.empleadoNombre || '(Empleado no registrado)',
-        empleadoApellido: venta.empleadoApellido || '',
-        empleadoDni: venta.empleadoDni || '(Sin DNI)',
-        total: venta.total || 0,
-        estado: venta.estado,
-        idPago: venta.idPago,
-        vuelto: venta.vuelto || 0,
-        montoPagado: venta.montoPagado || 0,
-        metodoPago: venta.metodoPago || 'No especificado',
-        detalles: (venta.detalles || []).map(detalle => ({
-          idDetalle: detalle.idDetalle,
-          productoNombre: detalle.productoNombre || 'Producto sin nombre',
-          cantidad: detalle.cantidad || 0,
-          precioUnitario: detalle.precioUnitario || 0,
-          subtotal: detalle.subtotal || 0
-        }))
-      }));
+      // Sumar +1 día a la fecha para corregir desfase de zona horaria
+      const ventasFormateadas = response.map(venta => {
+        let fechaAjustada = venta.fecha;
+        if (venta.fecha) {
+          const fechaObj = new Date(venta.fecha);
+          fechaObj.setDate(fechaObj.getDate() + 1);
+          fechaAjustada = fechaObj.toISOString().split('T')[0];
+        }
+        return {
+          idVenta: venta.idVenta,
+          fecha: fechaAjustada,
+          hora: venta.hora,
+          clienteNombre: venta.clienteNombre || 'Sin nombre',
+          clienteApellido: venta.clienteApellido || '',
+          clienteDni: venta.clienteDni || '(Sin DNI)',
+          empleadoNombre: venta.empleadoNombre || '(Empleado no registrado)',
+          empleadoApellido: venta.empleadoApellido || '',
+          empleadoDni: venta.empleadoDni || '(Sin DNI)',
+          total: venta.total || 0,
+          estado: venta.estado,
+          idPago: venta.idPago,
+          vuelto: venta.vuelto || 0,
+          montoPagado: venta.montoPagado || 0,
+          metodoPago: venta.metodoPago || 'No especificado',
+          detalles: (venta.detalles || []).map(detalle => ({
+            idDetalle: detalle.idDetalle,
+            productoNombre: detalle.productoNombre || 'Producto sin nombre',
+            cantidad: detalle.cantidad || 0,
+            precioUnitario: detalle.precioUnitario || 0,
+            subtotal: detalle.subtotal || 0
+          }))
+        };
+      });
 
       console.log('Ventas formateadas:', ventasFormateadas);
       setVentas(ventasFormateadas);
@@ -140,8 +186,6 @@ const ListaPage = () => {
     try {
       if (!fecha) return 'Sin fecha';
       const date = new Date(fecha);
-      // Sumar 1 día
-      date.setDate(date.getDate() + 1);
       return format(date, 'dd/MM/yyyy', { locale: es });
     } catch (error) {
       console.error('Error al formatear fecha:', error);
@@ -268,6 +312,79 @@ const ListaPage = () => {
     };
   }, []);
 
+  const manejarBusqueda = (e) => {
+    const valor = e.target.value;
+    setBusqueda(valor);
+    
+    // Filtrar ventas por búsqueda
+    const ventasFiltradas = ventas.filter(venta => {
+      const nombreCompletoCliente = `${venta.clienteNombre} ${venta.clienteApellido}`.toLowerCase();
+      return (
+        venta.idVenta.toString().includes(valor) ||
+        nombreCompletoCliente.includes(valor.toLowerCase()) ||
+        venta.metodoPago.toLowerCase().includes(valor.toLowerCase())
+      );
+    });
+    
+    setVentasFiltradas(ventasFiltradas);
+  };
+
+  const manejarFechaCambio = (fecha) => {
+    setFechaSeleccionada(fecha);
+    
+    if (!fecha) {
+      setVentasFiltradas(ventas);
+      return;
+    }
+    
+    // Filtrar ventas por fecha
+    const fechaSeleccionada = format(new Date(fecha), 'yyyy-MM-dd');
+    const ventasFiltradas = ventas.filter(venta => {
+      const fechaVenta = format(new Date(venta.fecha), 'yyyy-MM-dd');
+      return fechaVenta === fechaSeleccionada;
+    });
+    
+    setVentasFiltradas(ventasFiltradas);
+  };
+
+  const filtrarVentas = () => {
+    let resultados = [...ventas];
+
+    // Filtrar por nombre o apellido del cliente
+    if (busqueda.trim()) {
+      const busquedaLower = busqueda.toLowerCase();
+      resultados = resultados.filter(venta => 
+        `${venta.clienteNombre} ${venta.clienteApellido}`.toLowerCase().includes(busquedaLower)
+      );
+    }
+
+    // Filtrar por fecha
+    if (fechaSeleccionada) {
+      const fechaSelec = new Date(fechaSeleccionada);
+      const fechaSelecStr = format(fechaSelec, 'yyyy-MM-dd');
+      resultados = resultados.filter(venta => {
+        if (!venta.fecha) return false;
+        const fechaVenta = new Date(venta.fecha);
+        const fechaVentaStr = format(fechaVenta, 'yyyy-MM-dd');
+        return fechaVentaStr === fechaSelecStr;
+      });
+    }
+
+    setVentasFiltradas(resultados);
+  };
+
+  const limpiarFiltros = () => {
+    setBusqueda('');
+    setFechaSeleccionada(null);
+    setVentasFiltradas(ventas);
+  };
+
+  // Usar ventas filtradas para mostrar en la tabla
+  const ventasAMostrar = (busqueda || fechaSeleccionada) ? ventasFiltradas : ventas;
+
+  // Mostrar mensaje cuando no hay resultados
+  const noHayResultados = ventasAMostrar.length === 0 && !loading;
+
   if (loading && !ventas.length) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -295,51 +412,117 @@ const ListaPage = () => {
       )}
 
       <Card>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableHeaderCell>ID</TableHeaderCell>
-              <TableHeaderCell>Fecha</TableHeaderCell>
-              <TableHeaderCell>Hora</TableHeaderCell>
-              <TableHeaderCell>Cliente</TableHeaderCell>
-              <TableHeaderCell>Total</TableHeaderCell>
-              <TableHeaderCell>Monto Pagado</TableHeaderCell>
-              <TableHeaderCell>Vuelto</TableHeaderCell>
-              <TableHeaderCell>Método de Pago</TableHeaderCell>
-              <TableHeaderCell>Estado</TableHeaderCell>
-              <TableHeaderCell>Acciones</TableHeaderCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {ventas.map((venta) => (
-              <TableRow key={venta.idVenta}>
-                <TableCell>#{venta.idVenta}</TableCell>
-                <TableCell>{formatearFecha(venta.fecha)}</TableCell>
-                <TableCell>{formatearHora(venta.hora)}</TableCell>
-                <TableCell>{`${venta.clienteNombre} ${venta.clienteApellido}`}</TableCell>
-                <TableCell>S/. {venta.total?.toFixed(2) || '0.00'}</TableCell>
-                <TableCell>S/. {venta.montoPagado?.toFixed(2) || '0.00'}</TableCell>
-                <TableCell>S/. {venta.vuelto?.toFixed(2) || '0.00'}</TableCell>
-                <TableCell>{venta.metodoPago}</TableCell>
-                <TableCell>
-                  <Badge color={venta.estado ? 'green' : 'yellow'}>
-                    {venta.estado ? 'COMPLETADA' : 'PENDIENTE'}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={FileText}
-                    onClick={() => verDetalle(venta.idVenta)}
-                  >
-                    Ver Detalle
-                  </Button>
-                </TableCell>
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-4 items-center justify-between p-4 border-b">
+            {/* Buscador por nombre */}
+            <div className="flex-1 min-w-[200px] relative">
+              <TextInput
+                icon={Search}
+                placeholder="Buscar por nombre del cliente..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+              />
+            </div>
+            
+            {/* Selector de fecha */}
+            <div className="min-w-[200px] flex items-center gap-2 relative">
+              <DatePicker
+                value={fechaSeleccionada}
+                onValueChange={(date) => {
+                  if (date) {
+                    const newDate = new Date(date);
+                    newDate.setHours(0, 0, 0, 0);
+                    setFechaSeleccionada(newDate);
+                  } else {
+                    setFechaSeleccionada(null);
+                  }
+                }}
+                placeholder="Filtrar por fecha"
+                locale={es}
+                enableYearNavigation={true}
+                displayFormat="dd/MM/yyyy"
+                maxDate={new Date()} // No permite seleccionar fechas futuras
+                i18n={{
+                  months: [
+                    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                  ],
+                  weekDays: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+                  previousMonth: 'Mes anterior',
+                  nextMonth: 'Mes siguiente',
+                  today: 'Hoy',
+                  close: 'Cerrar'
+                }}
+                clearable={false}
+              />
+            </div>
+          </div>
+
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeaderCell>ID</TableHeaderCell>
+                <TableHeaderCell>Fecha</TableHeaderCell>
+                <TableHeaderCell>Hora</TableHeaderCell>
+                <TableHeaderCell>Cliente</TableHeaderCell>
+                <TableHeaderCell>Total</TableHeaderCell>
+                <TableHeaderCell>Monto Pagado</TableHeaderCell>
+                <TableHeaderCell>Vuelto</TableHeaderCell>
+                <TableHeaderCell>Método de Pago</TableHeaderCell>
+                <TableHeaderCell>Estado</TableHeaderCell>
+                <TableHeaderCell>Acciones</TableHeaderCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {noHayResultados ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center py-8 text-gray-500">
+                    No se encontraron ventas para los filtros seleccionados
+                  </TableCell>
+                </TableRow>
+              ) : (
+                ventasAMostrar.map((venta) => {
+                  let estadoTexto = 'COMPLETADA';
+                  let color = 'green';
+                  if (venta.estado === false || venta.estado === 'CANCELADA') {
+                    estadoTexto = 'CANCELADA';
+                    color = 'red';
+                  } else if (venta.estado === null || venta.estado === undefined) {
+                    estadoTexto = 'PENDIENTE';
+                    color = 'yellow';
+                  }
+                  return (
+                    <TableRow key={venta.idVenta}>
+                      <TableCell>#{venta.idVenta}</TableCell>
+                      <TableCell>{formatearFecha(venta.fecha)}</TableCell>
+                      <TableCell>{formatearHora(venta.hora)}</TableCell>
+                      <TableCell>{`${venta.clienteNombre} ${venta.clienteApellido}`}</TableCell>
+                      <TableCell>S/. {venta.total?.toFixed(2) || '0.00'}</TableCell>
+                      <TableCell>S/. {venta.montoPagado?.toFixed(2) || '0.00'}</TableCell>
+                      <TableCell>S/. {venta.vuelto?.toFixed(2) || '0.00'}</TableCell>
+                      <TableCell>{venta.metodoPago}</TableCell>
+                      <TableCell>
+                        <Badge color={color}>
+                          {estadoTexto}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon={FileText}
+                          onClick={() => verDetalle(venta.idVenta)}
+                        >
+                          Ver Detalle
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </Card>      {modalAbierto && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="w-full max-w-2xl my-4">
@@ -353,7 +536,7 @@ const ListaPage = () => {
                       alt="Logo Busster Gym" 
                       className="h-16 mx-auto mb-2"
                     />
-                    <Text className="font-bold text-xl">BUSSTER GYM S.A.C</Text>
+                    <Text className="font-bold text-xl">BUSTER GYM S.A.C</Text>
                     <Text className="text-gray-600">R.U.C. 20100100100</Text>
                     <Text className="text-gray-600">Jr. Las Palmeras 123 - Lima</Text>
                     <Text className="text-gray-600">Telf: (01) 123-4567</Text>
@@ -378,7 +561,8 @@ const ListaPage = () => {
                     <div className="grid grid-cols-[auto_1fr] gap-2">
                       <Text className="font-medium">DNI:</Text>
                       <Text>{detalleVentaSeleccionada.clienteDni || 'Sin DNI'}</Text>
-                    </div>                    <div className="grid grid-cols-[auto_1fr] gap-2">
+                    </div>
+                    <div className="grid grid-cols-[auto_1fr] gap-2">
                       <Text className="font-medium">Vendedor:</Text>
                       <Text>{detalleVentaSeleccionada.empleadoNombre} {detalleVentaSeleccionada.empleadoApellido}</Text>
                     </div>
@@ -390,33 +574,62 @@ const ListaPage = () => {
 
                   {/* Tabla de Productos */}
                   <div className="text-sm">
-                    <table className="w-full">
-                      <thead className="border-b">
-                        <tr className="text-left [&>th]:py-2 [&>th]:text-xs [&>th]:font-medium [&>th]:text-gray-500">
-                          <th>CANT.</th>
-                          <th>DESCRIPCIÓN</th>
-                          <th className="text-right">P.UNIT</th>
-                          <th className="text-right">TOTAL</th>
-                        </tr>
-                      </thead>
-                      <tbody className="[&>tr]:border-b [&>tr]:border-gray-100">
-                        {detalleVentaSeleccionada.detalles.map((detalle) => (
-                          <tr key={detalle.idDetalle} className="[&>td]:py-2">
-                            <td>{detalle.cantidad}</td>
-                            <td>{detalle.productoNombre}</td>
-                            <td className="text-right">S/ {detalle.precioUnitario.toFixed(2)}</td>
-                            <td className="text-right">S/ {detalle.subtotal.toFixed(2)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>                  {/* Totales y Detalles de Pago */}
-                  <div className="text-sm space-y-2 pt-2">
-                    <div className="grid grid-cols-2 text-right gap-2 border-t pt-2">
-                      <Text className="font-bold">TOTAL:</Text>
-                      <Text className="font-bold">S/ {detalleVentaSeleccionada.total.toFixed(2)}</Text>
-                    </div>
-                    <Text>SON: {convertirNumeroALetras(detalleVentaSeleccionada.total)} SOLES</Text>
+                    {(() => {
+                      // Calcular precios sin IGV y con IGV
+                      const IGV_RATE = 0.18;
+                      const detallesSinIGV = detalleVentaSeleccionada.detalles.map(detalle => {
+                        const precioUnitSinIGV = detalle.precioUnitario / (1 + IGV_RATE);
+                        const subtotalSinIGV = detalle.subtotal / (1 + IGV_RATE);
+                        return {
+                          ...detalle,
+                          precioUnitSinIGV,
+                          subtotalSinIGV
+                        };
+                      });
+                      const subtotal = detallesSinIGV.reduce((acc, d) => acc + d.subtotalSinIGV, 0);
+                      const igv = subtotal * IGV_RATE;
+                      const total = subtotal + igv;
+                      return (
+                        <>
+                          <table className="w-full mb-4">
+                            <thead className="border-b">
+                              <tr className="text-left [&>th]:py-2 [&>th]:text-xs [&>th]:font-medium [&>th]:text-gray-500">
+                                <th>CANT.</th>
+                                <th>DESCRIPCIÓN</th>
+                                <th className="text-right">P.UNIT (sin IGV)</th>
+                                <th className="text-right">TOTAL (sin IGV)</th>
+                              </tr>
+                            </thead>
+                            <tbody className="[&>tr]:border-b [&>tr]:border-gray-100">
+                              {detallesSinIGV.map((detalle, idx) => (
+                                <tr key={detalle.idDetalle || idx} className="[&>td]:py-2">
+                                  <td>{detalle.cantidad}</td>
+                                  <td>{detalle.productoNombre}</td>
+                                  <td className="text-right">S/ {detalle.precioUnitSinIGV.toFixed(2)}</td>
+                                  <td className="text-right">S/ {detalle.subtotalSinIGV.toFixed(2)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          {/* Totales */}
+                          <div className="pt-2">
+                            <div className="grid grid-cols-2 text-right gap-2 border-t pt-2">
+                              <Text className="">SUBTOTAL:</Text>
+                              <Text className="">S/ {subtotal.toFixed(2)}</Text>
+                            </div>
+                            <div className="grid grid-cols-2 text-right gap-2">
+                              <Text className="">IGV (18%):</Text>
+                              <Text className="">S/ {igv.toFixed(2)}</Text>
+                            </div>
+                            <div className="grid grid-cols-2 text-right gap-2">
+                              <Text className="font-bold">TOTAL:</Text>
+                              <Text className="font-bold">S/ {total.toFixed(2)}</Text>
+                            </div>
+                            <Text>SON: {convertirNumeroALetras(total)} SOLES</Text>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
 
                   {/* Información de Pago */}
@@ -438,24 +651,44 @@ const ListaPage = () => {
                     </div>
                   </div>
                   {/* Botones de Acción */}
-                  <div className="flex justify-end space-x-4 pt-6 no-print">
-                    <Button
-                      size="lg"
-                      variant="secondary"
-                      onClick={cerrarModal}
-                      className="px-8"
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      size="lg"
-                      variant="primary"
-                      icon={Printer}
-                      onClick={imprimirBoleta}
-                      className="px-8"
-                    >
-                      Imprimir
-                    </Button>
+                  <div className="flex justify-between pt-6 no-print">
+                    {/* Botón cancelar venta solo si la venta no está cancelada */}
+                    <div>
+                      {detalleVentaSeleccionada && detalleVentaSeleccionada.estado !== false && detalleVentaSeleccionada.estado !== 'CANCELADA' && (
+                        <Button
+                          size="lg"
+                          onClick={() => cancelarVenta(detalleVentaSeleccionada.idVenta)}
+                          disabled={cancelandoVenta}
+                          className="px-8 border border-red-600 text-red-600 bg-transparent hover:bg-red-50 hover:text-red-700"
+                        >
+                          {cancelandoVenta ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                              Cancelando...
+                            </>
+                          ) : (
+                            'Cancelar Venta'
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                    <div className="flex space-x-4">
+                      <Button
+                        size="lg"
+                        onClick={cerrarModal}
+                        className="px-8 border border-gray-400 text-gray-700 bg-transparent hover:bg-gray-100 hover:text-gray-900"
+                      >
+                        Cerrar
+                      </Button>
+                      <Button
+                        size="lg"
+                        icon={Printer}
+                        onClick={imprimirBoleta}
+                        className="px-8 border border-gray-400 text-gray-700 bg-transparent hover:bg-gray-100 hover:text-gray-900"
+                      >
+                        Imprimir
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}

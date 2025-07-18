@@ -102,7 +102,7 @@ const MaquinariaModal = ({
         ? await maquinariaAPI.actualizarPieza(piezaData)
         : await maquinariaAPI.guardarPieza(piezaData);
       if (response) {
-        alert(formData.id ? '¡Pieza actualizada correctamente!' : '¡Pieza guardada correctamente!');
+        // Notificar al componente padre
         onSuccess(response);
         onClose();
         setFormData({ id: null, nombre: '', stock: '', stockMinimo: '', peso: '', precioAlquiler: '', estado: true });

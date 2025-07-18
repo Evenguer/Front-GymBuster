@@ -9,9 +9,12 @@ import {
     Text,
     Flex,
     Metric,
-    Button
+    Button,
+    DatePicker
 } from '@tremor/react';
 import { Search, User, Clock, Calendar } from 'react-feather';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { asistenciaEmpleadoAPI } from '../services/asistenciaEmpleadoAPI';
 
 const ListaAsistenciaPage = () => {
@@ -20,6 +23,7 @@ const ListaAsistenciaPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [filtroFecha, setFiltroFecha] = useState(null); // No marcar día actual
     const [filtroEstado, setFiltroEstado] = useState('');
 
     const fetchAsistencias = async () => {
@@ -44,17 +48,28 @@ const ListaAsistenciaPage = () => {
 
     useEffect(() => {
         fetchAsistencias();
-    }, []);    // Filtrar asistencias basado en el término de búsqueda y estado seleccionado
+    }, []);
+
+    // Filtrar asistencias basado en el término de búsqueda, estado y fecha seleccionada
     const filteredAsistencias = asistencias.filter(asistencia => {
         const matchSearch = 
             asistencia.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             asistencia.apellidos?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             asistencia.fecha?.toString().includes(searchTerm);
-        
+
         const matchEstado = !filtroEstado || asistencia.estadoPuntualidad === filtroEstado;
-        
-        return matchSearch && matchEstado;
-    });const getEstadoPuntualidadBadge = (estado) => {
+
+        let matchFecha = true;
+        if (filtroFecha && asistencia.fecha) {
+            const fechaAsistenciaStr = format(new Date(asistencia.fecha + 'T00:00:00'), 'yyyy-MM-dd');
+            const filtroFechaStr = format(filtroFecha, 'yyyy-MM-dd');
+            matchFecha = fechaAsistenciaStr === filtroFechaStr;
+        }
+
+        return matchSearch && matchEstado && matchFecha;
+    });
+
+    const getEstadoPuntualidadBadge = (estado) => {
         switch (estado?.toUpperCase()) {
             case 'PUNTUAL':
                 return <Badge color="green">Puntual</Badge>;
@@ -84,8 +99,11 @@ const ListaAsistenciaPage = () => {
         return timeString.substring(0, 5); // Mostrar solo HH:mm
     };
 
+
     return (
-        <div className="p-4 space-y-4">            <div className="flex justify-between items-center mb-6">                <Title>Lista de Asistencias</Title>
+        <div className="p-4 space-y-4">
+            <div className="flex justify-between items-center mb-6">
+                <Title>Lista de Asistencias</Title>
                 <div className="flex space-x-2">
                     <Button
                         size="xs"
@@ -129,15 +147,55 @@ const ListaAsistenciaPage = () => {
                     </Button>
                 </div>
             </div>
-            
-            <div className="mb-6">
-                <TextInput
-                    icon={Search}
-                    placeholder="Buscar asistencias..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="max-w-sm"
-                />
+
+            {/* Filtros avanzados: buscador, calendario y actualizar */}
+            <div className="flex flex-col sm:flex-row gap-2 mb-6 items-center justify-between">
+                <div className="flex-1 relative max-w-sm">
+                    <TextInput
+                        icon={Search}
+                        placeholder="Buscar asistencias..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pr-8"
+                    />
+                    {searchTerm && (
+                        <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 focus:outline-none"
+                            onClick={() => setSearchTerm('')}
+                            aria-label="Limpiar filtro nombre"
+                            tabIndex={-1}
+                        >
+                            ×
+                        </button>
+                    )}
+                </div>
+                <div className="relative">
+                    <DatePicker
+                        value={filtroFecha}
+                        onValueChange={date => {
+                            const hoy = new Date();
+                            hoy.setHours(0, 0, 0, 0);
+                            if (date && date > hoy) return;
+                            setFiltroFecha(date);
+                        }}
+                        locale={es}
+                        className="w-[180px] pr-4 text-xs"
+                        maxDate={new Date()}
+                        placeholder="Fecha"
+                        enableClear={false}
+                    />
+                    {filtroFecha && (
+                        <button
+                            type="button"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                            onClick={() => setFiltroFecha(null)}
+                            aria-label="Limpiar filtro fecha"
+                        >
+                            ×
+                        </button>
+                    )}
+                </div>
             </div>
 
             {loading ? (
@@ -150,7 +208,20 @@ const ListaAsistenciaPage = () => {
                 </div>
             ) : filteredAsistencias.length === 0 ? (
                 <div className="text-center py-8">
-                    <Text>No hay asistencias disponibles</Text>
+                    <Text>
+                        {searchTerm
+                            ? 'No se encontraron asistencias que coincidan con la búsqueda'
+                            : 'No hay asistencias disponibles'}
+                    </Text>
+                    {searchTerm && (
+                        <Button
+                            variant="secondary"
+                            className="mt-4"
+                            onClick={() => setSearchTerm('')}
+                        >
+                            Limpiar búsqueda
+                        </Button>
+                    )}
                 </div>
             ) : (
                 <Grid numItems={1} numItemsSm={2} numItemsLg={3} className="gap-6">
