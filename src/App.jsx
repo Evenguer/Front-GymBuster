@@ -25,7 +25,6 @@ import HorarioPage from './modules/admin/pages/HorarioPage';
 import AsistenciaEmpleadoPage from './modules/admin/pages/AsistenciaEmpleadoPage';
 import ListaAsistenciaPage from './modules/admin/pages/ListaAsistenciaPage';
 import EspecialidadesPage from './modules/admin/pages/EspecialidadesPage';
-import ReportesVentasFinanzas from './modules/admin/pages/reportes/VentasFinanzasReportes';
 
 // Placeholder para páginas pendientes de implementar
 const PlaceholderPage = () => (
@@ -44,7 +43,12 @@ const EvaluacionPage = PlaceholderPage;
 const AsistenciaClientesPage = PlaceholderPage;
 const InscripcionesPage = PlaceholderPage;
 const DesempenoEntrenadoresPage = PlaceholderPage;
-
+const ReportesGeneralPage = PlaceholderPage;
+const ReportesVentasPage = PlaceholderPage;
+const ReportesAsistenciaPage = PlaceholderPage;
+const ConfiguracionPage = PlaceholderPage;
+const ConfiguracionHorariosPage = PlaceholderPage;
+const ConfiguracionSistemaPage = PlaceholderPage;
 // Staff pages placeholders
 const ClientesStaffPage = PlaceholderPage;
 const NuevaInscripcionPage = PlaceholderPage;
@@ -128,13 +132,14 @@ function App() {
               <Route path="entrenadores/desempeno" element={<DesempenoEntrenadoresPage />} />
               
               {/* Reportes y Análisis */}
-              <Route path="reportes/ventas-finanzas" element={<ReportesVentasFinanzas />} />
-              <Route path="reportes/alquileres" element={<PlaceholderPage />} />
-              <Route path="reportes/asistencia-participacion" element={<PlaceholderPage />} />
-              <Route path="reportes/clientes" element={<PlaceholderPage />} />
-              <Route path="reportes/inventario" element={<PlaceholderPage />} />
+              <Route path="reportes/general" element={<ReportesGeneralPage />} />
+              <Route path="reportes/ventas" element={<ReportesVentasPage />} />
+              <Route path="reportes/asistencia" element={<ReportesAsistenciaPage />} />
               
-
+              {/* Configuración */}
+              <Route path="configuracion" element={<ConfiguracionPage />} />
+              <Route path="configuracion/horarios" element={<ConfiguracionHorariosPage />} />
+              <Route path="configuracion/sistema" element={<ConfiguracionSistemaPage />} />
             </Route>
           </Route>
 

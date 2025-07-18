@@ -130,23 +130,4 @@ export const ENDPOINTS = {
 
   // Dashboard Recepcionista
   DASHBOARD_RECEPCIONISTA: `${BASE_URL}/dashboard-recepcionista`,
-  
-  // Dashboard Admin
-  DASHBOARD_ADMIN: `${BASE_URL}/dashboard-admin`,
-  DASHBOARD_ADMIN_ESTADISTICAS_VENTAS: `${BASE_URL}/dashboard-admin/estadisticas-ventas`,
-  DASHBOARD_ADMIN_ESTADISTICAS_CLIENTES: `${BASE_URL}/dashboard-admin/estadisticas-clientes`,
-  DASHBOARD_ADMIN_PRODUCTOS_BAJO_STOCK: `${BASE_URL}/dashboard-admin/productos-bajo-stock`,
-  DASHBOARD_ADMIN_ACTIVIDADES_RECIENTES: `${BASE_URL}/dashboard-admin/actividades-recientes`,
-  DASHBOARD_ADMIN_HORARIOS_HOY: `${BASE_URL}/dashboard-admin/horarios-hoy`,
-
-  // Reportes de Ventas y Finanzas
-  REPORTES_VENTAS: {
-    INGRESOS_TOTALES: `${BASE_URL}/reportes-ventas/ingresos-totales`,
-    CRECIMIENTO: `${BASE_URL}/reportes-ventas/crecimiento`,
-    TOTAL_TRANSACCIONES: `${BASE_URL}/reportes-ventas/total-transacciones`,
-    ANALISIS_CATEGORIA: `${BASE_URL}/reportes-ventas/analisis-categoria`,
-    PRODUCTOS_MAS_VENDIDOS: `${BASE_URL}/reportes-ventas/productos-mas-vendidos`,
-    TENDENCIAS: `${BASE_URL}/reportes-ventas/tendencias`,
-    RENTABILIDAD: `${BASE_URL}/reportes-ventas/rentabilidad`
-  }
 };
