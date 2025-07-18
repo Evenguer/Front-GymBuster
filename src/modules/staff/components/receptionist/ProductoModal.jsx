@@ -125,8 +125,6 @@ const ProductoModal = ({
         ? await productosAPI.actualizarProducto(productoData)
         : await productosAPI.guardarProducto(productoData);
           if (response) {
-        // Mostrar mensaje de éxito
-        alert(formData.id ? '¡Producto actualizado correctamente!' : '¡Producto guardado correctamente!');
         // Notificar al componente padre
         onSuccess(response);
         // Luego cerrar el modal

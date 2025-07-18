@@ -62,8 +62,8 @@ const ClientesListPage = () => {
       }
 
       const clientId = client.idCliente || client.id;
-      if (user?.role !== 'ADMIN') {
-        notify.error('No tienes permiso para cambiar el estado del usuario');
+      if (user?.role !== 'ADMIN' && user?.role !== 'RECEPCIONISTA') {
+        notify.error('Solo administradores y recepcionistas pueden cambiar el estado del usuario');
         return;
       }
 
@@ -91,8 +91,8 @@ const ClientesListPage = () => {
       const token = localStorage.getItem('token');
       const clientId = selectedClient.idCliente || selectedClient.id_cliente || selectedClient.id;
 
-      if (user?.role !== 'ADMIN') {
-        notify.error('Solo los administradores pueden actualizar datos de clientes');
+      if (user?.role !== 'ADMIN' && user?.role !== 'RECEPCIONISTA') {
+        notify.error('Solo administradores y recepcionistas pueden actualizar datos de clientes');
         return;
       }
 

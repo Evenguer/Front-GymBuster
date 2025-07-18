@@ -30,6 +30,20 @@ const getAuthConfig = () => {
 };
 
 export const ventasAPI = {
+  cancelarVenta: async (id) => {
+    try {
+      checkRole(['ADMIN', 'RECEPCIONISTA']);
+      const response = await axios.put(
+        ENDPOINTS.VENTAS.CANCELAR(id),
+        null,
+        getAuthConfig()
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error al cancelar venta:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Error al cancelar la venta');
+    }
+  },
   listarVentas: async () => {
     try {
       checkRole(['ADMIN', 'RECEPCIONISTA']);

@@ -541,111 +541,79 @@ return (
     {/* Paso 1: Datos básicos */}
     {pasoActual === 1 && (
       <Card className="mb-6">
-        <div className="space-y-6">
-          <Title>Información Básica</Title>
-          <div className="space-y-6">
-            <div className="border p-4 rounded-lg bg-gray-50">
-              <Text className="mb-2 font-medium">Buscar Cliente por DNI</Text>
-              <div className="flex gap-2">
-                <TextInput
-                  placeholder="Ingrese DNI del cliente"
-                  value={dni}
-                  onChange={handleDNIChange}
-                  maxLength={8}
-                  className="w-full"
-                />
-                <Button
-                  onClick={buscarClientePorDNI}
-                  disabled={!dni.trim()}
-                  icon={Search}
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                >
-                  Buscar
-                </Button>
-              </div>
-              {clienteEncontrado && (
-                <div className="mt-4 p-4 bg-white rounded-lg border border-green-200">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-green-100 p-2 rounded-full">
-                      <User className="w-6 h-6 text-green-600" />
-                    </div>
-                    <div className="flex-1">
-                      <Text className="font-semibold text-lg">{clienteEncontrado.nombreCompleto}</Text>
-                      <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
-                        <div>
-                          <Text className="text-gray-500">DNI</Text>
-                          <Text className="font-medium">{clienteEncontrado.dni}</Text>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div style={{ display: 'none' }}>
-              <Text className="mb-2">Empleado</Text>
-              <SearchSelect
-                value={formData.empleadoId || ""}
-                onValueChange={(value) => handleInputChange('empleadoId', value)}
-                placeholder="Buscar empleado..."
-                disabled={loading}
-                className="w-full"
+        <div className="mb-4">
+          <Title className="flex items-center gap-2">
+            <User className="text-red-600 mr-1" size={22} /> Datos del Cliente
+          </Title>
+          <Text className="text-gray-500 mt-2 block">Busca y selecciona el cliente para la venta</Text>
+        </div>
+        <form
+          className="flex flex-col sm:flex-row gap-2 mb-4"
+          onSubmit={e => {
+            e.preventDefault();
+            if (!dni.trim() || loading) return;
+            buscarClientePorDNI();
+          }}
+        >
+          <div className="flex-1 relative">
+            <TextInput
+              placeholder="Ingrese DNI del cliente"
+              value={dni}
+              onChange={handleDNIChange}
+              maxLength={8}
+              icon={User}
+              className="pr-8"
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (!dni.trim() || loading) return;
+                  buscarClientePorDNI();
+                }
+              }}
+            />
+            {dni && (
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                onClick={() => setDni('')}
+                aria-label="Limpiar filtro DNI"
               >
-                {empleados.map((empleado) => (
-                  <SearchSelectItem 
-                    key={empleado.id} 
-                    value={empleado.id}
-                    className="flex justify-between items-center"
-                  >
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4" />
-                      <span>{empleado.nombreCompleto}</span>
-                    </div>
-                  </SearchSelectItem>
-                ))}
-              </SearchSelect>
-              {formErrors.empleadoId && (
-                <Text color="red" className="mt-1 text-sm">{formErrors.empleadoId}</Text>
-              )}
-            </div>
-            <div>
-              <Text className="mb-2">Cliente</Text>
-              <SearchSelect
-                value={formData.clienteId || ""}
-                onValueChange={(value) => handleInputChange('clienteId', value)}
-                placeholder="Buscar cliente..."
-                disabled={loading}
-                className="w-full"
-              >
-                {clientes.map((cliente) => (
-                  <SearchSelectItem 
-                    key={cliente.id} 
-                    value={cliente.id}
-                    className="flex justify-between items-center"
-                  >
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4" />
-                      <span>{cliente.nombreCompleto}</span>
-                    </div>
-                  </SearchSelectItem>
-                ))}
-              </SearchSelect>
-              {formErrors.clienteId && (
-                <Text color="red" className="mt-1 text-sm">{formErrors.clienteId}</Text>
-              )}
-            </div>
-            <div className="flex justify-end">
-            <Button
-              onClick={handleSubmit}
-              icon={loading ? Loader2 : ShoppingCart}
-              disabled={loading}
-              variant="primary"
-              className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white"
-            >
-              {loading ? 'Procesando...' : 'Crear Venta'}
-            </Button>
-            </div>
+                ×
+              </button>
+            )}
           </div>
+          <Button 
+            type="submit"
+            onClick={e => {
+              e.preventDefault();
+              if (!dni.trim() || loading) return;
+              buscarClientePorDNI();
+            }}
+            icon={Search}
+            disabled={!dni.trim() || loading}
+            className="bg-red-600 hover:bg-red-700 text-white px-4"
+          >
+            Buscar
+          </Button>
+        </form>
+        {clienteEncontrado && (
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+            <CheckCircle className="text-green-600" size={22} />
+            <Text className="text-green-700 font-medium">
+              Cliente encontrado: {clienteEncontrado.nombreCompleto} (DNI: {clienteEncontrado.dni})
+            </Text>
+          </div>
+        )}
+        <div className="flex justify-end mt-4">
+          <Button
+            onClick={handleSubmit}
+            icon={loading ? Loader2 : ShoppingCart}
+            disabled={loading || !clienteEncontrado}
+            variant="primary"
+            className="bg-red-600 hover:bg-red-700 text-white w-full"
+          >
+            {loading ? 'Procesando...' : 'Crear Venta'}
+          </Button>
         </div>
       </Card>
     )}
@@ -828,8 +796,8 @@ return (
                     <TableHeaderCell>Producto</TableHeaderCell>
                     <TableHeaderCell>Stock</TableHeaderCell>
                     <TableHeaderCell>Cantidad</TableHeaderCell>
-                    <TableHeaderCell>Precio Unit.</TableHeaderCell>
-                    <TableHeaderCell>Subtotal</TableHeaderCell>
+                    <TableHeaderCell>Precio Unit. (con IGV)</TableHeaderCell>
+                    <TableHeaderCell>Subtotal (con IGV)</TableHeaderCell>
                     <TableHeaderCell className="text-right">Acciones</TableHeaderCell>
                   </TableRow>
                 </TableHead>
@@ -863,16 +831,35 @@ return (
                       </TableCell>
                     </TableRow>
                   ))}
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-right font-medium">
-                      Total:
-                    </TableCell>
-                    <TableCell className="font-medium" colSpan={2}>
-                      S/ {totalVenta.toFixed(2)}
-                    </TableCell>
-                  </TableRow>
                 </TableBody>
               </Table>
+              {/* Desglose debajo de la tabla */}
+              {detallesVenta.length > 0 && (() => {
+                const IGV_RATE = 0.18;
+                // Calcular subtotal sin IGV
+                const subtotalSinIGV = detallesVenta.reduce((sum, detalle) => {
+                  const precioSinIGV = detalle.producto.precio / (1 + IGV_RATE);
+                  return sum + (detalle.cantidad * precioSinIGV);
+                }, 0);
+                const igv = subtotalSinIGV * IGV_RATE;
+                const total = subtotalSinIGV + igv;
+                return (
+                  <div className="mt-4 text-right space-y-1">
+                    <div>
+                      <span className="font-medium">Op. Grabada (sin IGV):</span>
+                      <span className="ml-4">S/ {subtotalSinIGV.toFixed(2)}</span>
+                    </div>
+                    <div>
+                      <span className="font-medium">IGV (18%):</span>
+                      <span className="ml-4">S/ {igv.toFixed(2)}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold">Total:</span>
+                      <span className="ml-4 font-bold">S/ {total.toFixed(2)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
           
@@ -906,7 +893,7 @@ return (
               >
                 <option value="EFECTIVO">Efectivo</option>
                 <option value="TARJETA">Tarjeta</option>
-                <option value="TRANSFERENCIA">Transferencia</option>
+                <option value="BILLETERAS">Billeteras Digitales</option>
               </select>
             </div>
             <div>
@@ -956,7 +943,14 @@ return (
         <CheckCircle className="mx-auto mb-4 text-green-500" size={48} />
         <Title>¡Venta registrada exitosamente!</Title>
         <Text>La venta ha sido registrada y procesada correctamente.</Text>
-        <Button className="mt-6 bg-red-600 hover:bg-red-700 text-white" variant="primary" onClick={() => setPasoActual(1)}>
+        <Button
+          className="mt-6 bg-red-600 hover:bg-red-700 text-white"
+          variant="primary"
+          onClick={() => {
+            setPasoActual(1);
+            showNotification('Listo para registrar una nueva venta', 'info');
+          }}
+        >
           Registrar otra venta
         </Button>
       </Card>
@@ -968,13 +962,21 @@ return (
       onClose={handleCloseSnackbar}
       anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
     >
-      <Alert
-        onClose={handleCloseSnackbar}
-        severity={snackbarSeverity}
-        sx={{ width: '100%' }}
-      >
-        {snackbarMessage}
-      </Alert>
+      {/* Patrón verde para success y para el mensaje especial de info */}
+      {(snackbarSeverity === 'success' || snackbarMessage === 'Listo para registrar una nueva venta') ? (
+        <div className="flex items-center gap-2 p-4 bg-green-50 border border-green-200 rounded-lg shadow text-green-700 font-medium min-w-[300px]">
+          <CheckCircle className="text-green-600" />
+          <span className="text-green-700 font-medium">{snackbarMessage}</span>
+        </div>
+      ) : (
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbarSeverity}
+          sx={{ width: '100%' }}
+        >
+          {snackbarMessage}
+        </Alert>
+      )}
     </Snackbar>
   </div>
 );

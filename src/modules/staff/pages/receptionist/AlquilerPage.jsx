@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../../shared/hooks/useAuth';
 import { alquilerAPI } from '../../services/alquilerAPI';
@@ -441,35 +442,7 @@ const AlquilerPage = () => {
         showNotification(`Vuelto: S/ ${vuelto.toFixed(2)}`, 'info');
       }
       
-      // Mostrar un mensaje de éxito temporal
-      showNotification('Alquiler completado con éxito. Preparando formulario para nuevo alquiler...', 'success');
-
-      // Resetear el formulario para un nuevo alquiler después de 3 segundos
-      setTimeout(() => {
-        // Desbloquear el botón "Crear alquiler y continuar"
-        setBotonCrearBloqueado(false);
-        
-        // Resetear todos los estados para un nuevo alquiler
-        setDetallesAlquiler([]);
-        setAlquilerCreado(null);
-        setPiezaSeleccionada('');
-        setPiezaSeleccionadaObj(null);
-        setCantidad(1);
-        setBusquedaPieza('');
-        setFormData({
-          clienteId: '',
-          fechaFin: null
-        });
-        setDni('');
-        setClienteEncontrado(null);
-        setTotalAlquiler(0);
-        setMontoPagado('');
-        setFormErrors({});
-        setPasoActual(1);
-        
-        // Notificar que el formulario está listo para un nuevo alquiler
-        showNotification('Listo para registrar un nuevo alquiler', 'info');
-      }, 2000);
+      // Ya no se reinicia el formulario automáticamente. El usuario debe presionar el botón en la confirmación para iniciar otro alquiler.
       
     } catch (error) {
       console.error('Error al registrar pago:', error);
@@ -482,33 +455,24 @@ const AlquilerPage = () => {
   // Función para buscar cliente por DNI
   const buscarClientePorDNI = () => {
     if (!dni || dni.trim() === '') {
-      setFormErrors(prev => ({
-        ...prev,
-        dni: 'Ingrese un DNI válido'
-      }));
+      setClienteEncontrado(null);
+      setFormData(prev => ({ ...prev, clienteId: '' }));
+      setFormErrors(prev => ({ ...prev, dni: null, cliente: null }));
+      showNotification('Por favor, ingrese un DNI válido', 'error');
       return;
     }
-    
     // Buscar cliente
-    const clienteEncontrado = clientes.find(c => c.dni === dni);
-    if (clienteEncontrado) {
-      console.log('Cliente encontrado:', clienteEncontrado);
-      setClienteEncontrado(clienteEncontrado);
-      setFormData(prev => ({
-        ...prev,
-        clienteId: clienteEncontrado.id
-      }));
-      setFormErrors(prev => ({
-        ...prev,
-        dni: null,
-        cliente: null
-      }));
+    const cliente = clientes.find(c => c.dni === dni);
+    if (cliente) {
+      setClienteEncontrado(cliente);
+      setFormData(prev => ({ ...prev, clienteId: cliente.id }));
+      setFormErrors(prev => ({ ...prev, dni: null, cliente: null }));
+      showNotification('Cliente encontrado', 'success');
     } else {
       setClienteEncontrado(null);
-      setFormErrors(prev => ({
-        ...prev,
-        dni: 'No se encontró ningún cliente con ese DNI'
-      }));
+      setFormData(prev => ({ ...prev, clienteId: '' }));
+      setFormErrors(prev => ({ ...prev, dni: null, cliente: null }));
+      showNotification('No se encontró ningún cliente con ese DNI', 'error');
     }
   };
 
@@ -550,7 +514,7 @@ const AlquilerPage = () => {
     setFormErrors({});
     setPasoActual(1); // Volver al primer paso
     
-    showNotification('Formulario reiniciado correctamente', 'info');
+    showNotification('Listo para registrar un nuevo alquiler', 'info');
   };
 
   // Componente para mostrar el paso actual en el proceso
@@ -718,9 +682,12 @@ const AlquilerPage = () => {
   };
 
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <Title>Registro de Alquiler</Title>
+    <div className="space-y-6 p-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Nuevo Alquiler</h1>
+          <p className="text-gray-500">Registra un nuevo alquiler</p>
+        </div>
         {botonCrearBloqueado && pasoActual === 1 && (
           <Button 
             onClick={reiniciarFormulario} 
@@ -732,95 +699,95 @@ const AlquilerPage = () => {
           </Button>
         )}
       </div>
-      
       <ProgresoAlquiler pasoActual={pasoActual} />
-      
       {formErrors.fetch && (
         <Alert severity="error" className="mb-4">
           {formErrors.fetch}
         </Alert>
       )}
-      
       {/* Paso 1: Formulario para crear alquiler */}
       {pasoActual === 1 && (
-        <Card className="mb-6 shadow-sm">
-          <div className="space-y-6">
-            <Title className="mb-4 flex items-center">
-              <User size={20} className="mr-2 text-blue-600" />
-              <span>Datos del alquiler</span>
+        <Card className="mb-6">
+          <div className="mb-4">
+            <Title className="flex items-center gap-2">
+              <User className="text-red-600 mr-1" size={22} /> Datos del Cliente
             </Title>
-        
-        {botonCrearBloqueado && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-            <Text className="text-blue-700 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              Hay un alquiler en proceso. Para registrar uno nuevo, haga clic en "Nuevo Alquiler" o termine el proceso actual.
-            </Text>
+            <Text className="text-gray-500 mt-2 block">Busca y selecciona el cliente para el alquiler</Text>
           </div>
-        )}
-        
-        <div className="mb-5 p-4 bg-gray-50 rounded-lg">
-          <Text className="mb-2 font-medium">Buscar cliente por DNI</Text>
-          <div className="flex gap-2">
-            <TextInput
-              placeholder="Ingrese DNI del cliente"
-              value={dni}
-              onChange={(e) => setDni(e.target.value)}
-              error={!!formErrors.dni}
-              errorMessage={formErrors.dni}
-              icon={User}
-              className="flex-1 bg-white"
-              disabled={botonCrearBloqueado}
-            />
+          <form
+            className="flex flex-col sm:flex-row gap-2 mb-4"
+            onSubmit={e => {
+              e.preventDefault();
+              if (!dni.trim() || loading || botonCrearBloqueado) return;
+              buscarClientePorDNI();
+            }}
+          >
+            <div className="flex-1 relative">
+              <TextInput
+                placeholder="Ingrese DNI del cliente"
+                value={dni}
+                onChange={e => {
+                  const value = e.target.value;
+                  // Permitir pegar, pero solo aceptar números y máximo 8 dígitos
+                  if (/^\d{0,8}$/.test(value)) setDni(value);
+                }}
+                maxLength={8}
+                icon={User}
+                className="pr-8"
+                disabled={botonCrearBloqueado}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (!dni.trim() || loading || botonCrearBloqueado) return;
+                    buscarClientePorDNI();
+                  }
+                  // Ya no se bloquean otros caracteres para permitir pegar
+                }}
+                inputMode="numeric"
+                pattern="[0-9]*"
+              />
+              {dni && (
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                  onClick={() => setDni('')}
+                  aria-label="Limpiar filtro DNI"
+                >
+                  ×
+                </button>
+              )}
+            </div>
             <Button 
-              onClick={buscarClientePorDNI} 
-              disabled={loading || botonCrearBloqueado}
+              type="submit"
+              onClick={e => {
+                e.preventDefault();
+                if (!dni.trim() || loading || botonCrearBloqueado) return;
+                buscarClientePorDNI();
+              }}
               icon={Search}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={!dni.trim() || loading || botonCrearBloqueado}
+              className="bg-red-600 hover:bg-red-700 text-white px-4"
             >
               Buscar
             </Button>
-          </div>
-        </div>
-        
-        {clienteEncontrado && (
-          <div className="mb-4 p-2 border border-green-200 bg-green-50 rounded">
-            <Text>
-              <CheckCircle className="inline-block mr-2 text-green-600" size={16} /> 
-              Cliente encontrado: <strong>{clienteEncontrado.nombreCompleto}</strong> (DNI: {clienteEncontrado.dni})
-            </Text>
-          </div>
-        )}
-        
-        {formErrors.cliente && !clienteEncontrado && (
-          <div className="mb-4 p-2 border border-red-200 bg-red-50 rounded">
-            <Text className="text-red-600">
-              <AlertCircle className="inline-block mr-2" size={16} /> 
-              {formErrors.cliente}
-            </Text>
-          </div>
-        )}
-        
-        {formErrors.submit && (
-          <div className="mb-4 p-2 border border-red-200 bg-red-50 rounded">
-            <Text className="text-red-600">
-              {formErrors.submit}
-            </Text>
-          </div>
-        )}
-        
-            <Button 
+          </form>
+          {clienteEncontrado && (
+            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+              <CheckCircle className="text-green-600" size={22} />
+              <span className="text-green-700 font-medium">
+                Cliente encontrado: {clienteEncontrado.nombreCompleto} (DNI: {clienteEncontrado.dni})
+              </span>
+            </div>
+          )}
+          <div className="flex justify-end mt-4">
+            <Button
               onClick={handleSubmit}
+              icon={loading ? Loader2 : ShoppingCart}
               disabled={loading || !clienteEncontrado || botonCrearBloqueado}
-              loading={loading}
-              loadingText="Procesando..."
-              className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white"
-              icon={ShoppingCart}
-              size="lg"
+              variant="primary"
+              className="bg-red-600 hover:bg-red-700 text-white w-full"
             >
-              Crear alquiler y continuar
+              {loading ? 'Procesando...' : 'Crear alquiler y continuar'}
             </Button>
           </div>
         </Card>
@@ -936,12 +903,12 @@ const AlquilerPage = () => {
               <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <Text className="font-semibold text-lg text-green-800">
+                    <span className="font-semibold text-lg text-green-800">
                       {piezaSeleccionadaObj.nombre}
-                    </Text>
-                    <Text className="text-green-600">
+                    </span>
+                    <div className="text-green-600">
                       Precio: S/ {piezaSeleccionadaObj.precioAlquiler} | Stock: {piezaSeleccionadaObj.stock}
-                    </Text>
+                    </div>
                   </div>
                   <Button
                     size="sm"
@@ -955,10 +922,9 @@ const AlquilerPage = () => {
                     ✕
                   </Button>
                 </div>
-                
                 <div className="flex gap-4 items-end">
                   <div className="flex-1">
-                    <Text className="mb-2 font-medium">Cantidad</Text>
+                    <span className="mb-2 font-medium">Cantidad</span>
                     <NumberInput
                       value={cantidad}
                       onValueChange={(value) => {
@@ -1196,8 +1162,7 @@ const AlquilerPage = () => {
                 >
                   <SearchSelectItem value="EFECTIVO">Efectivo</SearchSelectItem>
                   <SearchSelectItem value="TARJETA">Tarjeta</SearchSelectItem>
-                  <SearchSelectItem value="YAPE">Yape</SearchSelectItem>
-                  <SearchSelectItem value="PLIN">Plin</SearchSelectItem>
+                  <SearchSelectItem value="BILLETERAS">Billeteras digitales</SearchSelectItem>
                 </SearchSelect>
               </div>
               <div className="p-4 bg-gray-50 rounded-lg">
@@ -1261,11 +1226,19 @@ const AlquilerPage = () => {
         open={openSnackbar} 
         autoHideDuration={5000} 
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} variant="filled">
-          {snackbarMessage}
-        </Alert>
+        {/* Personalización visual para éxito e info especial */}
+        {(snackbarSeverity === 'success' || (snackbarSeverity === 'info' && snackbarMessage === 'Listo para registrar un nuevo alquiler')) ? (
+          <div className="flex items-center gap-2 p-4 bg-green-50 border border-green-200 rounded-lg shadow text-green-700 font-medium min-w-[300px]">
+            <CheckCircle className="text-green-600" />
+            <span>{snackbarMessage}</span>
+          </div>
+        ) : (
+          <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} variant="filled">
+            {snackbarMessage}
+          </Alert>
+        )}
       </Snackbar>
     </div>
   );

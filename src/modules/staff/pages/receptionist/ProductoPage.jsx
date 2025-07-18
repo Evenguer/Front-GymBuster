@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNotification } from '../../../../shared/hooks/useNotification';
 import { 
   Card,
   Table,
@@ -22,6 +23,7 @@ import { categoriaAPI } from '../../../admin/services/CategoriaAPI';
 import ProductoModal from '../../components/receptionist/ProductoModal';
 
 const ProductoPage = () => {
+  const notify = useNotification();
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,9 +49,11 @@ const ProductoPage = () => {
         activos: response.filter(p => p.estado).length,
         inactivos: response.filter(p => !p.estado).length
       });
+      // notify.success eliminado para evitar mostrar mensaje al recargar/entrar a la página
     } catch (err) {
       setError('Error al cargar los productos');
       console.error('Error:', err.message);
+      notify.error('Error al cargar los productos');
     } finally {
       setLoading(false);
     }
@@ -61,13 +65,15 @@ const ProductoPage = () => {
       if (Array.isArray(response)) {
         setCategorias(response.filter(cat => cat.estado)); // Solo mostrar categorías activas
       } else {
-        setError('Error al cargar las categorías: formato de respuesta inválido');
-        setCategorias([]);
+      setError('Error al cargar las categorías: formato de respuesta inválido');
+      setCategorias([]);
+      notify.error('Error al cargar las categorías');
       }
     } catch (err) {
       console.error('Error al cargar categorías:', err);
       setError('Error al cargar las categorías. Por favor, intenta nuevamente.');
       setCategorias([]);
+      notify.error('Error al cargar las categorías');
     }
   };
 
@@ -98,13 +104,14 @@ const ProductoPage = () => {
           activos: nuevos.filter(p => p.estado).length,
           inactivos: nuevos.filter(p => !p.estado).length
         });
+        notify.success('Estado del producto actualizado correctamente');
       }
     } catch (err) {
       console.error('Error al cambiar el estado del producto:', err);
       if (err.message === 'No tienes permisos para realizar esta acción') {
-        alert('No tienes permisos para cambiar el estado del producto');
+        notify.error('No tienes permisos para cambiar el estado del producto');
       } else {
-        alert('Error al cambiar el estado del producto. Por favor, intenta nuevamente.');
+        notify.error('Error al cambiar el estado del producto. Por favor, intenta nuevamente.');
       }
     }
   };
@@ -122,9 +129,10 @@ const ProductoPage = () => {
         activos: nuevos.filter(p => p.estado).length,
         inactivos: nuevos.filter(p => !p.estado).length
       });
+      notify.success('Producto eliminado correctamente');
     } catch (err) {
       console.error('Error al eliminar el producto:', err.message);
-      alert('Error al eliminar el producto');
+      notify.error('Error al eliminar el producto');
     }
   };
 
@@ -158,6 +166,11 @@ const ProductoPage = () => {
       activos: nuevos.filter(p => p.estado).length,
       inactivos: nuevos.filter(p => !p.estado).length
     });
+    if (selectedProduct) {
+      notify.success('Producto actualizado correctamente');
+    } else {
+      notify.success('Producto agregado correctamente');
+    }
     // Cerrar el modal después de actualizar los datos
     handleCloseModal();
   };

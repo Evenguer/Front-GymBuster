@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNotification } from '../../../../shared/hooks/useNotification';
 import {
   Card,
   Table,
@@ -21,6 +22,7 @@ import { maquinariaAPI } from '../../services/maquinariaAPI';
 import MaquinariaModal from '../../components/receptionist/MaquinariaModal';
 
 const MaquinariaPage = () => {
+  const notify = useNotification();
   const [piezas, setPiezas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,9 +47,11 @@ const MaquinariaPage = () => {
         activos: response.filter(p => p.estado).length,
         inactivos: response.filter(p => !p.estado).length
       });
+      // No mostrar notificación de éxito al cargar la página
     } catch (err) {
       setError('Error al cargar las máquinas');
       console.error('Error:', err.message);
+      notify.error('Error al cargar las máquinas');
     } finally {
       setLoading(false);
     }
@@ -69,9 +73,10 @@ const MaquinariaPage = () => {
         activos: nuevos.filter(p => p.estado).length,
         inactivos: nuevos.filter(p => !p.estado).length
       });
+      notify.success('Estado de la pieza actualizado correctamente');
     } catch (err) {
       console.error('Error al cambiar el estado de la pieza:', err);
-      alert('Error al cambiar el estado de la pieza. Por favor, intenta nuevamente.');
+      notify.error('Error al cambiar el estado de la pieza. Por favor, intenta nuevamente.');
     }
   };
 
@@ -88,9 +93,10 @@ const MaquinariaPage = () => {
         activos: nuevos.filter(p => p.estado).length,
         inactivos: nuevos.filter(p => !p.estado).length
       });
+      notify.success('Máquina eliminada correctamente');
     } catch (err) {
       console.error('Error al eliminar la máquina:', err.message);
-      alert('Error al eliminar la máquina');
+      notify.error('Error al eliminar la máquina');
     }
   };
 
@@ -123,6 +129,11 @@ const MaquinariaPage = () => {
       activos: nuevos.filter(p => p.estado).length,
       inactivos: nuevos.filter(p => !p.estado).length
     });
+    if (selectedPieza) {
+      notify.success('Pieza actualizada correctamente');
+    } else {
+      notify.success('Pieza agregada correctamente');
+    }
     handleCloseModal();
   };
 
