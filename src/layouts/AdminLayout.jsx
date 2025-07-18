@@ -66,7 +66,8 @@ const AdminLayout = () => {
     {
       title: 'Gestión de Usuarios',
       icon: <Users size={20} />,
-      submenu: true,      submenuItems: [
+      submenu: true,
+      submenuItems: [
         { title: 'Lista de Usuarios', path: '/admin/usuarios' },
         { title: 'Lista de Empleados', path: '/admin/empleados' },
         { title: 'Lista de Clientes', path: '/admin/clientes' },
@@ -108,19 +109,11 @@ const AdminLayout = () => {
       icon: <BarChart2 size={20} />,
       submenu: true,
       submenuItems: [
-        { title: 'Estadísticas Generales', path: '/admin/reportes/general' },
-        { title: 'Reporte de Ventas', path: '/admin/reportes/ventas' },
-        { title: 'Métricas de Asistencia', path: '/admin/reportes/asistencia' },
-      ],
-    },
-    {
-      title: 'Configuración',
-      icon: <Settings size={20} />,
-      submenu: true,
-      submenuItems: [
-        { title: 'Configuración General', path: '/admin/configuracion' },
-        { title: 'Horarios del Gimnasio', path: '/admin/configuracion/horarios' },
-        { title: 'Parámetros del Sistema', path: '/admin/configuracion/sistema' },
+        { title: 'Reportes de Ventas y Finanzas', path: '/admin/reportes/ventas-finanzas' },
+        { title: 'Reportes de Alquileres', path: '/admin/reportes/alquileres' },
+        { title: 'Reportes de Asistencia y Participación', path: '/admin/reportes/asistencia-participacion' },
+        { title: 'Reportes de Clientes', path: '/admin/reportes/clientes' },
+        { title: 'Reportes de Inventario', path: '/admin/reportes/inventario' },
       ],
     },
   ];
