@@ -241,8 +241,8 @@ const CategoriasPage = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Categorías</h1>
-          <p className="text-gray-500">Gestiona las categorías de productos del gimnasio</p>
+          <h1 className="text-2xl font-bold text-gray-900">Gestion de Categorías</h1>
+          <p className="text-gray-500">Administra las categorías de productos del gimnasio</p>
         </div>
         <Button 
           icon={PlusCircle} 

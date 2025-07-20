@@ -1,7 +1,7 @@
+
 import { ENDPOINTS } from '../../../shared/services/endpoints';
 
 class DashboardAdminAPI {
-  
   /**
    * Obtener datos del dashboard de administrador
    * Incluye estadísticas generales como empleados, clientes, ventas, etc.
@@ -10,13 +10,9 @@ class DashboardAdminAPI {
   async obtenerDatosDashboard() {
     try {
       const token = localStorage.getItem('token');
-      
       if (!token) {
         throw new Error('No se encontró token de autenticación');
       }
-
-      console.log('Obteniendo datos del dashboard de administrador...');
-      
       const response = await fetch(ENDPOINTS.DASHBOARD_ADMIN, {
         method: 'GET',
         headers: {
@@ -24,7 +20,6 @@ class DashboardAdminAPI {
           'Authorization': `Bearer ${token}`
         }
       });
-
       if (!response.ok) {
         if (response.status === 401) {
           throw new Error('No autorizado. Verifique sus credenciales.');
@@ -37,16 +32,11 @@ class DashboardAdminAPI {
         }
         throw new Error(`Error del servidor: ${response.status} - ${response.statusText}`);
       }
-
       const data = await response.json();
-      
-      console.log('Datos del dashboard obtenidos exitosamente:', data);
-      
       // Validar estructura de datos esperada
       if (!data || typeof data !== 'object') {
         throw new Error('Formato de respuesta inválido');
       }
-
       // Asegurar que los campos numéricos tengan valores por defecto
       return {
         empleados: data.empleados || 0,
@@ -56,9 +46,35 @@ class DashboardAdminAPI {
         productosAgotados: data.productosAgotados || 0,
         nuevasInscripciones: data.nuevasInscripciones || 0
       };
-      
     } catch (error) {
       console.error('Error al obtener datos del dashboard:', error);
+      throw error;
+    }
+  }
+  /**
+   * Obtener piezas con bajo stock y resumen de inventario
+   * @returns {Promise<Object>} Piezas bajo stock y resumen de inventario
+   */
+  async obtenerPiezasBajoStock() {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No se encontró token de autenticación');
+      }
+      const response = await fetch(ENDPOINTS.DASHBOARD_ADMIN_PIEZAS_BAJO_STOCK, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`Error al obtener piezas bajo stock: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error al obtener piezas bajo stock:', error);
       throw error;
     }
   }

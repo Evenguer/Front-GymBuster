@@ -528,6 +528,7 @@ const UsersListPage = () => {
           setSelectedUser(null);
         }}
         user={selectedUser}
+        lastAccess={selectedUser ? lastLogin[selectedUser.id] : undefined}
       />
     </div>
   );

@@ -501,14 +501,14 @@ const ListaInscripcionesPage = () => {
         </div>
       </div>
 
-      {/* Filtros avanzados */}
-      <div className="flex flex-col sm:flex-row gap-2 mb-4">
-        <div className="flex-1 relative">
+      {/* Filtros avanzados estilo ListaPage */}
+      <div className="flex flex-wrap gap-4 items-center justify-between p-4 border-b mb-4">
+        {/* Buscador por nombre */}
+        <div className="flex-1 min-w-[200px] relative">
           <TextInput
             placeholder="Buscar por nombre de cliente..."
             value={filtroNombre}
             onChange={e => setFiltroNombre(e.target.value)}
-            className="pr-8"
           />
           {filtroNombre && (
             <button
@@ -521,49 +521,31 @@ const ListaInscripcionesPage = () => {
             </button>
           )}
         </div>
-        <div className="flex-1 relative flex items-center gap-2">
-          <div className="flex-1 relative">
-            <DatePicker
-              value={filtroFecha}
-              onValueChange={date => {
-                const hoy = new Date();
-                hoy.setHours(0, 0, 0, 0);
-                if (date && date > hoy) return;
-                setFiltroFecha(date);
-              }}
-              locale={es}
-              className="w-full pr-8"
-              maxDate={new Date()}
-              placeholder="Filtrar por fecha"
-              enableClear={false}
-            />
-            {filtroFecha && (
-              <button
-                type="button"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
-                onClick={() => setFiltroFecha(null)}
-                aria-label="Limpiar filtro fecha"
-              >
-                ×
-              </button>
-            )}
-          </div>
-          <Button 
-            onClick={cargarInscripciones} 
-            variant="secondary"
-            size="xs"
-            disabled={loading}
-            className="px-2 py-1 whitespace-nowrap"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="animate-spin mr-1" size={14} />
-                Cargando...
-              </>
-            ) : (
-              'Actualizar'
-            )}
-          </Button>
+        {/* Selector de fecha */}
+        <div className="min-w-[200px] flex items-center gap-2 relative">
+          <DatePicker
+            value={filtroFecha}
+            onValueChange={date => {
+              const hoy = new Date();
+              hoy.setHours(0, 0, 0, 0);
+              if (date && date > hoy) return;
+              setFiltroFecha(date);
+            }}
+            locale={es}
+            maxDate={new Date()}
+            placeholder="Filtrar por fecha"
+            enableClear={false}
+          />
+          {filtroFecha && (
+            <button
+              type="button"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+              onClick={() => setFiltroFecha(null)}
+              aria-label="Limpiar filtro fecha"
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
       </div>
 

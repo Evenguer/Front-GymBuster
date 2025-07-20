@@ -136,6 +136,7 @@ export const ENDPOINTS = {
   DASHBOARD_ADMIN_ESTADISTICAS_VENTAS: `${BASE_URL}/dashboard-admin/estadisticas-ventas`,
   DASHBOARD_ADMIN_ESTADISTICAS_CLIENTES: `${BASE_URL}/dashboard-admin/estadisticas-clientes`,
   DASHBOARD_ADMIN_PRODUCTOS_BAJO_STOCK: `${BASE_URL}/dashboard-admin/productos-bajo-stock`,
+  DASHBOARD_ADMIN_PIEZAS_BAJO_STOCK: `${BASE_URL}/dashboard-admin/piezas-bajo-stock`,
   DASHBOARD_ADMIN_ACTIVIDADES_RECIENTES: `${BASE_URL}/dashboard-admin/actividades-recientes`,
   DASHBOARD_ADMIN_HORARIOS_HOY: `${BASE_URL}/dashboard-admin/horarios-hoy`,
 
@@ -148,5 +149,29 @@ export const ENDPOINTS = {
     PRODUCTOS_MAS_VENDIDOS: `${BASE_URL}/reportes-ventas/productos-mas-vendidos`,
     TENDENCIAS: `${BASE_URL}/reportes-ventas/tendencias`,
     RENTABILIDAD: `${BASE_URL}/reportes-ventas/rentabilidad`
+  },
+
+  // Reportes de Alquileres
+  REPORTES_ALQUILERES: {
+    // Estado de alquileres
+    ESTADOS_MES_ACTUAL: `${BASE_URL}/reportes/alquileres/estados/mes-actual`,
+    ESTADOS_TRIMESTRE_ACTUAL: `${BASE_URL}/reportes/alquileres/estados/trimestre-actual`,
+    ESTADOS_ANIO_ACTUAL: `${BASE_URL}/reportes/alquileres/estados/anio-actual`,
+
+    // Top 10 piezas más alquiladas
+    TOP10_PIEZAS_MES_ACTUAL: `${BASE_URL}/reportes/alquileres/top10-piezas/mes-actual`,
+    TOP10_PIEZAS_TRIMESTRE_ACTUAL: `${BASE_URL}/reportes/alquileres/top10-piezas/trimestre-actual`,
+    TOP10_PIEZAS_ANIO_ACTUAL: `${BASE_URL}/reportes/alquileres/top10-piezas/anio-actual`,
+
+    // Alquileres con mora pendiente
+    PENDIENTES_MORA: `${BASE_URL}/reportes/alquileres/pendientes-mora`,
+
+    // Ganancias
+    INGRESOS_MES_ACTUAL: `${BASE_URL}/reportes/alquileres/ingresos-mes-actual`,
+    INGRESOS_TRIMESTRE_ACTUAL: `${BASE_URL}/reportes/alquileres/ingresos-trimestre-actual`,
+    INGRESOS_ANIO_ACTUAL: `${BASE_URL}/reportes/alquileres/ingresos-anio-actual`,
+
+    // Tendencias últimos 6 meses (parametrizable)
+    TENDENCIA: (meses = 6) => `${BASE_URL}/reportes/alquileres/tendencia?meses=${meses}`
   }
 };

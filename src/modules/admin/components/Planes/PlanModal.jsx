@@ -241,35 +241,24 @@ const PlanModal = ({ isOpen, onClose, onSave, plan }) => {
               />
             </div>
 
-            <div className="col-span-2">
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  name="estado"
-                  checked={formData.estado}
-                  onChange={handleInputChange}
-                  className="rounded text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm font-medium text-gray-700">Plan activo</span>
-              </label>
-            </div>
+            {/* Checkbox de 'Plan activo' eliminado por solicitud */}
           </div>
 
           <div className="flex justify-end space-x-4 mt-6 pt-4 border-t">
             <button
               type="button"
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               disabled={loading}
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
               disabled={loading}
             >
-              {loading ? 'Guardando...' : plan ? 'Actualizar' : 'Crear'}
+              {loading ? 'Guardando...' : 'Guardar Cambios'}
             </button>
           </div>
         </form>

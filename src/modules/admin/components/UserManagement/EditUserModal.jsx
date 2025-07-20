@@ -1,4 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Eye, EyeOff } from 'react-feather';
+import {
+  isStrongPassword,
+  ERROR_MESSAGES
+} from '../../../../shared/utils/validations';
 import { Dialog } from '@headlessui/react';
 import { Button } from '../../../../components/ui';
 import { updateUserCredentials, updateUserRole } from '../../../../shared/services/authAPI';
@@ -24,6 +29,8 @@ const EditUserModal = ({ user, isOpen, onClose, onSave }) => {
   const [formErrors, setFormErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [changePassword, setChangePassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     // Cuando se recibe el usuario, inicializar el formulario  // Función para verificar si el usuario tiene rol de administrador
   const checkIfAdmin = useCallback((user) => {
     if (!user) return false;
@@ -185,10 +192,9 @@ const EditUserModal = ({ user, isOpen, onClose, onSave }) => {
     if (changePassword) {
       if (!formData.contrasena) {
         errors.contrasena = 'La contraseña es obligatoria';
-      } else if (formData.contrasena.length < 6) {
-        errors.contrasena = 'La contraseña debe tener al menos 6 caracteres';
+      } else if (!isStrongPassword(formData.contrasena)) {
+        errors.contrasena = ERROR_MESSAGES.password;
       }
-      
       if (formData.contrasena !== formData.confirmarContrasena) {
         errors.confirmarContrasena = 'Las contraseñas no coinciden';
       }
@@ -408,33 +414,51 @@ const EditUserModal = ({ user, isOpen, onClose, onSave }) => {
                 
                 {changePassword && (
                   <>
-                    <div className="mb-3">
+                    <div className="mb-3 relative">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Nueva Contraseña*
                       </label>
                       <input
-                        type="password"
+                        type={showPassword ? 'text' : 'password'}
                         name="contrasena"
                         value={formData.contrasena}
                         onChange={handleInputChange}
                         className={`w-full p-2 border rounded ${formErrors.contrasena ? 'border-red-500' : 'border-gray-300'}`}
                       />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-8 text-gray-500 hover:text-gray-700"
+                        tabIndex={-1}
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                      <p className="text-gray-500 text-xs mt-1">La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, números y caracteres especiales.</p>
                       {formErrors.contrasena && (
                         <p className="mt-1 text-sm text-red-500">{formErrors.contrasena}</p>
                       )}
                     </div>
-                    
-                    <div className="mb-3">
+                    <div className="mb-3 relative">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Confirmar Contraseña*
                       </label>
                       <input
-                        type="password"
+                        type={showConfirmPassword ? 'text' : 'password'}
                         name="confirmarContrasena"
                         value={formData.confirmarContrasena}
                         onChange={handleInputChange}
                         className={`w-full p-2 border rounded ${formErrors.confirmarContrasena ? 'border-red-500' : 'border-gray-300'}`}
                       />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-8 text-gray-500 hover:text-gray-700"
+                        tabIndex={-1}
+                        onClick={() => setShowConfirmPassword((v) => !v)}
+                        aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      >
+                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
                       {formErrors.confirmarContrasena && (
                         <p className="mt-1 text-sm text-red-500">{formErrors.confirmarContrasena}</p>
                       )}

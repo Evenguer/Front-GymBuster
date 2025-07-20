@@ -16,7 +16,7 @@ import {
 import { ENDPOINTS } from '../../../../shared/services/endpoints';
 import './modal-styles.css';
 
-const ViewUserDetailsModal = ({ user, isOpen, onClose }) => {
+const ViewUserDetailsModal = ({ user, isOpen, onClose, lastAccess }) => {
   const [detailedUser, setDetailedUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -300,7 +300,23 @@ const ViewUserDetailsModal = ({ user, isOpen, onClose }) => {
                     <Calendar className="h-5 w-5 text-gray-400 mr-2" />
                     <span className="text-sm text-gray-500 mr-1">Último Acceso:</span>
                     <span className="text-sm font-medium">
-                      {displayUser.ultimoAcceso ? new Date(displayUser.ultimoAcceso).toLocaleString() : 'Nunca'}
+                      {lastAccess
+                        ? (() => {
+                            const date = new Date(lastAccess);
+                            return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                          })()
+                        : (() => {
+                            const fallback = displayUser.ultimoAcceso || displayUser.lastLogin || displayUser.last_access || displayUser.ultimo_acceso || displayUser.lastAccess;
+                            if (fallback) {
+                              try {
+                                return new Date(fallback).toLocaleString();
+                              } catch {
+                                return fallback;
+                              }
+                            }
+                            return 'Nunca';
+                          })()
+                      }
                     </span>
                   </div>
                   {displayUser.fechaCreacion && (

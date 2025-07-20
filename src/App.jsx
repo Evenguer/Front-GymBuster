@@ -26,6 +26,7 @@ import AsistenciaEmpleadoPage from './modules/admin/pages/AsistenciaEmpleadoPage
 import ListaAsistenciaPage from './modules/admin/pages/ListaAsistenciaPage';
 import EspecialidadesPage from './modules/admin/pages/EspecialidadesPage';
 import ReportesVentasFinanzas from './modules/admin/pages/reportes/VentasFinanzasReportes';
+import AlquileresFinanzasReportes from './modules/admin/pages/reportes/AlquileresFinanzasReportes';
 
 // Placeholder para páginas pendientes de implementar
 const PlaceholderPage = () => (
@@ -124,12 +125,12 @@ function App() {
               <Route path="planes" element={<PlanesPage />} />
               {/* Asistencia y Monitoreo */}
               <Route path="asistencia/clientes" element={<AsistenciaClientesPage />} />
-              <Route path="inscripciones" element={<InscripcionesPage />} />
-              <Route path="entrenadores/desempeno" element={<DesempenoEntrenadoresPage />} />
+              <Route path="verificar" element={<VerificarInscripcionPage />} />
+              <Route path="lista-clientes" element={<ListaAsistenciaCliente />} />
               
               {/* Reportes y Análisis */}
               <Route path="reportes/ventas-finanzas" element={<ReportesVentasFinanzas />} />
-              <Route path="reportes/alquileres" element={<PlaceholderPage />} />
+              <Route path="reportes/alquileres" element={<AlquileresFinanzasReportes />} />
               <Route path="reportes/asistencia-participacion" element={<PlaceholderPage />} />
               <Route path="reportes/clientes" element={<PlaceholderPage />} />
               <Route path="reportes/inventario" element={<PlaceholderPage />} />

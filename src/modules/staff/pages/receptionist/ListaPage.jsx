@@ -423,38 +423,31 @@ const ListaPage = () => {
                 onChange={(e) => setBusqueda(e.target.value)}
               />
             </div>
-            
-            {/* Selector de fecha */}
+            {/* Selector de fecha con X para limpiar */}
             <div className="min-w-[200px] flex items-center gap-2 relative">
               <DatePicker
                 value={fechaSeleccionada}
-                onValueChange={(date) => {
-                  if (date) {
-                    const newDate = new Date(date);
-                    newDate.setHours(0, 0, 0, 0);
-                    setFechaSeleccionada(newDate);
-                  } else {
-                    setFechaSeleccionada(null);
-                  }
+                onValueChange={date => {
+                  const hoy = new Date();
+                  hoy.setHours(0, 0, 0, 0);
+                  if (date && date > hoy) return;
+                  setFechaSeleccionada(date);
                 }}
-                placeholder="Filtrar por fecha"
                 locale={es}
-                enableYearNavigation={true}
-                displayFormat="dd/MM/yyyy"
-                maxDate={new Date()} // No permite seleccionar fechas futuras
-                i18n={{
-                  months: [
-                    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                  ],
-                  weekDays: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
-                  previousMonth: 'Mes anterior',
-                  nextMonth: 'Mes siguiente',
-                  today: 'Hoy',
-                  close: 'Cerrar'
-                }}
-                clearable={false}
+                maxDate={new Date()}
+                placeholder="Filtrar por fecha"
+                enableClear={false}
               />
+              {fechaSeleccionada && (
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                  onClick={() => setFechaSeleccionada(null)}
+                  aria-label="Limpiar filtro fecha"
+                >
+                  <X size={18} />
+                </button>
+              )}
             </div>
           </div>
 
@@ -566,10 +559,6 @@ const ListaPage = () => {
                       <Text className="font-medium">Vendedor:</Text>
                       <Text>{detalleVentaSeleccionada.empleadoNombre} {detalleVentaSeleccionada.empleadoApellido}</Text>
                     </div>
-                    <div className="grid grid-cols-[auto_1fr] gap-2">
-                      <Text className="font-medium">DNI Vendedor:</Text>
-                      <Text>{detalleVentaSeleccionada.empleadoDni}</Text>
-                    </div>
                   </div>
 
                   {/* Tabla de Productos */}
@@ -577,7 +566,9 @@ const ListaPage = () => {
                     {(() => {
                       // Calcular precios sin IGV y con IGV
                       const IGV_RATE = 0.18;
-                      const detallesSinIGV = detalleVentaSeleccionada.detalles.map(detalle => {
+                      const detalles = detalleVentaSeleccionada.detalles;
+                      // Para el desglose
+                      const detallesSinIGV = detalles.map(detalle => {
                         const precioUnitSinIGV = detalle.precioUnitario / (1 + IGV_RATE);
                         const subtotalSinIGV = detalle.subtotal / (1 + IGV_RATE);
                         return {
@@ -586,9 +577,9 @@ const ListaPage = () => {
                           subtotalSinIGV
                         };
                       });
-                      const subtotal = detallesSinIGV.reduce((acc, d) => acc + d.subtotalSinIGV, 0);
-                      const igv = subtotal * IGV_RATE;
-                      const total = subtotal + igv;
+                      const subtotalSinIGV = detallesSinIGV.reduce((acc, d) => acc + d.subtotalSinIGV, 0);
+                      const igv = subtotalSinIGV * IGV_RATE;
+                      const total = subtotalSinIGV + igv;
                       return (
                         <>
                           <table className="w-full mb-4">
@@ -596,33 +587,37 @@ const ListaPage = () => {
                               <tr className="text-left [&>th]:py-2 [&>th]:text-xs [&>th]:font-medium [&>th]:text-gray-500">
                                 <th>CANT.</th>
                                 <th>DESCRIPCIÓN</th>
-                                <th className="text-right">P.UNIT (sin IGV)</th>
-                                <th className="text-right">TOTAL (sin IGV)</th>
+                                <th className="text-right">P.UNIT</th>
+                                <th className="text-right">TOTAL</th>
                               </tr>
                             </thead>
                             <tbody className="[&>tr]:border-b [&>tr]:border-gray-100">
-                              {detallesSinIGV.map((detalle, idx) => (
+                              {detalles.map((detalle, idx) => (
                                 <tr key={detalle.idDetalle || idx} className="[&>td]:py-2">
                                   <td>{detalle.cantidad}</td>
                                   <td>{detalle.productoNombre}</td>
-                                  <td className="text-right">S/ {detalle.precioUnitSinIGV.toFixed(2)}</td>
-                                  <td className="text-right">S/ {detalle.subtotalSinIGV.toFixed(2)}</td>
+                                  <td className="text-right">S/ {detalle.precioUnitario.toFixed(2)}</td>
+                                  <td className="text-right">S/ {detalle.subtotal.toFixed(2)}</td>
                                 </tr>
                               ))}
                             </tbody>
                           </table>
-                          {/* Totales */}
+                          {/* Desglose debajo de la tabla */}
                           <div className="pt-2">
                             <div className="grid grid-cols-2 text-right gap-2 border-t pt-2">
-                              <Text className="">SUBTOTAL:</Text>
-                              <Text className="">S/ {subtotal.toFixed(2)}</Text>
+                              <Text className="">TOTAL:</Text>
+                              <Text className="">S/ {detalleVentaSeleccionada.detalles.reduce((acc, d) => acc + d.subtotal, 0).toFixed(2)}</Text>
+                            </div>
+                            <div className="grid grid-cols-2 text-right gap-2">
+                              <Text className="">Op. Grabada:</Text>
+                              <Text className="">S/ {subtotalSinIGV.toFixed(2)}</Text>
                             </div>
                             <div className="grid grid-cols-2 text-right gap-2">
                               <Text className="">IGV (18%):</Text>
                               <Text className="">S/ {igv.toFixed(2)}</Text>
                             </div>
                             <div className="grid grid-cols-2 text-right gap-2">
-                              <Text className="font-bold">TOTAL:</Text>
+                              <Text className="font-bold">IMPORTE TOTAL:</Text>
                               <Text className="font-bold">S/ {total.toFixed(2)}</Text>
                             </div>
                             <Text>SON: {convertirNumeroALetras(total)} SOLES</Text>

@@ -81,7 +81,6 @@ const AdminLayout = () => {
         { title: 'Horarios', path: '/admin/horarios' },
         { title: 'Asistencia Personal', path: '/admin/asistencia' },
         { title: 'Lista de Asistencias', path: '/admin/lista-asistencia' },
-        { title: 'Evaluación Desempeño', path: '/admin/evaluacion' },
       ],
     },
     {
@@ -99,9 +98,8 @@ const AdminLayout = () => {
       icon: <Clock size={20} />,
       submenu: true,
       submenuItems: [
-        { title: 'Asistencia Clientes', path: '/admin/asistencia/clientes' },
-        { title: 'Seguimiento Inscripciones', path: '/admin/inscripciones' },
-        { title: 'Desempeño Entrenadores', path: '/admin/entrenadores/desempeno' },
+        { title: 'Asistencia Clientes', path: '/admin/verificar' },
+        { title: 'Lista de Asistencias', path: '/admin/lista-clientes' },
       ],
     },
     {
@@ -111,9 +109,7 @@ const AdminLayout = () => {
       submenuItems: [
         { title: 'Reportes de Ventas y Finanzas', path: '/admin/reportes/ventas-finanzas' },
         { title: 'Reportes de Alquileres', path: '/admin/reportes/alquileres' },
-        { title: 'Reportes de Asistencia y Participación', path: '/admin/reportes/asistencia-participacion' },
-        { title: 'Reportes de Clientes', path: '/admin/reportes/clientes' },
-        { title: 'Reportes de Inventario', path: '/admin/reportes/inventario' },
+
       ],
     },
   ];

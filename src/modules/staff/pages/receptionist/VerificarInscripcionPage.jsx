@@ -354,15 +354,14 @@ const VerificarInscripcionPage = () => {
                             Use la cámara para escanear el código QR de la inscripción del cliente
                         </Text>
                         
-                        <Button
-                            icon={isScanning ? Camera : Square}
+                        <button
+                            type="button"
                             onClick={isScanning ? detenerEscanerQR : iniciarEscanerQR}
                             disabled={isLoading}
-                            size="lg"
-                            className={isScanning ? "bg-yellow-600 hover:bg-yellow-700" : "bg-blue-600 hover:bg-blue-700"}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-lg font-medium"
                         >
                             {isScanning ? 'Detener Escáner' : 'Iniciar Escáner QR'}
-                        </Button>
+                        </button>
                     </div>
                     
                     {/* Área del escáner QR */}
@@ -408,22 +407,22 @@ const VerificarInscripcionPage = () => {
                                 }
                             </Text>
                             <div className="mt-4 flex gap-2 justify-center">
-                                <Button
+                                <button
+                                    type="button"
                                     onClick={capturarYEscanear}
-                                    size="sm"
                                     disabled={!webcamReady}
-                                    className="bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-400"
+                                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium disabled:bg-gray-400"
                                 >
                                     Escanear Manualmente
-                                </Button>
-                                <Button
+                                </button>
+                                <button
+                                    type="button"
                                     onClick={cambiarCamara}
-                                    size="sm"
                                     disabled={!webcamReady}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-400"
+                                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium disabled:bg-gray-400"
                                 >
                                     Cambiar Cámara
-                                </Button>
+                                </button>
                             </div>
                         </div>
                     )}
@@ -509,16 +508,15 @@ const VerificarInscripcionPage = () => {
                                 </Text>
                                 
                                 {/* Botón oculto pero manteniendo el espacio */}
-                                <Button
-                                    size="lg"
-                                    icon={UserCheck}
-                                    loading={isLoading}
+                                <button
+                                    type="button"
                                     onClick={registrarAsistencia}
-                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                    disabled={isLoading}
+                                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-lg font-medium"
                                     style={{ visibility: 'hidden' }}
                                 >
                                     ✓ Registrar Asistencia
-                                </Button>
+                                </button>
                             </div>
                         ) : (
                             /* Mensaje de error para inscripciones inválidas/inactivas */
@@ -535,12 +533,13 @@ const VerificarInscripcionPage = () => {
                                 </Text>
                                 
                                 {/* Botón oculto pero manteniendo el espacio */}
-                                <Button
-                                    size="lg"
+                                <button
+                                    type="button"
                                     style={{ visibility: 'hidden' }}
+                                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-lg font-medium"
                                 >
                                     Botón oculto
-                                </Button>
+                                </button>
                             </div>
                         )}
                     </div>

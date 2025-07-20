@@ -231,7 +231,7 @@ const HorarioPage = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Horarios</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">Gestion de Horarios</h1>
                     <p className="text-gray-500">Administra los horarios de los empleados del gimnasio</p>
                 </div>
                 <Button

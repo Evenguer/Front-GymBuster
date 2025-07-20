@@ -587,12 +587,21 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
             )}
 
             <div className="flex justify-end space-x-2 mt-6">
-              <Button onClick={onClose} variant="secondary">
+              <button
+                type="button"
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+                onClick={onClose}
+                disabled={false}
+              >
                 Cancelar
-              </Button>
-              <Button type="submit" variant="primary">
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                disabled={false}
+              >
                 Crear Usuario
-              </Button>
+              </button>
             </div>
           </form>
         </div>

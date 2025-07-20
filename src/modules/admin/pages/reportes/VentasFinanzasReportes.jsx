@@ -422,67 +422,36 @@ const ReportesVentasFinanzas = () => {
           <Title className="text-2xl font-bold mb-2">Reportes de Ventas y Finanzas</Title>
           <Text>Análisis detallado de los ingresos, ventas y rentabilidad del negocio</Text>
         </div>
-        <button 
-          onClick={() => exportarReportePDF(datosFinancieros, periodo)} 
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center"
-          disabled={recargando}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clipRule="evenodd" />
-          </svg>
-          Exportar PDF
-        </button>
       </div>
 
       {/* Selector de Periodo */}
       <div className="mb-6">
-        <div className="flex justify-between items-center">
-          <div className="flex gap-2">
-            <button 
-              onClick={() => cambiarPeriodo('mensual')}
-              className={`px-4 py-2 rounded-lg transition-all ${periodo === 'mensual' 
-                ? 'bg-indigo-600 text-white' 
-                : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}
-            >
-              Mensual
-            </button>
-            <button 
-              onClick={() => cambiarPeriodo('trimestral')}
-              className={`px-4 py-2 rounded-lg transition-all ${periodo === 'trimestral' 
-                ? 'bg-indigo-600 text-white' 
-                : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}
-            >
-              Trimestral
-            </button>
-            <button 
-              onClick={() => cambiarPeriodo('anual')}
-              className={`px-4 py-2 rounded-lg transition-all ${periodo === 'anual' 
-                ? 'bg-indigo-600 text-white' 
-                : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}
-            >
-              Anual
-            </button>
-          </div>
-          
-          <button 
-            onClick={recargarDatos}
-            disabled={recargando || cargando}
-            className="flex items-center px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Actualizar datos"
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => cambiarPeriodo('mensual')}
+            className={`px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 ${periodo === 'mensual' ? '' : 'opacity-70'}`}
+            disabled={periodo === 'mensual'}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${recargando ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span className="ml-1">Actualizar</span>
+            Mensual
+          </button>
+          <button
+            type="button"
+            onClick={() => cambiarPeriodo('trimestral')}
+            className={`px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 ${periodo === 'trimestral' ? '' : 'opacity-70'}`}
+            disabled={periodo === 'trimestral'}
+          >
+            Trimestral
+          </button>
+          <button
+            type="button"
+            onClick={() => cambiarPeriodo('anual')}
+            className={`px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 ${periodo === 'anual' ? '' : 'opacity-70'}`}
+            disabled={periodo === 'anual'}
+          >
+            Anual
           </button>
         </div>
-        
-        {recargando && (
-          <div className="mt-2 flex items-center text-xs text-indigo-600">
-            <div className="animate-spin mr-2 h-3 w-3 border-t-2 border-indigo-600 rounded-full"></div>
-            Actualizando datos...
-          </div>
-        )}
       </div>
 
       <TabGroup>

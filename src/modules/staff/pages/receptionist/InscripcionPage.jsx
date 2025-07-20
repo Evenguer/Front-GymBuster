@@ -81,6 +81,8 @@ const InscripcionPage = () => {
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+  const [snackbarDuration, setSnackbarDuration] = useState(6000);
+  const [snackbarKey, setSnackbarKey] = useState(0);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -301,11 +303,14 @@ const InscripcionPage = () => {
   };
 
   // Funciones auxiliares
-  const showSnackbar = (message, severity = 'success') => {
-    setSnackbarMessage(message);
-    setSnackbarSeverity(severity);
-    setOpenSnackbar(true);
-  };
+ const showSnackbar = (message, severity = 'success', duration) => {
+  setSnackbarMessage(message);
+  setSnackbarSeverity(severity);
+  setSnackbarDuration(duration || 8000);
+  setSnackbarKey(prev => prev + 1); // Fuerza reinicio del Snackbar
+  setOpenSnackbar(false);
+  setTimeout(() => setOpenSnackbar(true), 10);
+};
 
   // Función para filtrar planes
   const planesFiltrados = planes.filter(plan => {
@@ -562,7 +567,10 @@ const InscripcionPage = () => {
               <Button
                 className="bg-red-600 hover:bg-red-700 text-white w-full py-2 text-sm font-medium rounded-lg shadow-sm"
                 icon={CheckCircle}
-                onClick={() => setPasoActual(2)}
+                onClick={() => {
+                  setPasoActual(2);
+                  showSnackbar('Datos registrados. Continúe agregando su plan para la inscripción', 'success', 4000);
+                }}
                 size="lg"
                 disabled={!clienteEncontrado}
               >
@@ -946,8 +954,9 @@ const InscripcionPage = () => {
       
       {/* Notificaciones arriba, igual que en AlquilerPage.jsx */}
       <Snackbar 
+        key={snackbarKey}
         open={openSnackbar} 
-        autoHideDuration={5000} 
+        autoHideDuration={snackbarDuration}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >

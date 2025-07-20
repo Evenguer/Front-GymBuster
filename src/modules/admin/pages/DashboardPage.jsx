@@ -3,6 +3,7 @@ import { Card, Title, Text, Tab, TabList, TabGroup, TabPanel, TabPanels, Metric,
 import { AreaChart, DonutChart, BarChart } from '@tremor/react';
 import { Calendar, Users, DollarSign, Package, AlertTriangle, Clock, TrendingUp, BarChart2 } from 'react-feather';
 import dashboardAdminAPI from '../services/DashboardAdminAPI';
+import { ENDPOINTS } from '../../../shared/services/endpoints';
 
 const DashboardPage = () => {
   const [stats, setStats] = useState({
@@ -42,84 +43,64 @@ const DashboardPage = () => {
     try {
       setRefreshing(true);
       setError(null);
-      
       console.log('🔄 Iniciando carga de datos del dashboard...');
-      
       // Cargar datos básicos del dashboard (métricas principales)
       const dashboardData = await dashboardAdminAPI.obtenerDatosDashboard();
-      console.log('📊 Datos básicos del dashboard:', dashboardData);
       setStats(dashboardData);
-      
       // Cargar estadísticas para gráficos en paralelo
-      const [estadisticasVentas, estadisticasClientes, productosBajoStock, actividadesRecientes, horariosHoy] = await Promise.all([
+      const [estadisticasVentas, estadisticasClientes, productosBajoStock, actividadesRecientes, horariosHoy, piezasBajoStockResp, topPiezasMasAlquiladas] = await Promise.all([
         dashboardAdminAPI.obtenerEstadisticasVentas(),
-        dashboardAdminAPI.obtenerEstadisticasClientes(), 
+        dashboardAdminAPI.obtenerEstadisticasClientes(),
         dashboardAdminAPI.obtenerProductosBajoStock(),
         dashboardAdminAPI.obtenerActividadesRecientes(),
-        dashboardAdminAPI.obtenerHorariosHoy() // Nuevo endpoint específico para horarios
+        dashboardAdminAPI.obtenerHorariosHoy(),
+        dashboardAdminAPI.obtenerPiezasBajoStock(),
+        // Servicio para top 10 piezas más alquiladas del mes actual
+        fetch(ENDPOINTS.REPORTES_ALQUILERES.TOP10_PIEZAS_MES_ACTUAL, {
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        }).then(r => r.json())
       ]);
-      
-      console.log('📈 Estadísticas de ventas:', estadisticasVentas);
-      console.log('👥 Estadísticas de clientes:', estadisticasClientes);
-      console.log('📦 Productos bajo stock:', productosBajoStock);
-      console.log('⚡ Actividades recientes:', actividadesRecientes);
-      console.log('🕒 Horarios de hoy:', horariosHoy);
-      
-      // Procesar datos de ventas por mes para el gráfico
+      // ...procesamiento de datos productos y clientes...
       const ventasChartData = estadisticasVentas.ventasPorMes?.map(item => ({
         date: item.nombreMes?.substring(0, 3) || 'Sin fecha',
         mes: item.mes || '',
         Ventas: parseFloat(item.totalVentas) || 0,
         CantidadVentas: parseInt(item.cantidadVentas) || 0
       })) || [];
-      
-      // Procesar datos de inscripciones por mes
       const inscripcionesChartData = estadisticasVentas.inscripcionesPorMes?.map(item => ({
         date: item.nombreMes?.substring(0, 3) || 'Sin fecha',
         mes: item.mes || '',
         Inscripciones: parseInt(item.cantidadInscripciones) || 0
       })) || [];
-      
-      // Combinar datos de ventas e inscripciones por fecha
       const combinedChartData = ventasChartData.map((venta) => {
         const inscripcionCorrespondiente = inscripcionesChartData.find(
           insc => insc.mes === venta.mes
         ) || { Inscripciones: 0 };
-        
         return {
           date: venta.date,
           Ventas: venta.Ventas,
           Inscripciones: inscripcionCorrespondiente.Inscripciones
         };
       });
-      
-      // Procesar datos de categorías para gráfico de dona
       const categoriasData = estadisticasVentas.ventasPorCategoria?.map(item => ({
         name: item.categoria || 'Sin categoría',
         value: parseFloat(item.totalVentas) || 0,
         cantidadVendida: parseInt(item.cantidadVendida) || 0
       })) || [];
-      
-      // Procesar datos de productos más vendidos
       const productosMasVendidos = estadisticasVentas.productosMasVendidos?.map(item => ({
         name: item.nombreProducto || 'Sin nombre',
         value: parseInt(item.cantidadVendida) || 0,
         ingresos: parseFloat(item.totalVentas) || 0
       })) || [];
-      
-      // Procesar datos de asistencias por día
       const asistenciasData = estadisticasClientes.asistenciasPorDia?.map(item => ({
         name: item.diaSemana || 'Sin día',
         value: parseInt(item.cantidadAsistencias) || 0
       })) || [];
-      
-      // Procesar datos de clientes por plan
       const clientesPlanData = estadisticasClientes.clientesPorPlan?.map(item => ({
         name: item.nombrePlan || 'Sin plan',
         value: parseInt(item.cantidadClientes) || 0,
         porcentaje: parseFloat(item.porcentaje) || 0
       })) || [];
-      
       setChartData({
         ventasPorMes: combinedChartData,
         productosPorCategoria: categoriasData,
@@ -129,10 +110,11 @@ const DashboardPage = () => {
         productosBajoStock: productosBajoStock.productosBajoStock || [],
         ultimasVentas: actividadesRecientes.ultimasVentas || [],
         ultimasInscripciones: actividadesRecientes.ultimasInscripciones || [],
-        empleadosHoy: horariosHoy.empleadosHoy || actividadesRecientes.empleadosHoy || [] // Priorizar datos específicos de horarios
+        empleadosHoy: horariosHoy.empleadosHoy || actividadesRecientes.empleadosHoy || [],
+        // Nuevos datos para análisis de equipamiento
+        piezasBajoStock: piezasBajoStockResp.piezasBajoStock || [],
+        topPiezasMasAlquiladas: Array.isArray(topPiezasMasAlquiladas) ? topPiezasMasAlquiladas : (topPiezasMasAlquiladas?.data || [])
       });
-      
-      console.log('✅ Datos del dashboard cargados exitosamente');
       setLoading(false);
       setRefreshing(false);
     } catch (err) {
@@ -186,14 +168,6 @@ const DashboardPage = () => {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h1>
           <p className="text-gray-500">Bienvenido al panel de administración de Busster GYM</p>
         </div>
-        <button 
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <TrendingUp size={16} className={`mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-          {refreshing ? 'Actualizando...' : 'Actualizar datos'}
-        </button>
       </div>
       
       {/* Tarjetas de estadísticas principales */}
@@ -300,7 +274,8 @@ const DashboardPage = () => {
         <TabList className="mb-4 overflow-x-auto flex-nowrap">
           <Tab className="whitespace-nowrap">📈 Tendencias de Ventas</Tab>
           <Tab className="whitespace-nowrap">📦 Análisis de Productos</Tab>
-          <Tab className="whitespace-nowrap">👥 Actividad de Clientes</Tab>
+          <Tab className="whitespace-nowrap">🔧 Análisis de Equipamiento</Tab>
+          <Tab className="whitespace-nowrap">👨🏻‍💼 Actividad de Clientes</Tab>
           <Tab className="whitespace-nowrap">⚡ Actividades Recientes</Tab>
         </TabList>
         
@@ -392,7 +367,6 @@ const DashboardPage = () => {
                   )}
                 </div>
               </Card>
-              
               <Card className="h-auto min-h-[420px] pb-6 overflow-auto relative">
                 {refreshing && <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-10 rounded-lg">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
@@ -428,6 +402,77 @@ const DashboardPage = () => {
                       <div className="text-center">
                         <Package size={48} className="mx-auto mb-2 text-gray-400" />
                         <Text>¡Excelente! No hay productos con bajo stock</Text>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </div>
+          </TabPanel>
+
+          {/* Panel 3: Análisis de Equipamiento */}
+          <TabPanel>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="h-auto min-h-[420px] pb-6 relative">
+                {refreshing && <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-10 rounded-lg">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                </div>}
+                <Title>🏆 Piezas Más Alquiladas</Title>
+                <Text>Top piezas por cantidad alquilado</Text>
+                <div className="mt-4 h-72 overflow-hidden">
+                  {chartData.topPiezasMasAlquiladas?.length > 0 ? (
+                    <BarChart
+                      className="h-full w-full"
+                      data={chartData.topPiezasMasAlquiladas.map(p => ({ name: p.pieza, Cantidad: p.unidadesAlquiladas }))}
+                      index="name"
+                      categories={["Cantidad"]}
+                      colors={["indigo"]}
+                      showAnimation
+                      showLegend={false}
+                      valueFormatter={v => `${v} alquileres`}
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-gray-500">
+                      <Text>No hay datos de piezas alquiladas</Text>
+                    </div>
+                  )}
+                </div>
+              </Card>
+              <Card className="h-auto min-h-[420px] pb-6 overflow-auto relative">
+                {refreshing && <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-10 rounded-lg">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
+                </div>}
+                <Title>📦 Stock de Equipamiento</Title>
+                <Text>Piezas que requieren reabastecimiento</Text>
+                <div className="mt-4 space-y-4 max-h-72 overflow-auto pr-2">
+                  {chartData.piezasBajoStock?.length > 0 ? (
+                    chartData.piezasBajoStock.map((pieza, index) => (
+                      <div key={index} className="mb-4 p-3 border rounded-lg bg-gray-50">
+                        <Flex className="flex-wrap mb-2">
+                          <Text className="truncate max-w-[70%] font-medium">{pieza.nombrePieza}</Text>
+                          <Text className="text-sm text-gray-600">{pieza.categoria}</Text>
+                        </Flex>
+                        <Flex className="flex-wrap mb-2">
+                          <Text className="text-sm">Stock: {pieza.stockActual} / Mínimo: {pieza.stockMinimo}</Text>
+                          <Text className={`text-sm font-medium ${
+                            pieza.porcentajeStock < 20 ? 'text-red-600' : 
+                            pieza.porcentajeStock < 50 ? 'text-amber-600' : 'text-green-600'
+                          }`}>
+                            {pieza.porcentajeStock}% del stock mínimo
+                          </Text>
+                        </Flex>
+                        <ProgressBar 
+                          value={Math.min(pieza.porcentajeStock, 100)} 
+                          color={pieza.porcentajeStock < 20 ? "red" : pieza.porcentajeStock < 50 ? "amber" : "emerald"} 
+                          className="mt-2" 
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-gray-500">
+                      <div className="text-center">
+                        <Package size={48} className="mx-auto mb-2 text-gray-400" />
+                        <Text>¡Excelente! No hay piezas con bajo stock</Text>
                       </div>
                     </div>
                   )}

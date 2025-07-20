@@ -183,8 +183,8 @@ const EspecialidadesPage = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Especialidades</h1>
-          <p className="text-gray-500">Gestiona las especialidades del gimnasio</p>
+          <h1 className="text-2xl font-bold text-gray-900">Gestion de Especialidades</h1>
+          <p className="text-gray-500">Administra las especialidades del gimnasio</p>
         </div>
         {isAdmin() && (
           <Button
@@ -245,7 +245,7 @@ const EspecialidadesPage = () => {
               filteredEspecialidades.map((especialidad) => (
                 <TableRow key={especialidad.id}>
                   <TableCell>
-                    <div className="font-medium text-gray-900">{especialidad.nombre}</div>
+                    <div className="text-gray-500">{especialidad.nombre}</div>
                   </TableCell>
                   <TableCell>
                     <div className="text-gray-500">{especialidad.descripcion}</div>
