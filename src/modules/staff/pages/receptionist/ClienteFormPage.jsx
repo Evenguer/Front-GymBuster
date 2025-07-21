@@ -8,10 +8,10 @@ import {
   isStrongPassword,
   isValidEmail,
   isValidUsername,
-  isOver18,
   isValidName,
   ERROR_MESSAGES
 } from '../../../../shared/utils/validations';
+import { isOver18, getMaxBirthDate } from '../../../../shared/utils/dateUtils';
 import './modal-styles.css';
 
 const initialFormData = {
@@ -353,16 +353,14 @@ const ClienteFormPage = () => {
                 value={formData.fechaNacimiento}
                 onChange={handleInputChange}
                 error={formErrors.fechaNacimiento}
-                max={(() => {
-                  const today = new Date();
-                  today.setFullYear(today.getFullYear() - 13);
-                  return today.toISOString().split('T')[0];
-                })()}
+                max={getMaxBirthDate()}
+                placeholder="Seleccione fecha de nacimiento"
               />
               {formErrors.fechaNacimiento && (
                 <p className="text-red-500 text-xs mt-1">{formErrors.fechaNacimiento}</p>
               )}
-              <p className="text-gray-500 text-xs mt-1">Debe ser mayor de 13 años para registrarse.</p>
+              <p className="text-gray-500 text-xs mt-1">Debe ser mayor de 18 años.</p>
+        
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">

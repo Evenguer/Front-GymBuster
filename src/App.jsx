@@ -125,8 +125,7 @@ import VerificarInscripcionPage from './modules/staff/pages/receptionist/Verific
 import ListaAsistenciaCliente from './modules/staff/pages/receptionist/ListaAsistenciaCliente';
 
 import TrainerHomePage from './modules/staff/pages/trainer/TrainerHomePage';
-// ...existing code...
-
+import StaffDashboardSwitch from './modules/staff/pages/StaffDashboardSwitch';
 
 // Client Pages
 import ClientHomePage from './modules/client/pages/ClientHomePage';
@@ -197,7 +196,7 @@ function App() {
             <Route element={<StaffLayout />}>
               <Route index element={<Navigate to="/staff/dashboard" replace />} />
               {/* Dashboard: muestra el de recepcionista o entrenador según el rol */}
-              <Route path="dashboard" element={<TrainerHomePage />} />
+              <Route path="dashboard" element={<StaffDashboardSwitch />} />
               <Route path="categorias" element={<CategoriaPage />} />
               <Route path="especialidades" element={<EspecialidadListaPage />} />
               <Route path="planes" element={<PlanesListaPage />} />
