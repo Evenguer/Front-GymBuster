@@ -170,7 +170,7 @@ const TrainerPerformanceManagementPage = () => {
     if (!form.estatura || isNaN(form.estatura) || Number(form.estatura) <= 0) return 'La estatura debe ser mayor a 0.';
     if (!form.diagnostico || form.diagnostico.trim().length < 10) return 'El diagnóstico debe tener al menos 10 caracteres.';
     if (form.diagnostico && form.diagnostico.trim().length > 100) return 'El diagnóstico no debe superar los 100 caracteres.';
-    if (!form.edad || isNaN(form.edad) || Number(form.edad) < 13 || Number(form.edad) > 120) return 'La edad debe estar entre 13 y 120 años.';
+    if (!form.edad || isNaN(form.edad) || Number(form.edad) < 18 || Number(form.edad) > 120) return 'La edad debe ser mayor o igual a 18 años y menor a 120 años.';
     if (!form.nivelFisico || form.nivelFisico.trim().length < 3) return 'El nivel físico es obligatorio y debe tener al menos 3 caracteres.';
     return '';
   };
@@ -395,7 +395,7 @@ const TrainerPerformanceManagementPage = () => {
                             (() => {
                               const diasOrden = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
                               const horariosOrdenados = cliente.horarios.slice().sort((a, b) => diasOrden.indexOf(a.diaSemana) - diasOrden.indexOf(b.diaSemana));
-                              return horariosOrdenados.map((h, idx) => (
+                              return horariosOrdenados.map((h) => (
                                 <div key={h.idHorario || `${h.diaSemana}-${h.horaInicio}-${h.horaFin}`}
                                   className="bg-gray-100 rounded-lg px-3 py-2 text-xs text-gray-700 flex flex-col shadow-sm border border-gray-200">
                                   <span className="font-semibold text-red-700">{h.diaSemana}</span>
@@ -515,7 +515,7 @@ const TrainerPerformanceManagementPage = () => {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-black mb-2 flex items-center gap-1"><Heart size={14} className="text-red-600" />Edad</label>
-                    <input type="number" name="edad" value={form.edad} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" required min="13" max="120" />
+                    <input type="number" name="edad" value={form.edad} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500" required min="18" max="120" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-black mb-2 flex items-center gap-1"><Activity size={14} className="text-red-600" />Nivel Físico</label>
