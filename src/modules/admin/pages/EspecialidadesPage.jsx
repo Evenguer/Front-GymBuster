@@ -279,39 +279,38 @@ const EspecialidadesPage = () => {
                   <TableCell>
                     {isAdmin() && (
                       <div className="flex gap-2">
-
-                        <Button
-                          size="xs"
-                          variant="secondary"
-                          icon={Edit}
+                        <button
                           onClick={() => handleEditEspecialidad(especialidad)}
-                          className="p-2"
+                          className="px-2 py-2 border-2 border-orange-500 text-orange-500 rounded-lg hover:bg-orange-50 hover:border-orange-600 font-medium bg-transparent flex items-center justify-center"
+                          title="Editar"
                           aria-label="Editar"
-                        />
-                        <Button
-                          size="xs"
-                          variant="secondary"
-                          color="red"
-                          icon={Trash2}
-                          onClick={async () => {
-
-                            if (!window.confirm('¿Estás seguro de que quieres eliminar esta especialidad?')) return;
-                            try {
-                              const token = localStorage.getItem('token');
-                              await especialidadAPI.eliminarEspecialidad(especialidad.id, token);
-                              notify.success('Especialidad eliminada correctamente');
-                              await fetchEspecialidades();
-                            } catch (error) {
-                              console.error('Error al eliminar especialidad:', error);
-                              notify.error(error.message || 'Error al eliminar la especialidad');
-                            }
+                        >
+                          <Edit size={12} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            import('../../../shared/components/ConfirmDeleteToast').then(({ showConfirmDeleteToast }) => {
+                              showConfirmDeleteToast({
+                                message: '¿Estás seguro de que quieres eliminar esta especialidad?',
+                                onConfirm: async () => {
+                                  try {
+                                    const token = localStorage.getItem('token');
+                                    await especialidadAPI.eliminarEspecialidad(especialidad.id, token);
+                                    notify.success('Especialidad eliminada correctamente');
+                                    await fetchEspecialidades();
+                                  } catch (error) {
+                                    notify.error(error.message || 'Error al eliminar la especialidad');
+                                  }
+                                },
+                              });
+                            });
                           }}
-
-
-                          className="p-2"
+                          className="px-2 py-2 border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-700 font-medium bg-transparent flex items-center justify-center"
+                          title="Eliminar"
                           aria-label="Eliminar"
-
-                        />
+                        >
+                          <Trash2 size={12} />
+                        </button>
                       </div>
                     )}
                   </TableCell>

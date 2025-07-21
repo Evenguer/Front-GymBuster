@@ -19,6 +19,7 @@ import {
 } from '@tremor/react';
 import { Edit, Trash2, Search, PlusCircle, RefreshCw } from 'react-feather';
 import { productosAPI } from '../../../staff/services/productosAPI';
+import { showConfirmDeleteToast } from '../../../../shared/components/ConfirmDeleteToast';
 import { categoriaAPI } from '../../../admin/services/CategoriaAPI';
 import ProductoModal from '../../components/receptionist/ProductoModal';
 
@@ -117,23 +118,25 @@ const ProductoPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar este producto?')) {
-      return;
-    }
-    try {
-      await productosAPI.eliminarProducto(id);
-      const nuevos = productos.filter(prod => prod.idProducto !== id);
-      setProductos(nuevos);
-      setCounters({
-        total: nuevos.length,
-        activos: nuevos.filter(p => p.estado).length,
-        inactivos: nuevos.filter(p => !p.estado).length
-      });
-      notify.success('Producto eliminado correctamente');
-    } catch (err) {
-      console.error('Error al eliminar el producto:', err.message);
-      notify.error('Error al eliminar el producto');
-    }
+    showConfirmDeleteToast({
+      message: '¿Estás seguro de que quieres eliminar este producto?',
+      onConfirm: async () => {
+        try {
+          await productosAPI.eliminarProducto(id);
+          const nuevos = productos.filter(prod => prod.idProducto !== id);
+          setProductos(nuevos);
+          setCounters({
+            total: nuevos.length,
+            activos: nuevos.filter(p => p.estado).length,
+            inactivos: nuevos.filter(p => !p.estado).length
+          });
+          notify.success('Producto eliminado correctamente');
+        } catch (err) {
+          console.error('Error al eliminar el producto:', err.message);
+          notify.error('Error al eliminar el producto');
+        }
+      }
+    });
   };
 
   const handleEdit = (producto) => {

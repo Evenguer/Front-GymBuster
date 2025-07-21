@@ -30,10 +30,12 @@ import {
   X,
   UserCheck,
   CalendarDays,
-  Ban
+  Ban,
+  Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { showConfirmDeleteToast } from '../../../../shared/components/ConfirmDeleteToast';
 
 
 const ListaInscripcionesPage = () => {
@@ -176,38 +178,34 @@ const ListaInscripcionesPage = () => {
   };
 
   const cancelarInscripcion = async (idInscripcion) => {
-    if (!window.confirm('¿Estás seguro de que deseas cancelar esta inscrpcion?')) return;
-    try {
-      setCancelandoInscripcion(true);
-      setError(null);
-      
-      console.log('Cancelando inscripción:', idInscripcion);
-      
-      await inscripcionAPI.cancelarInscripcion(idInscripcion);
-      
-      // Actualizar el estado en la lista local
-      setInscripciones(prev => prev.map(inscripcion => 
-        inscripcion.idInscripcion === idInscripcion 
-          ? { ...inscripcion, estado: 'CANCELADA' }
-          : inscripcion
-      ));
-      
-      // Actualizar el detalle seleccionado si es el mismo
-      if (detalleInscripcionSeleccionada && detalleInscripcionSeleccionada.idInscripcion === idInscripcion) {
-        setDetalleInscripcionSeleccionada(prev => ({
-          ...prev,
-          estado: 'CANCELADA'
-        }));
+    showConfirmDeleteToast({
+      message: '¿Estás seguro de que deseas cancelar esta inscripción?',
+      onConfirm: async () => {
+        try {
+          setCancelandoInscripcion(true);
+          setError(null);
+          console.log('Cancelando inscripción:', idInscripcion);
+          await inscripcionAPI.cancelarInscripcion(idInscripcion);
+          setInscripciones(prev => prev.map(inscripcion => 
+            inscripcion.idInscripcion === idInscripcion 
+              ? { ...inscripcion, estado: 'CANCELADA' }
+              : inscripcion
+          ));
+          if (detalleInscripcionSeleccionada && detalleInscripcionSeleccionada.idInscripcion === idInscripcion) {
+            setDetalleInscripcionSeleccionada(prev => ({
+              ...prev,
+              estado: 'CANCELADA'
+            }));
+          }
+          console.log('Inscripción cancelada exitosamente');
+        } catch (err) {
+          console.error('Error al cancelar inscripción:', err);
+          setError(`Error al cancelar la inscripción: ${err.message}`);
+        } finally {
+          setCancelandoInscripcion(false);
+        }
       }
-      
-      console.log('Inscripción cancelada exitosamente');
-      
-    } catch (err) {
-      console.error('Error al cancelar inscripción:', err);
-      setError(`Error al cancelar la inscripción: ${err.message}`);
-    } finally {
-      setCancelandoInscripcion(false);
-    }
+    });
   };
 
   const formatearFecha = (fecha) => {
@@ -592,9 +590,9 @@ const ListaInscripcionesPage = () => {
                   <Button
                     size="sm"
                     variant="secondary"
-                    icon={FileText}
+                    icon={Eye}
                     onClick={() => verDetalle(inscripcion.idInscripcion)}
-                    className="px-4 py-2 border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-700 font-medium bg-transparent"
+                    className="border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-700 bg-transparent px-4 py-2 flex items-center gap-2 font-medium"
                   >
                     Ver Detalle
                   </Button>

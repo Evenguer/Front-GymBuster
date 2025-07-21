@@ -70,25 +70,31 @@ export const AuthProvider = ({ children }) => {
       
       // Realizar petición al backend real
       const response = await axios.post(`${API_URL}/auth/login`, credentials);
-      
+
       // Imprimir la respuesta completa para depuración
       console.log('Respuesta de login:', response.data);
-      
+
       // Verificar la estructura de la respuesta
       if (!response.data) {
         throw new Error('Respuesta del servidor vacía');
-      }      // La respuesta debería ser un objeto JwtResponse según tu backend
-      // {id: number, token: string, tipo: string, nombreUsuario: string, roles: string[]}
-      const { id, token, nombreUsuario, roles } = response.data;
-      
+      }
+      // La respuesta debería ser un objeto JwtResponse según tu backend
+      // {id: number, token: string, tipo: string, nombreUsuario: string, roles: string[], estado: boolean}
+      const { id, token, nombreUsuario, roles, estado } = response.data;
+
+      if (estado === false) {
+        setError('Tu usuario está desactivado. No puedes iniciar sesión.');
+        throw new Error('Usuario desactivado');
+      }
+
       if (!token) {
         throw new Error('No se recibió el token de autenticación');
       }
-      
+
       // Guardar token en localStorage
       localStorage.setItem('token', token);
       setToken(token);
-        // Crear objeto de usuario a partir de los datos obtenidos
+      // Crear objeto de usuario a partir de los datos obtenidos
       const userFromResponse = {
         id: id || 0, // Ahora obtenemos el ID desde la respuesta
         username: nombreUsuario,
@@ -97,19 +103,19 @@ export const AuthProvider = ({ children }) => {
         name: nombreUsuario,
         token: token // Guardar el token para usar en las llamadas a API
       };
-      
+
       console.log('Usuario procesado:', userFromResponse);
       console.log('Roles recibidos:', roles);
-      
+
       // Guardar información básica del usuario en localStorage
       localStorage.setItem('user', JSON.stringify(userFromResponse));
-      
+
       setUser(userFromResponse);
       setIsAuthenticated(true);
-      
+
       // Configurar token en cabeceras por defecto
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      
+
       return userFromResponse;
     } catch (err) {
       // Capturar específicamente el mensaje de error del servidor si existe

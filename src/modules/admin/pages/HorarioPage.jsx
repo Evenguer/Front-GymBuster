@@ -198,15 +198,20 @@ const HorarioPage = () => {
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('¿Está seguro de eliminar este horario?')) {
-            try {
-                await horarioEmpleadoAPI.eliminarHorario(id);
-                notify.success('Horario eliminado exitosamente');
-                await fetchHorarios();
-            } catch (error) {
-                notify.error(error.message || 'Error al eliminar el horario');
-            }
-        }
+        import('../../../shared/components/ConfirmDeleteToast').then(({ showConfirmDeleteToast }) => {
+            showConfirmDeleteToast({
+                message: '¿Está seguro de eliminar este horario?',
+                onConfirm: async () => {
+                    try {
+                        await horarioEmpleadoAPI.eliminarHorario(id);
+                        notify.success('Horario eliminado exitosamente');
+                        await fetchHorarios();
+                    } catch (error) {
+                        notify.error(error.message || 'Error al eliminar el horario');
+                    }
+                },
+            });
+        });
     };
 
     const filteredHorarios = horarios.filter(horario => {

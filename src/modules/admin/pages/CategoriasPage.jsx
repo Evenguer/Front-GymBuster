@@ -90,17 +90,20 @@ const CategoriasPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar esta categoría?')) {
-      return;
-    }
-    
-    try {
-      await categoriaAPI.eliminarCategoria(id);
-      setCategorias(categorias.filter(cat => cat.idCategoria !== id));
-      notify.success('Categoría eliminada correctamente');
-    } catch {
-      notify.error('Error al eliminar la categoría');
-    }
+    import('../../../shared/components/ConfirmDeleteToast').then(({ showConfirmDeleteToast }) => {
+      showConfirmDeleteToast({
+        message: '¿Estás seguro de que quieres eliminar esta categoría?',
+        onConfirm: async () => {
+          try {
+            await categoriaAPI.eliminarCategoria(id);
+            setCategorias(categorias.filter(cat => cat.idCategoria !== id));
+            notify.success('Categoría eliminada correctamente');
+          } catch {
+            notify.error('Error al eliminar la categoría');
+          }
+        },
+      });
+    });
   };
   
   const handleEdit = (categoria) => {
@@ -331,25 +334,23 @@ const CategoriasPage = () => {
                   <TableCell>
 
 
-                    <div className="flex space-x-2">
-                      <Button
-                        size="xs"
-                        variant="secondary"
-                        icon={Edit}
-                        onClick={() => handleEdit(categoria)}
-                        className="p-2"
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
                         aria-label="Editar"
-                      />
-                      <Button
-                        size="xs"
-                        variant="secondary"
-                        color="red"
-                        icon={Trash2}
-                        onClick={() => handleDelete(categoria.idCategoria)}
-                        className="p-2"
+                        className="px-2 py-2 border-2 border-orange-500 text-orange-500 rounded-lg hover:bg-orange-50 hover:border-orange-600 font-medium bg-transparent flex items-center justify-center"
+                        onClick={() => handleEdit(categoria)}
+                      >
+                        <Edit size={12} />
+                      </button>
+                      <button
+                        type="button"
                         aria-label="Eliminar"
-
-                      />
+                        className="px-2 py-2 border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-700 font-medium bg-transparent flex items-center justify-center"
+                        onClick={() => handleDelete(categoria.idCategoria)}
+                      >
+                        <Trash2 size={12} />
+                      </button>
                     </div>
                   </TableCell>
                 </TableRow>

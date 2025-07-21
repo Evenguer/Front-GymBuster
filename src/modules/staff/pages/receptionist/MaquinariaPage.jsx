@@ -19,6 +19,7 @@ import {
 } from '@tremor/react';
 import { Edit, Trash2, Search, PlusCircle, RefreshCw } from 'react-feather';
 import { maquinariaAPI } from '../../services/maquinariaAPI';
+import { showConfirmDeleteToast } from '../../../../shared/components/ConfirmDeleteToast';
 import MaquinariaModal from '../../components/receptionist/MaquinariaModal';
 
 const MaquinariaPage = () => {
@@ -81,23 +82,25 @@ const MaquinariaPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar esta máquina?')) {
-      return;
-    }
-    try {
-      await maquinariaAPI.eliminarPieza(id);
-      const nuevos = piezas.filter(pieza => pieza.idPieza !== id);
-      setPiezas(nuevos);
-      setCounters({
-        total: nuevos.length,
-        activos: nuevos.filter(p => p.estado).length,
-        inactivos: nuevos.filter(p => !p.estado).length
-      });
-      notify.success('Máquina eliminada correctamente');
-    } catch (err) {
-      console.error('Error al eliminar la máquina:', err.message);
-      notify.error('Error al eliminar la máquina');
-    }
+    showConfirmDeleteToast({
+      message: '¿Estás seguro de que quieres eliminar esta máquina?',
+      onConfirm: async () => {
+        try {
+          await maquinariaAPI.eliminarPieza(id);
+          const nuevos = piezas.filter(pieza => pieza.idPieza !== id);
+          setPiezas(nuevos);
+          setCounters({
+            total: nuevos.length,
+            activos: nuevos.filter(p => p.estado).length,
+            inactivos: nuevos.filter(p => !p.estado).length
+          });
+          notify.success('Máquina eliminada correctamente');
+        } catch (err) {
+          console.error('Error al eliminar la máquina:', err.message);
+          notify.error('Error al eliminar la máquina');
+        }
+      }
+    });
   };
 
   const handleEdit = (pieza) => {
