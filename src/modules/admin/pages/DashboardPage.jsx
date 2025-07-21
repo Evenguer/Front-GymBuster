@@ -70,7 +70,7 @@ const DashboardPage = () => {
       const inscripcionesChartData = estadisticasVentas.inscripcionesPorMes?.map(item => ({
         date: item.nombreMes?.substring(0, 3) || 'Sin fecha',
         mes: item.mes || '',
-        Inscripciones: parseInt(item.cantidadInscripciones) || 0
+        Inscripciones: parseFloat(item.montoTotal) || 0
       })) || [];
       const combinedChartData = ventasChartData.map((venta) => {
         const inscripcionCorrespondiente = inscripcionesChartData.find(
@@ -263,7 +263,7 @@ const DashboardPage = () => {
             <div className="min-w-0">
               <Text className="truncate text-green-600">Ingresos Totales</Text>
               <Metric className="text-2xl font-bold text-gray-900">{formatoPeso(stats.ventasTotales)}</Metric>
-              <Text className="text-xs text-gray-500 mt-1">Ventas acumuladas</Text>
+              <Text className="text-xs text-gray-500 mt-1">Total de ventas, inscripciones y alquileres</Text>
             </div>
           </Flex>
         </Card>
