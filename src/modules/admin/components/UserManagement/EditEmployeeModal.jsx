@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { Select, SelectItem, TextInput, DatePicker, NumberInput } from '@tremor/react';
 import { updateEmployee } from '../../../../shared/services/employeeAPI';
+import { isOver18, getMaxBirthDate } from '../../../../shared/utils/dateUtils';
 
 const EditEmployeeModal = ({ employee, isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState({
@@ -157,6 +158,13 @@ const EditEmployeeModal = ({ employee, isOpen, onClose, onSave }) => {
     if (formData.ruc && formData.ruc.length !== 11) errors.ruc = 'El RUC debe tener 11 dígitos';
     if (!formData.salario) errors.salario = 'El salario es requerido';
     if (formData.salario <= 0) errors.salario = 'El salario debe ser mayor a 0';
+
+    // Validar edad
+    if (!formData.fechaNacimiento) {
+      errors.fechaNacimiento = 'La fecha de nacimiento es requerida';
+    } else if (!isOver18(formData.fechaNacimiento)) {
+      errors.fechaNacimiento = 'Debe ser mayor de 18 años para registrarse';
+    }
 
     // Validaciones específicas para entrenadores
     if (isTrainer) {
@@ -345,7 +353,12 @@ const EditEmployeeModal = ({ employee, isOpen, onClose, onSave }) => {
                     }));
                   }}
                   type="date"
+                  max={getMaxBirthDate()}
                 />
+                {formErrors.fechaNacimiento && (
+                  <p className="text-red-500 text-xs mt-1">{formErrors.fechaNacimiento}</p>
+                )}
+                <p className="text-gray-500 text-xs mt-1">Debe ser mayor de 18 años.</p>
               </div>
             </div>
             

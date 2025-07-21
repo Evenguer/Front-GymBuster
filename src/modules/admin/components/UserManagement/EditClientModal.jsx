@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Select, SelectItem, TextInput } from '@tremor/react';
 import { toast } from 'react-hot-toast';
+import { isOver18, getMaxBirthDate } from '../../../../shared/utils/dateUtils';
 
 const EditClientModal = ({ client, isOpen, onClose, onSave }) => {  const [formData, setFormData] = useState({
     nombre: '',
@@ -128,6 +129,13 @@ const EditClientModal = ({ client, isOpen, onClose, onSave }) => {  const [formD
     if (formData.correo && !/\S+@\S+\.\S+/.test(formData.correo)) errors.correo = 'El correo no es válido';
     if (!formData.celular) errors.celular = 'El celular es requerido';
     if (formData.celular && formData.celular.length !== 9) errors.celular = 'El celular debe tener 9 dígitos';
+    
+    // Validar edad
+    if (!formData.fechaNacimiento) {
+      errors.fechaNacimiento = 'La fecha de nacimiento es requerida';
+    } else if (!isOver18(formData.fechaNacimiento)) {
+      errors.fechaNacimiento = 'Debe ser mayor de 18 años para registrarse';
+    }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -358,12 +366,11 @@ const EditClientModal = ({ client, isOpen, onClose, onSave }) => {  const [formD
                     }));
                   }}
                   type="date"
-                  max={(() => {
-                    const today = new Date();
-                    today.setFullYear(today.getFullYear() - 13);
-                    return today.toISOString().split('T')[0];
-                  })()}
-                />               
+                  max={getMaxBirthDate()}
+                />
+                {formErrors.fechaNacimiento && (
+                  <p className="text-red-500 text-xs mt-1">{formErrors.fechaNacimiento}</p>
+                )}
               </div>
             </div>
           </div>

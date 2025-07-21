@@ -12,12 +12,12 @@ import {
   isStrongPassword,
   isValidEmail,
   isValidUsername,
-  isOver18,
   isValidName,
   isValidSalary,
   isValidMaxQuota,
   ERROR_MESSAGES
 } from '../../../../shared/utils/validations';
+import { isOver18, getMaxBirthDate } from '../../../../shared/utils/dateUtils';
 
 const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
   const notify = useNotification();
@@ -407,16 +407,12 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   name="fechaNacimiento"
                   value={formData.fechaNacimiento}
                   onChange={handleInputChange}
-                  max={(() => {
-                    const today = new Date();
-                    today.setFullYear(today.getFullYear() - 13);
-                    return today.toISOString().split('T')[0];
-                  })()}
+                  max={getMaxBirthDate()}
                 />
                 {formErrors.fechaNacimiento && (
                   <p className="text-red-500 text-xs mt-1">{formErrors.fechaNacimiento}</p>
                 )}
-                <p className="text-gray-500 text-xs mt-1">Debe ser mayor de 13 años para registrarse.</p>
+                <p className="text-gray-500 text-xs mt-1">Debe ser mayor de 18 años para registrarse.</p>
               </div>
             </div>
 
