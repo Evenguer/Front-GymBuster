@@ -263,7 +263,7 @@ const DashboardPage = () => {
             <div className="min-w-0">
               <Text className="truncate text-green-600">Ingresos Totales</Text>
               <Metric className="text-2xl font-bold text-gray-900">{formatoPeso(stats.ventasTotales)}</Metric>
-              <Text className="text-xs text-gray-500 mt-1">Ventas acumuladas</Text>
+              <Text className="text-xs text-gray-500 mt-1">Total de ventas, inscripciones y alquileres</Text>
             </div>
           </Flex>
         </Card>
