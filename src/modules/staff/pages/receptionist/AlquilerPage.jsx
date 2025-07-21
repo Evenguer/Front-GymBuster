@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../../shared/hooks/useAuth';
 import { alquilerAPI } from '../../services/alquilerAPI';
@@ -435,14 +434,6 @@ const AlquilerPage = () => {
       setPasoActual(4); // Avanzar al paso de confirmación
       
       showNotification('Alquiler registrado exitosamente', 'success');
-      
-      // Mostrar detalle del vuelto
-      const vuelto = parseFloat(montoPagado) - totalAlquiler;
-      if (vuelto > 0) {
-        showNotification(`Vuelto: S/ ${vuelto.toFixed(2)}`, 'info');
-      }
-      
-      // Ya no se reinicia el formulario automáticamente. El usuario debe presionar el botón en la confirmación para iniciar otro alquiler.
       
     } catch (error) {
       console.error('Error al registrar pago:', error);
@@ -903,7 +894,7 @@ const AlquilerPage = () => {
               <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <span className="font-semibold text-lg text-green-800">
+                    <span className="mb-2 font-medium text-lg text-green-800">
                       {piezaSeleccionadaObj.nombre}
                     </span>
                     <div className="text-green-600">

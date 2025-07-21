@@ -164,7 +164,7 @@ const ClienteFormPage = () => {
         iconTheme: {
           primary: '#10B981',
           secondary: '#fff',
-        },
+        }
       });
     } catch (error) {
       console.error('Error:', error);
@@ -353,11 +353,16 @@ const ClienteFormPage = () => {
                 value={formData.fechaNacimiento}
                 onChange={handleInputChange}
                 error={formErrors.fechaNacimiento}
+                max={(() => {
+                  const today = new Date();
+                  today.setFullYear(today.getFullYear() - 13);
+                  return today.toISOString().split('T')[0];
+                })()}
               />
               {formErrors.fechaNacimiento && (
                 <p className="text-red-500 text-xs mt-1">{formErrors.fechaNacimiento}</p>
               )}
-              <p className="text-gray-500 text-xs mt-1">{getHelpMessage('fechaNacimiento')}</p>
+              <p className="text-gray-500 text-xs mt-1">Debe ser mayor de 13 años para registrarse.</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">

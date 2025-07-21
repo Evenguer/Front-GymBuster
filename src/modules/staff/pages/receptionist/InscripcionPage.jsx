@@ -461,23 +461,19 @@ const InscripcionPage = () => {
         {pasoActual > 1 && pasoActual < 7 && (
           <div className="flex gap-2">
             {pasoActual !== 6 && (
-              <Button 
+              <button 
+                type="button"
                 onClick={volver}
-                variant="secondary"
-                icon={ArrowLeft}
-                size="sm"
+                className="px-4 py-2 border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-700 font-medium"
+                disabled={loading}
               >
-                Volver
-              </Button>
+                <span className="flex items-center gap-2">
+                  <ArrowLeft size={18} />
+                  Volver
+                </span>
+              </button>
             )}
-            <Button 
-              onClick={reiniciarFormulario} 
-              variant="secondary"
-              color="gray"
-              size="sm"
-            >
-              Nueva Inscripción
-            </Button>
+            {/* Se elimina el botón Nueva Inscripción */}
           </div>
         )}
       </div>

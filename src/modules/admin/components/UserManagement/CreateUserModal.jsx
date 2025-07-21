@@ -407,11 +407,16 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   name="fechaNacimiento"
                   value={formData.fechaNacimiento}
                   onChange={handleInputChange}
+                  max={(() => {
+                    const today = new Date();
+                    today.setFullYear(today.getFullYear() - 13);
+                    return today.toISOString().split('T')[0];
+                  })()}
                 />
                 {formErrors.fechaNacimiento && (
                   <p className="text-red-500 text-xs mt-1">{formErrors.fechaNacimiento}</p>
                 )}
-                <p className="text-gray-500 text-xs mt-1">{getHelpMessage('fechaNacimiento')}</p>
+                <p className="text-gray-500 text-xs mt-1">Debe ser mayor de 13 años para registrarse.</p>
               </div>
             </div>
 

@@ -141,7 +141,9 @@ const ViewUserDetailsModal = ({ user, isOpen, onClose, lastAccess }) => {
 
   // Renderizar la lista de roles del usuario
   const renderRoles = () => {
-    const roles = Array.isArray(displayUser.roles) ? displayUser.roles : [displayUser.role || 'No definido'];
+    let roles = Array.isArray(displayUser.roles) ? displayUser.roles : [displayUser.role || 'No definido'];
+    // Eliminar duplicados (por valor)
+    roles = [...new Set(roles)];
     return roles.map((role, index) => (
       <span 
         key={index} 
@@ -159,20 +161,10 @@ const ViewUserDetailsModal = ({ user, isOpen, onClose, lastAccess }) => {
       <div className="fixed inset-0 overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4">
           <Dialog.Panel className="modal-content w-full max-w-3xl transform overflow-hidden rounded-lg bg-white p-6 text-left align-middle shadow-xl transition-all">
-            <Dialog.Title as="div" className="flex justify-between items-center mb-6">
+            <Dialog.Title as="div" className="flex items-center mb-6">
               <h3 className="text-xl font-bold text-gray-900">
                 Detalles del Usuario
               </h3>
-              <button
-                type="button"
-                className="rounded-md bg-white text-gray-400 hover:text-gray-500"
-                onClick={onClose}
-              >
-                <span className="sr-only">Cerrar</span>
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
             </Dialog.Title>
 
             <div className="space-y-6">
@@ -193,11 +185,6 @@ const ViewUserDetailsModal = ({ user, isOpen, onClose, lastAccess }) => {
                   <div className="flex flex-wrap mt-2">
                     {renderRoles()}
                   </div>
-                </div>
-                <div className="ml-auto">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${displayUser.estado ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                    {displayUser.estado ? 'Activo' : 'Inactivo'}
-                  </span>
                 </div>
               </div>
 
