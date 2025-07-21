@@ -219,6 +219,7 @@ const EmployeesListPage = () => {
                         }}
                         showDelete={false}
                         showView={false}
+                        hideText={true}
                       />
                     </div>
                   </TableCell>

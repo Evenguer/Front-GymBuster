@@ -260,6 +260,7 @@ const ClientesListPage = () => {
                         onEdit={() => handleEditClick(client)}
                         showDelete={false}
                         showView={false}
+                        hideText={true}
                       />
                     </div>
                   </TableCell>

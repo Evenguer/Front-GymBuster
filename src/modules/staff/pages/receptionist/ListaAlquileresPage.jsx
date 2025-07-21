@@ -1,3 +1,4 @@
+import { showConfirmDeleteToast } from '../../../../shared/components/ConfirmDeleteToast';
 import React, { useState, useEffect } from 'react';
 import { alquilerAPI } from '../../services/alquilerAPI';
 import { ESTADO_ALQUILER, ESTADO_ALQUILER_INFO } from '../../constants/alquilerEstados';
@@ -997,9 +998,10 @@ const ListaAlquileresPage = () => {
                           variant="secondary"
                           color="red"
                           onClick={() => {
-                            if (window.confirm('¿Estás seguro de que deseas cancelar este alquiler?')) {
-                              cambiarEstadoAlquiler(detalleAlquiler.idAlquiler, ESTADO_ALQUILER.CANCELADO);
-                            }
+                            showConfirmDeleteToast({
+                              message: '¿Estás seguro de que deseas cancelar este alquiler?',
+                              onConfirm: () => cambiarEstadoAlquiler(detalleAlquiler.idAlquiler, ESTADO_ALQUILER.CANCELADO)
+                            });
                           }}
                           disabled={loading}
                           className="justify-start"

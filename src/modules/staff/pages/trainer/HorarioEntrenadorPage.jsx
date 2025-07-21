@@ -45,12 +45,36 @@ const HorarioEntrenadorPage = () => {
   }
   // El backend no envía el campo 'estado', así que mostramos todos los horarios recibidos
   const horariosActivos = horarios;
-  // Ordenar horarios por día de la semana
+  // Ordenar horarios por día de la semana y luego por hora de inicio
   const diasOrden = ["lunes","martes","miércoles","jueves","viernes","sábado","domingo"];
   function normalizaDia(dia) {
-    return dia.normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase();
+    if (!dia) return "";
+    // Eliminar tildes, espacios y convertir a minúsculas
+    let d = dia.normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase().trim();
+    // Reemplazar variantes comunes y devolver exactamente como en diasOrden
+    if (d.startsWith("lun")) return "lunes";
+    if (d.startsWith("mar")) return "martes";
+    if (d.startsWith("mie") || d.startsWith("mi")) return "miércoles";
+    if (d.startsWith("jue")) return "jueves";
+    if (d.startsWith("vie")) return "viernes";
+    if (d.startsWith("sab")) return "sábado";
+    if (d.startsWith("dom")) return "domingo";
+    return d;
   }
-  const horariosOrdenados = horariosActivos.slice().sort((a, b) => diasOrden.indexOf(normalizaDia(a.dia)) - diasOrden.indexOf(normalizaDia(b.dia)));
+  // Función para comparar horas en formato HH:mm
+  function compararHoras(horaA, horaB) {
+    const [hA, mA] = horaA.split(":").map(Number);
+    const [hB, mB] = horaB.split(":").map(Number);
+    if (hA !== hB) return hA - hB;
+    return mA - mB;
+  }
+  const horariosOrdenados = horariosActivos.slice().sort((a, b) => {
+    const diaA = diasOrden.indexOf(normalizaDia(a.dia));
+    const diaB = diasOrden.indexOf(normalizaDia(b.dia));
+    if (diaA !== diaB) return diaA - diaB;
+    // Si es el mismo día, ordenar por hora de inicio
+    return compararHoras(a.horaInicio, b.horaInicio);
+  });
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-2 sm:px-6 md:px-12">

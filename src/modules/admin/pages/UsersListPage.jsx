@@ -498,6 +498,7 @@ const UsersListPage = () => {
                       onView={() => handleViewUserDetails(user)}
                       onEdit={() => handleEditUser(user)}
                       showDelete={false}
+                      hideText={true}
                     />
                   </TableCell>
                 </TableRow>

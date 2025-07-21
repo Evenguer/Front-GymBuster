@@ -34,7 +34,7 @@ const ClientHomePage = () => {
             description="Consulta tus planes de inscripción actuales, horarios y asistencia semanal."
             icon={<svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" strokeWidth="2" /><path d="M8 2v4M16 2v4" strokeWidth="2" /></svg>}
             color="from-primary-400 to-primary-600"
-            onClick={() => navigate('/client/inscripciones')}
+            onClick={() => navigate('/client/inscripciones/planes-inscritos')}
           />
           <HomeCard
             title="Desempeño Actual"
@@ -55,7 +55,7 @@ const ClientHomePage = () => {
             description="Consulta el historial de tus planes finalizados o cancelados y tus estadísticas de asistencia."
             icon={<svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" strokeWidth="2" /><path d="M8 2v4M16 2v4" strokeWidth="2" /><path d="M12 8v4l3 3" strokeWidth="2" /></svg>}
             color="from-gray-300 to-gray-400"
-            onClick={() => navigate('/client/inscripciones/anteriores')}
+            onClick={() => navigate('/client/inscripciones/planes-anteriores')}
           />
           <HomeCard
             title="Mi Perfil"

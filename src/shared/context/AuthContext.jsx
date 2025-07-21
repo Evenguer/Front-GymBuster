@@ -70,30 +70,34 @@ export const AuthProvider = ({ children }) => {
       
       // Realizar petición al backend real
       const response = await axios.post(`${API_URL}/auth/login`, credentials);
-      
+
       // Imprimir la respuesta completa para depuración
       console.log('Respuesta de login:', response.data);
-      
+
       // Verificar la estructura de la respuesta
       if (!response.data) {
         throw new Error('Respuesta del servidor vacía');
+
       }      // La respuesta debería ser un objeto JwtResponse según tu backend
       // {id: number, token: string, tipo: string, nombreUsuario: string, roles: string[]}
       const { id, token, nombreUsuario, roles, hasMultipleRoles } = response.data;
       
+
       if (!token) {
         throw new Error('No se recibió el token de autenticación');
       }
-      
+
       // Guardar token en localStorage
       localStorage.setItem('token', token);
       setToken(token);
+
       
       // Verificar si el usuario tiene roles duales (cliente y empleado)
       const tieneRolCliente = verificarRol(roles, 'CLIENTE');
       const tieneRolEmpleado = verificarRolEmpleado(roles);
       const tieneMultiplesRoles = hasMultipleRoles || (tieneRolCliente && tieneRolEmpleado);
       
+
       // Crear objeto de usuario a partir de los datos obtenidos
       const userFromResponse = {
         id: id || 0, // Ahora obtenemos el ID desde la respuesta
@@ -106,19 +110,19 @@ export const AuthProvider = ({ children }) => {
         tieneRolEmpleado: tieneRolEmpleado,
         tieneMultiplesRoles: tieneMultiplesRoles
       };
-      
+
       console.log('Usuario procesado:', userFromResponse);
       console.log('Roles recibidos:', roles);
-      
+
       // Guardar información básica del usuario en localStorage
       localStorage.setItem('user', JSON.stringify(userFromResponse));
-      
+
       setUser(userFromResponse);
       setIsAuthenticated(true);
-      
+
       // Configurar token en cabeceras por defecto
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      
+
       return userFromResponse;
     } catch (err) {
       // Capturar específicamente el mensaje de error del servidor si existe

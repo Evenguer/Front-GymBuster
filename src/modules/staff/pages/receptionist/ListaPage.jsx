@@ -29,7 +29,8 @@ import {
   AlertCircle,
   Loader2,
   X,
-  Filter
+  Filter,
+  Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -53,18 +54,24 @@ const ListaPage = () => {
   // Cancelar venta
   const cancelarVenta = async (idVenta) => {
     if (!idVenta) return;
-    if (!window.confirm('¿Estás seguro de que deseas cancelar esta venta?')) return;
-    setCancelandoVenta(true);
-    setError(null);
-    try {
-      await ventasAPI.cancelarVenta(idVenta);
-      await cargarVentas();
-      setModalAbierto(false);
-    } catch (err) {
-      setError(err.message || 'Error al cancelar la venta');
-    } finally {
-      setCancelandoVenta(false);
-    }
+    import('../../../../shared/components/ConfirmDeleteToast').then(({ showConfirmDeleteToast }) => {
+      showConfirmDeleteToast({
+        message: '¿Estás seguro de que deseas cancelar esta venta?',
+        onConfirm: async () => {
+          setCancelandoVenta(true);
+          setError(null);
+          try {
+            await ventasAPI.cancelarVenta(idVenta);
+            await cargarVentas();
+            setModalAbierto(false);
+          } catch (err) {
+            setError(err.message || 'Error al cancelar la venta');
+          } finally {
+            setCancelandoVenta(false);
+          }
+        },
+      });
+    });
   };
 
   useEffect(() => {
@@ -503,9 +510,9 @@ const ListaPage = () => {
                         <Button
                           size="sm"
                           variant="secondary"
-                          icon={FileText}
+                          icon={Eye}
                           onClick={() => verDetalle(venta.idVenta)}
-                          className="px-4 py-2 border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-700 font-medium bg-transparent"
+                          className="border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-700 bg-transparent px-4 py-2 flex items-center gap-2 font-medium"
                         >
                           Ver Detalle
                         </Button>

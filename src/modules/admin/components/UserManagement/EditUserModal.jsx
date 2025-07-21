@@ -205,22 +205,11 @@ const EditUserModal = ({ user, isOpen, onClose, onSave }) => {
       // Determinar el rol actual y el nuevo rol
       const rolActual = normalizeRole(user.roles || user.role || '');
       const nuevoRol = formData.rol;
-      
-      // Verificar si es empleado
-      const esEmpleado = ['ADMIN', 'ENTRENADOR', 'RECEPCIONISTA'].includes(rolActual);
-      
-      // Verificar si el nuevo rol es cliente o empleado
-      const nuevoRolEsCliente = nuevoRol === 'CLIENTE';
-      const nuevoRolEsEmpleado = ['ADMIN', 'ENTRENADOR', 'RECEPCIONISTA'].includes(nuevoRol);
-      
-      // Regla 1: Un empleado no puede cambiar a cliente
-      if (esEmpleado && nuevoRolEsCliente) {
-        errors.rol = 'No está permitido cambiar un empleado a rol de cliente';
-      }
-      
-      // Regla 2: Un empleado solo puede cambiar entre roles de empleados
-      if (esEmpleado && !nuevoRolEsEmpleado) {
-        errors.rol = 'Un empleado solo puede cambiar entre roles de empleado';
+      // Ya no se restringe el cambio de empleado a cliente
+      // Solo validar que el rol seleccionado sea válido
+      const rolesValidos = ['ADMIN', 'ENTRENADOR', 'RECEPCIONISTA', 'CLIENTE'];
+      if (!rolesValidos.includes(nuevoRol)) {
+        errors.rol = 'Rol seleccionado no es válido.';
       }
     }
     
@@ -278,41 +267,12 @@ const EditUserModal = ({ user, isOpen, onClose, onSave }) => {
         console.log('Nuevo rol seleccionado:', formData.rol);
         console.log('Rol formateado para enviar al backend:', formattedRol);
         
-        // Identificar si el usuario actual es cliente o empleado
-        const esCliente = userCurrentRole === 'CLIENTE';
-        const esEmpleado = ['ADMIN', 'ENTRENADOR', 'RECEPCIONISTA'].includes(userCurrentRole);
-        
-        // Determinar si el nuevo rol es de cliente o empleado
-        const nuevoRolEsCliente = formattedRol === 'CLIENTE';
-        const nuevoRolEsEmpleado = ['ADMIN', 'ENTRENADOR', 'RECEPCIONISTA'].includes(formattedRol);
-          // Validar según las reglas de negocio:
-        // 1. Los empleados no pueden cambiar a rol cliente
-        // 2. Los empleados solo pueden cambiar entre roles de empleados
-        // 3. Los clientes sí pueden cambiar a roles de empleados
-        
-        if (esEmpleado && nuevoRolEsCliente) {
-          setFormErrors(prev => ({
-            ...prev,
-            rol: 'No está permitido cambiar un empleado a rol de cliente.',
-            general: 'Los empleados no pueden ser degradados a clientes. Si necesita hacerlo, contacte al administrador del sistema.'
-          }));
-          throw new Error('No está permitido cambiar un empleado a rol de cliente.');
-        }
+        // Ya no se restringe el cambio de empleado a cliente. El backend lo permite y el frontend también debe permitirlo.
         
         try {
           await updateUserRole(user.id, formattedRol, currentUser.token);
           console.log('Rol actualizado exitosamente');
-            // Marcar si el cambio requiere actualización especial (cliente a empleado)
-          if (esCliente && nuevoRolEsEmpleado) {
-            console.log('Un cliente ha sido promovido a empleado. Marcando para actualización especial...');
-            user.clienteAEmpleado = true;
-            user.detallesCambioRol = {
-              rolAnterior: 'CLIENTE',
-              nuevoRol: formattedRol,
-              requiereActualizacion: true,
-              timestamp: new Date().toISOString()
-            };
-          }
+          // Si necesitas lógica especial para cambios de rol, agrégala aquí, pero ya no se requiere para cliente/empleado.
         } catch (roleError) {
           console.error('Error detallado al actualizar rol:', roleError);
           // Manejo específico para errores de rol
@@ -480,8 +440,8 @@ const EditUserModal = ({ user, isOpen, onClose, onSave }) => {
                   
                   {user && ['ADMIN', 'ENTRENADOR', 'RECEPCIONISTA'].includes(normalizeRole(user.roles || user.role)) && (
                     <div className="mb-2 p-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-md text-xs">
-                      <strong>Importante:</strong> Un empleado sólo puede cambiar entre roles de empleado. 
-                      No es posible cambiar un empleado a rol de Cliente.
+                      <strong>Importante:</strong> Un empleado puede volver a tener el rol de Cliente si es necesario. 
+                      Puedes cambiar el rol de empleado a cliente sin restricciones.
                     </div>
                   )}
                   
@@ -492,25 +452,14 @@ const EditUserModal = ({ user, isOpen, onClose, onSave }) => {
                     className={`w-full p-2 pr-8 border rounded appearance-none bg-white ${formErrors.rol ? 'border-red-500' : 'border-gray-300'}`}
                   >
                     <option value="" disabled>Seleccione un rol</option>
-                    {rolesDisponibles.map((rol) => {
-                      // Determinar si la opción debería estar disponible según las reglas de negocio
-                      const rolActual = normalizeRole(user?.roles || user?.role || '');
-                      const esEmpleado = ['ADMIN', 'ENTRENADOR', 'RECEPCIONISTA'].includes(rolActual);
-                      
-                      // Si es empleado y la opción es CLIENTE, deshabilitar
-                      const deshabilitado = esEmpleado && rol.id === 'CLIENTE';
-                      
-                      return (
-                        <option 
-                          key={rol.id} 
-                          value={rol.id}
-                          disabled={deshabilitado}
-                          className={deshabilitado ? "text-gray-400" : ""}
-                        >
-                          {rol.nombre} {deshabilitado ? "(No disponible)" : ""}
-                        </option>
-                      );
-                    })}
+                    {rolesDisponibles.map((rol) => (
+                      <option 
+                        key={rol.id} 
+                        value={rol.id}
+                      >
+                        {rol.nombre}
+                      </option>
+                    ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
                     <svg className="w-5 h-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">

@@ -212,36 +212,38 @@ const PlanesPage = () => {
                 <TableCell>
                   <div className="flex gap-2 items-center">
 
-                    <Button
-                      size="xs"
-                      variant="secondary"
-                      icon={Edit}
-                      onClick={() => handleEditPlan(plan)}
-                      className="p-2"
+                    <button
+                      type="button"
                       aria-label="Editar"
-                    />
-                    <Button
-                      size="xs"
-                      variant="secondary"
-                      color="red"
-                      icon={Trash2}
-                      onClick={async () => {
-
-                        if (!window.confirm('¿Estás seguro de que quieres eliminar este plan?')) return;
-                        try {
-                          const token = localStorage.getItem('token');
-                          await eliminarPlan(plan.idPlan, token);
-                          notify.success('Plan eliminado correctamente');
-                          await fetchPlanes();
-                        } catch (error) {
-                          notify.error(error.message || 'Error al eliminar el plan');
-                        }
-                      }}
-
-                      className="p-2"
+                      className="px-2 py-2 border-2 border-orange-500 text-orange-500 rounded-lg hover:bg-orange-50 hover:border-orange-600 font-medium bg-transparent flex items-center justify-center"
+                      onClick={() => handleEditPlan(plan)}
+                    >
+                      <Edit size={12} />
+                    </button>
+                    <button
+                      type="button"
                       aria-label="Eliminar"
-
-                    />
+                      className="px-2 py-2 border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-700 font-medium bg-transparent flex items-center justify-center"
+                      onClick={() => {
+                        import('../../../shared/components/ConfirmDeleteToast').then(({ showConfirmDeleteToast }) => {
+                          showConfirmDeleteToast({
+                            message: '¿Estás seguro de que quieres eliminar este plan?',
+                            onConfirm: async () => {
+                              try {
+                                const token = localStorage.getItem('token');
+                                await eliminarPlan(plan.idPlan, token);
+                                notify.success('Plan eliminado correctamente');
+                                await fetchPlanes();
+                              } catch (error) {
+                                notify.error(error.message || 'Error al eliminar el plan');
+                              }
+                            },
+                          });
+                        });
+                      }}
+                    >
+                      <Trash2 size={12} />
+                    </button>
                   </div>
                 </TableCell>
               </TableRow>
