@@ -128,6 +128,23 @@ export const ENDPOINTS = {
   LIST_ALL_INSCRIPTIONS: `${BASE_URL}/inscripciones/listar`,
   CANCEL_INSCRIPTION: (id) => `${BASE_URL}/inscripciones/cancelar/${id}`,
 
+  GET_CLIENT_PLANS: (idCliente) => `${BASE_URL}/inscripciones/planes-inscritos/${idCliente}`,
+  GET_CLIENT_PLANS_HISTORY: (idCliente) => `${BASE_URL}/inscripciones/historial-planes/${idCliente}`,
+
+  // Desempeño (Cliente)
+  GET_CLIENT_DESEMPENO: (idCliente) => `${BASE_URL}/desempeno/cliente/${idCliente}`,
+  GET_CLIENT_DESEMPENO_HISTORY: (idCliente) => `${BASE_URL}/desempeno/historial/${idCliente}`,
+
+  // Entrenador (Premium y Estándar)
+  TRAINER_PREMIUM_PLANS_CLIENTS: `${BASE_URL}/entrenador/premium/planes-clientes`,
+  TRAINER_STANDARD_PLANS_CLIENTS: `${BASE_URL}/entrenador/estandar/planes-clientes`,
+
+  //Desempeño (Entrenador)
+  TRAINER_REGISTER_DESEMPENO: `${BASE_URL}/desempeno/registrar`,
+  TRAINER_UPDATE_DESEMPENO: (id) => `${BASE_URL}/desempeno/actualizar/${id}`,
+  TRAINER_DELETE_DESEMPENO: (id) => `${BASE_URL}/desempeno/eliminar/${id}`,
+  TRAINER_GET_CLIENT_DESEMPENO: (idCliente) => `${BASE_URL}/desempeno/cliente/${idCliente}`,
+
   // Dashboard Recepcionista
   DASHBOARD_RECEPCIONISTA: `${BASE_URL}/dashboard-recepcionista`,
   
@@ -174,4 +191,5 @@ export const ENDPOINTS = {
     // Tendencias últimos 6 meses (parametrizable)
     TENDENCIA: (meses = 6) => `${BASE_URL}/reportes/alquileres/tendencia?meses=${meses}`
   }
+
 };

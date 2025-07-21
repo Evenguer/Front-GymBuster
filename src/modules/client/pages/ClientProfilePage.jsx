@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 import ClientProfileDetails from '../components/Profile/ClientProfileDetails';
 import PasswordChangeForm from '../components/Profile/PasswordChangeForm';
 import { getClientProfile, updateClientPassword } from '../services/clientAPI';
@@ -62,17 +63,20 @@ const ClientProfilePage = () => {
   };
 
   if (loadingProfile) {
-    return <div className="text-center py-10 text-gray-600">Cargando perfil...</div>;
+    return <LoadingSpinner message="Cargando perfil..." />;
   }
 
   if (!profile) {
     return <div className="text-center py-10 text-red-600">{error || 'No se pudo cargar el perfil.'}</div>;
   }
-
+  
   return (
-    <div className="max-w-2xl mx-auto">
-      {error && <div className="text-red-600 mb-4">{error}</div>}
-      <ClientProfileDetails profile={profile} onShowPasswordForm={() => setShowPasswordForm(true)} />
+    <div className="min-h-screen w-full flex items-center justify-center bg-transparent overflow-hidden">
+      <div className="w-full max-w-7xl h-full flex items-center justify-center">
+        <div className="w-full">
+          <ClientProfileDetails profile={profile} onShowPasswordForm={() => setShowPasswordForm(true)} />
+        </div>
+      </div>
       {showPasswordForm && (
         <PasswordChangeForm
           onSubmit={handlePasswordChange}

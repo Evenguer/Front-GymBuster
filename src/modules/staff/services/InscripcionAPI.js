@@ -86,18 +86,19 @@ export const inscripcionAPI = {
   // Obtener horarios de un instructor
   obtenerHorariosInstructor: async (idEmpleado) => {
     try {
-      checkRole(['ADMIN', 'RECEPCIONISTA']);
-      
+      // Permitir a ADMIN, RECEPCIONISTA y ENTRENADOR
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user) throw new Error('No hay usuario autenticado');
+      if (!['ADMIN', 'RECEPCIONISTA', 'ENTRENADOR'].includes(user.role)) {
+        throw new Error('No tienes permisos para realizar esta acción');
+      }
       if (!idEmpleado) {
         throw new Error('ID del empleado es requerido');
       }
-      
       const response = await axios.get(
         ENDPOINTS.LIST_INSTRUCTOR_SCHEDULES(idEmpleado),
         getAuthConfig()
       );
-      
-      console.log('Horarios del instructor', idEmpleado, ':', response.data);
       return response.data;
     } catch (error) {
       console.error('Error al obtener horarios del instructor:', error);

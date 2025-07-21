@@ -103,22 +103,27 @@ const StaffLayout = () => {
     },
   ];
 
-  // Menú para el entrenador
+  // Menú para el entrenador (estructura solicitada)
   const trainerMenuItems = [
+    {
+      title: 'Inicio',
+      path: '/staff/dashboard',
+      icon: <Home size={20} />,
+    },
     {
       title: 'Clientes',
       icon: <Users size={20} />,
       submenu: true,
       submenuItems: [
-        { title: 'Asistencia', path: '/staff/clientes/asistencia' },
+        { title: 'Inscripciones y Desempeños', path: '/staff/inscripciones/desempeno' }, // Aquí irá TrainerPerformanceManagementPage
       ],
     },
     {
-      title: 'Inscripciones',
-      icon: <CheckSquare size={20} />,
+      title: 'Planes',
+      icon: <Clipboard size={20} />,
       submenu: true,
       submenuItems: [
-        { title: 'Desempeño', path: '/staff/inscripciones/desempeno' },
+        { title: 'Horarios', path: '/staff/planes/horarios' },
       ],
     },
   ];
