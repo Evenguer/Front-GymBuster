@@ -61,6 +61,7 @@ import ClienteLayout from './layouts/ClienteLayout';
 
 // Pages
 import LoginPage from './pages/auth/LoginPage';
+import RoleSelectionPage from './pages/auth/RoleSelectionPage';
 import NotFoundPage from './pages/NotFoundPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 
@@ -146,6 +147,7 @@ function App() {
         <Routes>
           {/* Rutas de autenticación */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/role-selection" element={<RoleSelectionPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
           
           {/* Rutas de administrador */}

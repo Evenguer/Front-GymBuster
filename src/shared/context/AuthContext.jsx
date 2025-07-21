@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Respuesta del servidor vacía');
       }      // La respuesta debería ser un objeto JwtResponse según tu backend
       // {id: number, token: string, tipo: string, nombreUsuario: string, roles: string[]}
-      const { id, token, nombreUsuario, roles } = response.data;
+      const { id, token, nombreUsuario, roles, hasMultipleRoles } = response.data;
       
       if (!token) {
         throw new Error('No se recibió el token de autenticación');
@@ -88,14 +88,23 @@ export const AuthProvider = ({ children }) => {
       // Guardar token en localStorage
       localStorage.setItem('token', token);
       setToken(token);
-        // Crear objeto de usuario a partir de los datos obtenidos
+      
+      // Verificar si el usuario tiene roles duales (cliente y empleado)
+      const tieneRolCliente = verificarRol(roles, 'CLIENTE');
+      const tieneRolEmpleado = verificarRolEmpleado(roles);
+      const tieneMultiplesRoles = hasMultipleRoles || (tieneRolCliente && tieneRolEmpleado);
+      
+      // Crear objeto de usuario a partir de los datos obtenidos
       const userFromResponse = {
         id: id || 0, // Ahora obtenemos el ID desde la respuesta
         username: nombreUsuario,
         roles: roles || [], // Guardar el array de roles completo
         role: obtenerRolPrincipal(roles || []), // Para compatibilidad con código existente
         name: nombreUsuario,
-        token: token // Guardar el token para usar en las llamadas a API
+        token: token, // Guardar el token para usar en las llamadas a API
+        tieneRolCliente: tieneRolCliente,
+        tieneRolEmpleado: tieneRolEmpleado,
+        tieneMultiplesRoles: tieneMultiplesRoles
       };
       
       console.log('Usuario procesado:', userFromResponse);
@@ -133,24 +142,20 @@ export const AuthProvider = ({ children }) => {
       throw new Error(mensaje);
     }
   };
-  // Función auxiliar para obtener el rol principal del usuario
-  const obtenerRolPrincipal = (roles) => {
-    console.log('Obteniendo rol principal de:', roles);
-    
+  // Función para normalizar roles (pueden venir en diferentes formatos)
+  const normalizarRoles = (roles) => {
     if (!Array.isArray(roles)) {
       if (typeof roles === 'string') {
-        // Si es string, lo convertimos a array
-        roles = [roles];
+        roles = [roles]; // Si es string, lo convertimos a array
       } else {
         console.warn('Roles no es un array ni string:', roles);
-        return 'CLIENTE'; // Valor por defecto si roles no es array ni string
+        return []; // Array vacío si roles no es válido
       }
     }
     
-    // Normalizar roles (pueden venir en diferentes formatos)
-    const rolesNormalizados = roles.map(rol => {
+    return roles.map(rol => {
       if (typeof rol === 'string') {
-        return rol.toUpperCase(); // No quitamos el prefijo ROLE_ para mantener consistencia
+        return rol.toUpperCase();
       } else if (rol && rol.authority) {
         return rol.authority.toUpperCase();
       } else if (rol && rol.nombre) {
@@ -158,7 +163,29 @@ export const AuthProvider = ({ children }) => {
       }
       return '';
     });
-    
+  };
+  
+  // Función para verificar si un usuario tiene un rol específico
+  const verificarRol = (roles, rolBuscado) => {
+    const rolesNormalizados = normalizarRoles(roles);
+    return rolesNormalizados.some(rol => 
+      rol === rolBuscado || 
+      rol === `ROLE_${rolBuscado}` || 
+      rol.includes(rolBuscado)
+    );
+  };
+  
+  // Función para verificar si el usuario tiene algún rol de empleado
+  const verificarRolEmpleado = (roles) => {
+    return verificarRol(roles, 'ADMIN') || 
+           verificarRol(roles, 'RECEPCIONISTA') || 
+           verificarRol(roles, 'ENTRENADOR');
+  };
+
+  // Función auxiliar para obtener el rol principal del usuario
+  const obtenerRolPrincipal = (roles) => {
+    console.log('Obteniendo rol principal de:', roles);
+    const rolesNormalizados = normalizarRoles(roles);
     console.log('Roles normalizados:', rolesNormalizados);
     
     // Buscar roles en orden de prioridad, ahora considerando el prefijo ROLE_
@@ -180,6 +207,26 @@ export const AuthProvider = ({ children }) => {
   const clearError = () => {
     setError(null);
   };
+  
+  // Nueva función para cambiar el rol activo del usuario sin tener que hacer login de nuevo
+  const cambiarRolActivo = (rolSeleccionado) => {
+    if (!user) return false;
+    
+    // Actualiza el objeto de usuario con el rol seleccionado como principal
+    // pero mantiene todos los roles disponibles
+    const usuarioActualizado = {
+      ...user,
+      rolActivo: rolSeleccionado, // Nuevo campo para indicar qué rol está usando actualmente
+      // Si el rol seleccionado es 'cliente', actualizamos el rol principal para compatibilidad
+      role: rolSeleccionado === 'cliente' ? 'CLIENTE' : user.role
+    };
+    
+    // Guardar la información actualizada del usuario
+    setUser(usuarioActualizado);
+    localStorage.setItem('user', JSON.stringify(usuarioActualizado));
+    
+    return true;
+  };
 
   return (
     <AuthContext.Provider 
@@ -190,7 +237,10 @@ export const AuthProvider = ({ children }) => {
         error, 
         login, 
         logout, 
-        clearError 
+        clearError,
+        verificarRol, // Exponemos funciones útiles para verificar roles
+        verificarRolEmpleado,
+        cambiarRolActivo // Exponemos la función para cambiar el rol activo
       }}
     >
       {children}

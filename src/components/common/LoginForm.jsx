@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'react-feather';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../shared/hooks/useAuth';
 import { User, Lock } from "react-feather";
 
 const LoginForm = () => {
+  const location = useLocation();
+  const { selectedRole, email, password } = location.state || {};
+  
   const [formData, setFormData] = useState({
-    nombreUsuario: '',
-    contrasena: '',
+    nombreUsuario: email || '',
+    contrasena: password || '',
   });
   const [formErrors, setFormErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
@@ -47,24 +50,47 @@ const LoginForm = () => {
     
     try {
       const user = await login(formData);
+      console.log('Usuario autenticado:', user);
       
-      // Redirigir según el rol del usuario
-      switch(user.role) {
-        case 'ADMIN':
-          navigate('/admin/dashboard');
-          break;
-        case 'RECEPCIONISTA':
-          navigate('/staff/dashboard');
-          break;
-        case 'ENTRENADOR':
-          navigate('/staff/dashboard');
-          break;
-        case 'CLIENTE':
-          navigate('/client/dashboard');
-          break;
-        default:
-          navigate('/login');
+      // Si el usuario tiene múltiples roles (cliente y algún rol de empleado) y no ha seleccionado uno
+      if (user.tieneMultiplesRoles && !selectedRole) {
+        console.log('Usuario con múltiples roles, redirigiendo a selección de rol');
+        // Guardar las credenciales en el estado para no pedirlas de nuevo después de seleccionar rol
+        navigate('/role-selection', { 
+          state: { email: formData.nombreUsuario, password: formData.contrasena } 
+        });
+        return;
       }
+      
+      // Si ya seleccionó rol cliente o solo tiene rol cliente
+      if (selectedRole === 'cliente' || (!selectedRole && user.role === 'CLIENTE' && !user.tieneRolEmpleado)) {
+        console.log('Redirigiendo a dashboard de cliente');
+        navigate('/client/dashboard');
+        return;
+      }
+      
+      // Para roles de empleado (seleccionado o único)
+      if (selectedRole === 'empleado' || (!selectedRole && user.tieneRolEmpleado)) {
+        console.log('Redirigiendo según rol de empleado:', user.role);
+        
+        switch(user.role) {
+          case 'ADMIN':
+            navigate('/admin/dashboard');
+            break;
+          case 'RECEPCIONISTA':
+          case 'ENTRENADOR':
+            navigate('/staff/dashboard');
+            break;
+          default:
+            // Si el rol no es reconocido pero seleccionó empleado, ir al dashboard de staff
+            navigate('/staff/dashboard');
+        }
+        return;
+      }
+      
+      // Caso de fallback si algo no se maneja correctamente
+      console.warn('No se pudo determinar la redirección adecuada');
+      navigate('/login');
     } catch (error) {
       console.error('Error de login:', error);
       // El error ya se maneja en el AuthContext y se muestra en la UI
