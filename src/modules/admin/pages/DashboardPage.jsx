@@ -70,7 +70,7 @@ const DashboardPage = () => {
       const inscripcionesChartData = estadisticasVentas.inscripcionesPorMes?.map(item => ({
         date: item.nombreMes?.substring(0, 3) || 'Sin fecha',
         mes: item.mes || '',
-        Inscripciones: parseInt(item.cantidadInscripciones) || 0
+        Inscripciones: parseFloat(item.montoTotal) || 0
       })) || [];
       const combinedChartData = ventasChartData.map((venta) => {
         const inscripcionCorrespondiente = inscripcionesChartData.find(
