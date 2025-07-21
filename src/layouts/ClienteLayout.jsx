@@ -22,7 +22,7 @@ const ClienteLayout = () => {
   const clientMenuItems = [
     {
       title: 'Inicio',
-      path: '/client/dashboard',
+      path: '/client',
       icon: <Home size={20} />,
     },
     {
@@ -30,7 +30,10 @@ const ClienteLayout = () => {
       icon: <CheckSquare size={20} />,
       submenu: true,
       submenuItems: [
+        { title: 'Planes Inscritos', path: '/client/inscripciones/planes-inscritos' },
+        { title: 'Planes Anteriores', path: '/client/inscripciones/planes-anteriores' },
         { title: 'Desempeño', path: '/client/inscripciones/desempeno' },
+        { title: 'Historial de Desempeños', path: '/client/inscripciones/desempeno-historial' },
       ],
     },
     {
@@ -94,8 +97,8 @@ const ClienteLayout = () => {
         {/* Menu items */}
         <div className="flex-grow overflow-y-auto py-2">
           <ul>
-            {clientMenuItems.map((item, index) => (
-              <li key={index} className="mb-1 px-2">
+            {clientMenuItems.map((item) => (
+              <li key={item.title} className="mb-1 px-2">
                 {item.submenu ? (
                   <div>
                     <button
@@ -116,8 +119,8 @@ const ClienteLayout = () => {
                     </button>
                     {expanded[item.title] && sidebarOpen && (
                       <ul className="pl-8 mt-1 space-y-1">
-                        {item.submenuItems.map((subItem, subIndex) => (
-                          <li key={subIndex}>
+                        {item.submenuItems.map((subItem) => (
+                          <li key={subItem.path}>
                             <NavLink
                               to={subItem.path}
                               className={() => `block py-2 px-3 rounded-lg transition-colors duration-200`}
@@ -136,7 +139,7 @@ const ClienteLayout = () => {
                 ) : (
                   <NavLink
                     to={item.path}
-                    className={() => `flex items-center py-2 px-3 rounded-lg transition-colors duration-200 ${sidebarOpen ? '' : 'justify-center'}`}
+                    className={() => `flex items-center py-2 px-3 rounded-lg transition-colors duration-200`}
                     style={({ isActive }) => ({
                       backgroundColor: isActive ? '#C50E1D' : 'transparent',
                       color: isActive ? 'white' : '#9ca3af'
@@ -180,7 +183,18 @@ const ClienteLayout = () => {
         <header className="bg-white shadow-sm z-10">
           <div className="p-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-800">Panel de Cliente</h2>
+              <h2 className="text-xl font-semibold text-gray-800">
+                {(() => {
+                  const path = location.pathname;
+                  if (path === '/client' || path === '/client/dashboard') return 'Inicio';
+                  if (path.startsWith('/client/inscripciones/planes-inscritos')) return 'Planes Inscritos';
+                  if (path.startsWith('/client/inscripciones/planes-anteriores')) return 'Planes Anteriores';
+                  if (path.startsWith('/client/inscripciones/desempeno-historial')) return 'Historial de Desempeños';
+                  if (path.startsWith('/client/inscripciones/desempeno')) return 'Desempeño Actual';
+                  if (path.startsWith('/client/perfil')) return 'Mi Perfil';
+                  return 'Panel de Cliente';
+                })()}
+              </h2>
               <div className="flex items-center space-x-4">
                 {/* Notificaciones, perfil, etc. */}
               </div>

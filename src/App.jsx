@@ -1,4 +1,54 @@
-import React from "react";
+import React, { useEffect, useState } from 'react';
+import HorarioEntrenadorPage from './modules/staff/pages/trainer/HorarioEntrenadorPage';
+import TrainerPerformanceManagementPage from './modules/staff/pages/trainer/TrainerPerformanceManagementPage';
+import TrainerStandardInscriptionClientsPage from './modules/staff/pages/trainer/TrainerStandardInscriptionClientsPage';
+import { useAuth } from './shared/hooks/useAuth';
+
+// ...existing imports...
+
+// ...existing imports...
+
+
+// ...existing code...
+import axios from 'axios';
+import { ENDPOINTS } from './shared/services/endpoints';
+
+// Switch para mostrar la página correcta según el tipo de entrenador (consultando al backend)
+const TrainerInscriptionSwitch = () => {
+  const { user } = useAuth();
+  const [tipo, setTipo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchTipo = async () => {
+      if (!user?.id) {
+        setError('No se encontró el usuario.');
+        setLoading(false);
+        return;
+      }
+      try {
+        setLoading(true);
+        setError(null);
+        // Consultar el tipo de entrenador desde el backend
+        const res = await axios.get(ENDPOINTS.GET_EMPLOYEE_BY_USER(user.id));
+        // El backend debe retornar un campo tipoInstructor o similar
+        setTipo(res.data?.tipoInstructor || res.data?.tipo || null);
+      } catch (err) {
+        setError(err?.message || 'No se pudo obtener el tipo de entrenador.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTipo();
+  }, [user]);
+
+  if (loading) return <div className="text-center py-8">Cargando...</div>;
+  if (error) return <div className="text-center text-red-600 py-8">{error}</div>;
+  if (tipo === 'PREMIUM') return <TrainerPerformanceManagementPage />;
+  if (tipo === 'ESTANDAR' || tipo === 'ESTÁNDAR') return <TrainerStandardInscriptionClientsPage />;
+  return <div className="text-center text-red-600 py-8">No tienes permisos para ver esta sección.</div>;
+};
 import "./App.css";
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './shared/context/AuthContext';
@@ -61,8 +111,7 @@ const PlanesStaffPage = PlaceholderPage;
 
 
 // Staff Pages
-import DashBoardRecepcion from './modules/staff/pages/receptionist/DashboardRecepcion';
-import StaffDashboardPage from './modules/staff/pages/StaffDashboardPage';
+// ...existing code...
 import ProductoPage from './modules/staff/pages/receptionist/ProductoPage';
 import CategoriaPage from './modules/staff/pages/receptionist/CategoriaPage';
 import VentaPage from './modules/staff/pages/receptionist/VentaPage';
@@ -78,15 +127,17 @@ import ListaInscripcionesPage from './modules/staff/pages/receptionist/ListaInsc
 import VerificarInscripcionPage from './modules/staff/pages/receptionist/VerificarInscripcionPage';
 import ListaAsistenciaCliente from './modules/staff/pages/receptionist/ListaAsistenciaCliente';
 
-import TrainerDashboardPage from './modules/staff/pages/trainer/TrainerDashboardPage';
-import ClientAttendancePage from './modules/staff/pages/trainer/ClientAttendancePage';
-import InscriptionPerformancePage from './modules/staff/pages/trainer/InscriptionPerformancePage';
+import TrainerHomePage from './modules/staff/pages/trainer/TrainerHomePage';
+// ...existing code...
 
 
 // Client Pages
-import ClientDashboardPage from './modules/client/pages/ClientDashboardPage';
-import ClientInscriptionPerformancePage from './modules/client/pages/ClientInscriptionPerformancePage';
+import ClientHomePage from './modules/client/pages/ClientHomePage';
+import ClientPerformancePage from './modules/client/pages/ClientPerformancePage';
+import ClientPerformanceHistoryPage from './modules/client/pages/ClientPerformanceHistoryPage';
 import ClientProfilePage from './modules/client/pages/ClientProfilePage';
+import ClientInscribedPlans from './modules/client/pages/ClientInscribedPlans';
+import ClientPlanesAnteriores from './modules/client/pages/ClientPlanesAnteriores';
 
 // Protected Route
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -150,7 +201,7 @@ function App() {
             <Route element={<StaffLayout />}>
               <Route index element={<Navigate to="/staff/dashboard" replace />} />
               {/* Dashboard: muestra el de recepcionista o entrenador según el rol */}
-              <Route path="dashboard" element={<DashBoardRecepcion/>} />
+              <Route path="dashboard" element={<TrainerHomePage />} />
               <Route path="categorias" element={<CategoriaPage />} />
               <Route path="especialidades" element={<EspecialidadListaPage />} />
               <Route path="planes" element={<PlanesListaPage />} />
@@ -175,8 +226,10 @@ function App() {
               <Route path="verificar" element={<VerificarInscripcionPage />} />
               <Route path="planes" element={<PlanesStaffPage />} />
               {/* Rutas específicas para ENTRENADOR */}
-              <Route path="clientes/asistencia" element={<ClientAttendancePage />} />
-              <Route path="inscripciones/desempeno" element={<InscriptionPerformancePage />} />
+              {/* Inscripciones y Desempeños: premium ve gestión, estándar solo ve lista */}
+              <Route path="inscripciones/desempeno" element={<TrainerInscriptionSwitch />} />
+              <Route path="planes/horarios" element={<HorarioEntrenadorPage />} />
+              {/* <Route path="clientes/asistencia" element={<ClientAttendancePage />} /> */}
               {/* Aquí irán las demás rutas de staff */}
             </Route>
           </Route>
@@ -186,10 +239,13 @@ function App() {
             <ProtectedRoute allowedRoles={['CLIENTE']} redirectPath="/login" />
           }>
             <Route element={<ClienteLayout />}>
-              <Route index element={<Navigate to="/client/dashboard" replace />} />
-              <Route path="dashboard" element={<ClientDashboardPage />} />
-              <Route path="inscripciones/desempeno" element={<ClientInscriptionPerformancePage />} />
+              <Route index element={<ClientHomePage />} />
+              <Route path="dashboard" element={<ClientHomePage />} />
+              <Route path="inscripciones/desempeno" element={<ClientPerformancePage />} />
+              <Route path="inscripciones/desempeno-historial" element={<ClientPerformanceHistoryPage />} />
               <Route path="perfil" element={<ClientProfilePage />} />
+              <Route path="inscripciones/planes-inscritos" element={<ClientInscribedPlans />} />
+              <Route path="inscripciones/planes-anteriores" element={<ClientPlanesAnteriores />} />
               {/* Aquí irán las demás rutas de cliente */}
             </Route>
           </Route>
