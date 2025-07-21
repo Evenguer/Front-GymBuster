@@ -10,6 +10,9 @@ import {
   LogOut
 } from 'react-feather';
 import logoImage from '../assets/LOGO BUSSTER GYM.png';
+import '@n8n/chat/style.css';
+import '../assets/chat-styles.css';
+import { createChat } from '@n8n/chat';
 
 const ClienteLayout = () => {
   const [expanded, setExpanded] = useState({});
@@ -17,6 +20,42 @@ const ClienteLayout = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Función alternativa sin CORS proxy (recomendada)
+  const initializeChatDirect = () => {
+    createChat({
+      webhookUrl: 'https://chume.app.n8n.cloud/webhook/8b3d8621-f638-46fd-870d-6b3f407ed524/chat',
+      webhookConfig: {
+        method: 'POST',
+        headers: {}
+      },
+      target: '#n8n-chat',
+      mode: 'window',
+      chatInputKey: 'chatInput',
+      chatSessionKey: 'sessionId',
+      loadPreviousSession: true,
+      metadata: {},
+      showWelcomeScreen: false,
+      defaultLanguage: 'es',
+      initialMessages: [
+        '👋 ¡Bienvenido/a al Chat de GymBuster!',
+        '¿En qué puedo ayudarte hoy?'
+      ],
+      i18n: {
+        es: {
+          title: 'Chat GymBuster',
+          subtitle: "Estamos aquí para ayudarte 24/7",
+          footer: '',
+          getStarted: 'Iniciar chat',
+          inputPlaceholder: '¿En qué puedo ayudarte?',
+        },
+      }
+    });
+  };
+
+  useEffect(() => {
+    initializeChatDirect();
+  }, [user]);
 
   // Menú para el cliente
   const clientMenuItems = [
@@ -70,6 +109,9 @@ const ClienteLayout = () => {
 
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
+      {/* Chat container */}
+      <div id="n8n-chat" className="fixed bottom-4 right-4 z-[9999]"></div>
+
       {/* Sidebar */}
       <div
         className={`${sidebarOpen ? 'w-64' : 'w-20'} h-full text-white transition-all duration-300 flex flex-col z-20`}

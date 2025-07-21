@@ -79,6 +79,16 @@ const EditClientModal = ({ client, isOpen, onClose, onSave }) => {  const [formD
     }
   }, [client]);const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    // Bloquear números en nombre y apellidos
+    if (name === 'nombre' || name === 'apellidos') {
+      // Permitir solo letras, tildes, ñ y espacios
+      const soloLetras = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '');
+      setFormData(prev => ({
+        ...prev,
+        [name]: soloLetras
+      }));
+      return;
+    }
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -98,17 +108,27 @@ const EditClientModal = ({ client, isOpen, onClose, onSave }) => {  const [formD
 
   const validateForm = () => {
     const errors = {};
-    
+
     // Validaciones para los campos del cliente
-    if (!formData.nombre) errors.nombre = 'El nombre es requerido';
-    if (!formData.apellidos) errors.apellidos = 'Los apellidos son requeridos';
+    if (!formData.nombre) {
+      errors.nombre = 'El nombre es requerido';
+    } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(formData.nombre)) {
+      errors.nombre = 'El nombre solo debe contener letras';
+    }
+
+    if (!formData.apellidos) {
+      errors.apellidos = 'Los apellidos son requeridos';
+    } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(formData.apellidos)) {
+      errors.apellidos = 'Los apellidos solo deben contener letras';
+    }
+
     if (!formData.dni) errors.dni = 'El DNI es requerido';
     if (formData.dni && formData.dni.length !== 8) errors.dni = 'El DNI debe tener 8 dígitos';
     if (!formData.correo) errors.correo = 'El correo es requerido';
     if (formData.correo && !/\S+@\S+\.\S+/.test(formData.correo)) errors.correo = 'El correo no es válido';
     if (!formData.celular) errors.celular = 'El celular es requerido';
     if (formData.celular && formData.celular.length !== 9) errors.celular = 'El celular debe tener 9 dígitos';
-    
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -338,6 +358,11 @@ const EditClientModal = ({ client, isOpen, onClose, onSave }) => {  const [formD
                     }));
                   }}
                   type="date"
+                  max={(() => {
+                    const today = new Date();
+                    today.setFullYear(today.getFullYear() - 13);
+                    return today.toISOString().split('T')[0];
+                  })()}
                 />               
               </div>
             </div>

@@ -110,23 +110,7 @@ const EspecialidadModal = ({ isOpen, onClose, onSave, especialidad }) => {
             )}
           </div>
 
-          <div>
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                name="estado"
-                checked={formData.estado}
-                onChange={handleInputChange}
-                className="rounded text-red-600 focus:ring-red-500 h-4 w-4 cursor-pointer"
-              />
-              <span className="text-sm font-medium text-gray-700">
-                Especialidad activa
-              </span>
-            </label>
-            <p className="text-xs text-gray-500 mt-1">
-              Las especialidades inactivas no estarán disponibles para asignar a entrenadores
-            </p>
-          </div>
+          {/* Apartado de 'Especialidad activa' eliminado por solicitud */}
 
           <div className="flex justify-end space-x-4 pt-4 mt-6 border-t border-gray-200">
             <button

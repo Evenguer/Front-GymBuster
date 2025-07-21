@@ -164,12 +164,6 @@ const HorarioModal = ({ isOpen, onClose, horario, empleados, onSuccess, isLoadin
                         <h3 className="text-xl font-medium">
                             {horario ? 'Editar Horario' : 'Nuevo Horario'}
                         </h3>
-                        <button 
-                            onClick={onClose}
-                            className="text-gray-500 hover:text-gray-700"
-                        >
-                            <X size={20} />
-                        </button>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
@@ -279,16 +273,21 @@ const HorarioModal = ({ isOpen, onClose, horario, empleados, onSuccess, isLoadin
                         )}
 
                         <div className="flex justify-end space-x-4 mt-6">
-                            <Button variant="secondary" onClick={onClose}>
-                                Cancelar
-                            </Button>
-                            <Button 
-                                type="submit" 
-                                variant="primary"
+                            <button
+                                type="button"
+                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+                                onClick={onClose}
                                 disabled={isLoading}
                             >
-                                {horario ? 'Actualizar' : 'Crear'}
-                            </Button>
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Guardando...' : (horario ? 'Actualizar' : 'Crear')}
+                            </button>
                         </div>
                     </form>
                 </div>

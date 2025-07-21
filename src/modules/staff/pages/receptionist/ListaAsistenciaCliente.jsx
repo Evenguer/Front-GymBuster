@@ -9,9 +9,12 @@ import {
     Text,
     Flex,
     Metric,
-    Button
+    Button,
+    DatePicker
 } from '@tremor/react';
 import { Search, User, Clock, Calendar, RefreshCw } from 'react-feather';
+import { es } from 'date-fns/locale';
+import { format } from 'date-fns';
 import { asistenciaClienteAPI } from '../../services/AsistenciaClienteAPI';
 
 const ListaAsistenciaCliente = () => {
@@ -21,6 +24,8 @@ const ListaAsistenciaCliente = () => {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filtroTurno, setFiltroTurno] = useState('');
+    const [filtroFecha, setFiltroFecha] = useState(null);
+    const [filtroEstado, setFiltroEstado] = useState(''); // '', 'asistio', 'noasistio'
 
     const fetchAsistencias = async () => {
         try {
@@ -45,7 +50,7 @@ const ListaAsistenciaCliente = () => {
         fetchAsistencias();
     }, []);
 
-    // Filtrar asistencias basado en el término de búsqueda y turno seleccionado
+    // Filtrar asistencias basado en el término de búsqueda, turno, estado y fecha seleccionada
     const filteredAsistencias = asistencias.filter(asistencia => {
         const matchSearch = 
             asistencia.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -53,10 +58,21 @@ const ListaAsistenciaCliente = () => {
             asistencia.fecha?.toString().includes(searchTerm) ||
             asistencia.planNombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             asistencia.turno?.toLowerCase().includes(searchTerm.toLowerCase());
-        
+
         const matchTurno = !filtroTurno || asistencia.turno?.toLowerCase() === filtroTurno.toLowerCase();
-        
-        return matchSearch && matchTurno;
+
+        let matchFecha = true;
+        if (filtroFecha && asistencia.fecha) {
+            const fechaAsistenciaStr = format(new Date(asistencia.fecha + 'T00:00:00'), 'yyyy-MM-dd');
+            const filtroFechaStr = format(filtroFecha, 'yyyy-MM-dd');
+            matchFecha = fechaAsistenciaStr === filtroFechaStr;
+        }
+
+        let matchEstado = true;
+        if (filtroEstado === 'asistio') matchEstado = asistencia.estado === true;
+        if (filtroEstado === 'noasistio') matchEstado = asistencia.estado === false;
+
+        return matchSearch && matchTurno && matchFecha && matchEstado;
     });
 
     // Para clientes, mostramos "Asistió" o "No asistió" según el estado
@@ -123,52 +139,109 @@ const ListaAsistenciaCliente = () => {
 
     return (
         <div className="p-4 space-y-4">
-            <div className="flex justify-between items-center mb-6">
-                <Title>Lista de Asistencias de Clientes</Title>
-                <div className="flex space-x-2">
-                    <Button
-                        size="xs"
-                        variant={filtroTurno === '' ? 'primary' : 'secondary'}
-                        onClick={() => setFiltroTurno('')}
-                        color="blue"
-                    >
-                        Todos
-                    </Button>
-                    <Button
-                        size="xs"
-                        variant={filtroTurno === 'mañana' ? 'primary' : 'secondary'}
-                        onClick={() => setFiltroTurno(filtroTurno === 'mañana' ? '' : 'mañana')}
-                        color="yellow"
-                    >
-                        Mañana
-                    </Button>
-                    <Button
-                        size="xs"
-                        variant={filtroTurno === 'tarde' ? 'primary' : 'secondary'}
-                        onClick={() => setFiltroTurno(filtroTurno === 'tarde' ? '' : 'tarde')}
-                        color="orange"
-                    >
-                        Tarde
-                    </Button>
-                    <Button
-                        size="xs"
-                        variant={filtroTurno === 'noche' ? 'primary' : 'secondary'}
-                        onClick={() => setFiltroTurno(filtroTurno === 'noche' ? '' : 'noche')}
-                        color="blue"
-                    >
-                        Noche
-                    </Button>
+            <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                    <Title>Lista de Asistencias de Clientes</Title>
+                    <div className="flex flex-wrap gap-2">
+                        <Button
+                            size="xs"
+                            variant={filtroEstado === 'asistio' ? 'primary' : 'secondary'}
+                            onClick={() => setFiltroEstado(filtroEstado === 'asistio' ? '' : 'asistio')}
+                            color="green"
+                        >
+                            Asistió
+                        </Button>
+                        <Button
+                            size="xs"
+                            variant={filtroEstado === 'noasistio' ? 'primary' : 'secondary'}
+                            onClick={() => setFiltroEstado(filtroEstado === 'noasistio' ? '' : 'noasistio')}
+                            color="red"
+                        >
+                            No asistió
+                        </Button>
+                        <Button
+                            size="xs"
+                            variant={filtroTurno === '' ? 'primary' : 'secondary'}
+                            onClick={() => setFiltroTurno('')}
+                            color="blue"
+                        >
+                            Todos
+                        </Button>
+                        <Button
+                            size="xs"
+                            variant={filtroTurno === 'mañana' ? 'primary' : 'secondary'}
+                            onClick={() => setFiltroTurno(filtroTurno === 'mañana' ? '' : 'mañana')}
+                            color="yellow"
+                        >
+                            Mañana
+                        </Button>
+                        <Button
+                            size="xs"
+                            variant={filtroTurno === 'tarde' ? 'primary' : 'secondary'}
+                            onClick={() => setFiltroTurno(filtroTurno === 'tarde' ? '' : 'tarde')}
+                            color="orange"
+                        >
+                            Tarde
+                        </Button>
+                        <Button
+                            size="xs"
+                            variant={filtroTurno === 'noche' ? 'primary' : 'secondary'}
+                            onClick={() => setFiltroTurno(filtroTurno === 'noche' ? '' : 'noche')}
+                            color="blue"
+                        >
+                            Noche
+                        </Button>
+                    </div>
                 </div>
             </div>
             
-            <div className="mb-6">
-                <TextInput
-                    icon={Search}
-                    placeholder="Buscar por nombre, apellido, fecha, plan o turno..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="max-w-md"
-                />
+            <div className="mb-6 flex flex-col sm:flex-row gap-2 items-center justify-between">
+                <div className="relative max-w-md flex-1">
+                    <TextInput
+                        icon={Search}
+                        placeholder="Buscar registros..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pr-8"
+                    />
+                    {searchTerm && (
+                        <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 focus:outline-none"
+                            onClick={() => setSearchTerm('')}
+                            aria-label="Limpiar filtro nombre"
+                            tabIndex={-1}
+                        >
+                            ×
+                        </button>
+                    )}
+                </div>
+                <div className="relative">
+                    <DatePicker
+                        value={filtroFecha}
+                        onValueChange={date => {
+                            const hoy = new Date();
+                            hoy.setHours(0, 0, 0, 0);
+                            if (date && date > hoy) return;
+                            setFiltroFecha(date);
+                        }}
+                        locale={es}
+                        className="w-[180px] pr-4 text-xs"
+                        maxDate={new Date()}
+                        placeholder="Fecha"
+                        enableClear={false}
+                    />
+                    {filtroFecha && (
+                        <button
+                            type="button"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                            onClick={() => setFiltroFecha(null)}
+                            aria-label="Limpiar filtro fecha"
+                        >
+                            ×
+                        </button>
+                    )}
+                </div>
             </div>
 
             {loading ? (

@@ -139,8 +139,8 @@ const PlanesPage = () => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Planes</h1>
-          <p className="text-gray-500">Gestiona los planes del gimnasio</p>
+          <h1 className="text-2xl font-bold text-gray-900">Gestion de Planes</h1>
+          <p className="text-gray-500">Administra los planes del gimnasio</p>
         </div>
         <Button variant="primary" icon={PlusCircle} onClick={handleCreatePlan} className="bg-red-600 hover:bg-red-700 text-white">
           Nuevo Plan

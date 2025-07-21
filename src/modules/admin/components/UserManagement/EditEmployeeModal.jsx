@@ -82,10 +82,20 @@ const EditEmployeeModal = ({ employee, isOpen, onClose, onSave }) => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
+    // Bloquear números en nombre y apellidos
+    if (name === 'nombre' || name === 'apellidos') {
+      // Permitir solo letras, tildes, ñ y espacios
+      const soloLetras = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '');
+      setFormData(prev => ({
+        ...prev,
+        [name]: soloLetras
+      }));
+      return;
+    }
+
     // Si se está cambiando el rol y el nuevo rol no es ENTRENADOR
     if (name === 'rol' && value !== 'ENTRENADOR') {
-      // Limpiar los campos específicos de entrenador
       setFormData(prev => ({
         ...prev,
         [name]: type === 'checkbox' ? checked : value,
@@ -94,14 +104,12 @@ const EditEmployeeModal = ({ employee, isOpen, onClose, onSave }) => {
       }));
       setIsTrainer(false);
     } else if (name === 'rol' && value === 'ENTRENADOR') {
-      // Si se está cambiando a rol ENTRENADOR
       setFormData(prev => ({
         ...prev,
         [name]: type === 'checkbox' ? checked : value
       }));
       setIsTrainer(true);
     } else {
-      // Para cualquier otro campo, actualización normal
       setFormData(prev => ({
         ...prev,
         [name]: type === 'checkbox' ? checked : value
@@ -125,28 +133,38 @@ const EditEmployeeModal = ({ employee, isOpen, onClose, onSave }) => {
 
   const validateForm = () => {
     const errors = {};
-    
+
     // Validaciones generales para todos los empleados
-    if (!formData.nombre) errors.nombre = 'El nombre es requerido';
-    if (!formData.apellidos) errors.apellidos = 'Los apellidos son requeridos';
+    if (!formData.nombre) {
+      errors.nombre = 'El nombre es requerido';
+    } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(formData.nombre)) {
+      errors.nombre = 'El nombre solo debe contener letras';
+    }
+
+    if (!formData.apellidos) {
+      errors.apellidos = 'Los apellidos son requeridos';
+    } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]+$/.test(formData.apellidos)) {
+      errors.apellidos = 'Los apellidos solo deben contener letras';
+    }
+
     if (!formData.dni) errors.dni = 'El DNI es requerido';
     if (formData.dni && formData.dni.length !== 8) errors.dni = 'El DNI debe tener 8 dígitos';
     if (!formData.correo) errors.correo = 'El correo es requerido';
     if (formData.correo && !/\S+@\S+\.\S+/.test(formData.correo)) errors.correo = 'El correo no es válido';
     if (!formData.celular) errors.celular = 'El celular es requerido';
     if (formData.celular && formData.celular.length !== 9) errors.celular = 'El celular debe tener 9 dígitos';
-    
+
     if (formData.ruc && formData.ruc.length !== 11) errors.ruc = 'El RUC debe tener 11 dígitos';
     if (!formData.salario) errors.salario = 'El salario es requerido';
     if (formData.salario <= 0) errors.salario = 'El salario debe ser mayor a 0';
-    
+
     // Validaciones específicas para entrenadores
     if (isTrainer) {
       if (formData.tipoInstructor === 'PREMIUM' && (!formData.cupoMaximo || formData.cupoMaximo <= 0)) {
         errors.cupoMaximo = 'El cupo máximo es requerido para instructores premium';
       }
     }
-    
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };  const handleSubmit = async (e) => {

@@ -203,7 +203,7 @@ const EmployeesListPage = () => {
                   </TableCell>
                   <TableCell>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{employee.roles?.join(', ') || 'Sin rol'}</p>
+                      <p className="text-sm font-medium text-gray-900">{employee.roles ? Array.from(new Set(employee.roles.map(r => r.toUpperCase()))).join(', ') : 'Sin rol'}</p>
                       {employee.tipoInstructor && (
                         <p className="text-xs text-gray-500">Instructor: {employee.tipoInstructor}</p>
                       )}

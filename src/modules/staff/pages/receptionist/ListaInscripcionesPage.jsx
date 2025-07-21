@@ -12,7 +12,9 @@ import {
   Text,
   Button,
   Badge,
-  Flex
+  Flex,
+  TextInput,
+  DatePicker
 } from '@tremor/react';
 import { 
   Receipt,
@@ -33,6 +35,7 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+
 const ListaInscripcionesPage = () => {
   const [inscripciones, setInscripciones] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -40,10 +43,37 @@ const ListaInscripcionesPage = () => {
   const [detalleInscripcionSeleccionada, setDetalleInscripcionSeleccionada] = useState(null);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [cancelandoInscripcion, setCancelandoInscripcion] = useState(false);
+  // Filtros
+  const [filtroNombre, setFiltroNombre] = useState('');
+  const [filtroFecha, setFiltroFecha] = useState(() => {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    return hoy;
+  });
+
 
   useEffect(() => {
     cargarInscripciones();
   }, []);
+  // Filtrar inscripciones por nombre y fecha
+  const inscripcionesFiltradas = inscripciones.filter(inscripcion => {
+    // Filtro por nombre (cliente)
+    const nombreCompleto = `${inscripcion.clienteNombre || ''} ${inscripcion.clienteApellido || ''}`.toLowerCase();
+    const nombreMatch = filtroNombre.trim() === '' || nombreCompleto.includes(filtroNombre.trim().toLowerCase());
+    // Filtro por fecha (fecha de inscripción)
+    let fechaMatch = true;
+    if (filtroFecha && inscripcion.fechaInscripcion) {
+      const fechaInsc = new Date(inscripcion.fechaInscripcion);
+      const filtro = new Date(filtroFecha);
+      // Comparar año, mes y día en UTC para evitar desfases de zona horaria local
+      fechaMatch = (
+        fechaInsc.getUTCFullYear() === filtro.getUTCFullYear() &&
+        fechaInsc.getUTCMonth() === filtro.getUTCMonth() &&
+        fechaInsc.getUTCDate() === filtro.getUTCDate()
+      );
+    }
+    return nombreMatch && fechaMatch;
+  });
 
   const cargarInscripciones = async () => {
     try {
@@ -146,6 +176,7 @@ const ListaInscripcionesPage = () => {
   };
 
   const cancelarInscripcion = async (idInscripcion) => {
+    if (!window.confirm('¿Estás seguro de que deseas cancelar esta inscrpcion?')) return;
     try {
       setCancelandoInscripcion(true);
       setError(null);
@@ -451,6 +482,7 @@ const ListaInscripcionesPage = () => {
     };
   }, []);
 
+
   if (loading && !inscripciones.length) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -459,12 +491,61 @@ const ListaInscripcionesPage = () => {
     );
   }
 
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Historial de Inscripciones</h1>
           <p className="text-gray-500">Registro de todas las inscripciones realizadas</p>
+        </div>
+      </div>
+
+      {/* Filtros avanzados estilo ListaPage */}
+      <div className="flex flex-wrap gap-4 items-center justify-between p-4 border-b mb-4">
+        {/* Buscador por nombre */}
+        <div className="flex-1 min-w-[200px] relative">
+          <TextInput
+            placeholder="Buscar por nombre de cliente..."
+            value={filtroNombre}
+            onChange={e => setFiltroNombre(e.target.value)}
+          />
+          {filtroNombre && (
+            <button
+              type="button"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+              onClick={() => setFiltroNombre('')}
+              aria-label="Limpiar filtro nombre"
+            >
+              ×
+            </button>
+          )}
+        </div>
+        {/* Selector de fecha */}
+        <div className="min-w-[200px] flex items-center gap-2 relative">
+          <DatePicker
+            value={filtroFecha}
+            onValueChange={date => {
+              const hoy = new Date();
+              hoy.setHours(0, 0, 0, 0);
+              if (date && date > hoy) return;
+              setFiltroFecha(date);
+            }}
+            locale={es}
+            maxDate={new Date()}
+            placeholder="Filtrar por fecha"
+            enableClear={false}
+          />
+          {filtroFecha && (
+            <button
+              type="button"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+              onClick={() => setFiltroFecha(null)}
+              aria-label="Limpiar filtro fecha"
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -493,7 +574,7 @@ const ListaInscripcionesPage = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {inscripciones.map((inscripcion) => (
+            {inscripcionesFiltradas.map((inscripcion) => (
               <TableRow key={inscripcion.idInscripcion}>
                 <TableCell>#{inscripcion.idInscripcion}</TableCell>
                 <TableCell>{`${inscripcion.clienteNombre} ${inscripcion.clienteApellido}`}</TableCell>
@@ -513,12 +594,20 @@ const ListaInscripcionesPage = () => {
                     variant="secondary"
                     icon={FileText}
                     onClick={() => verDetalle(inscripcion.idInscripcion)}
+                    className="px-4 py-2 border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-50 hover:border-red-700 font-medium bg-transparent"
                   >
                     Ver Detalle
                   </Button>
                 </TableCell>
               </TableRow>
             ))}
+            {inscripcionesFiltradas.length === 0 && !loading && (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-4 text-gray-500">
+                  No hay inscripciones registradas
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </Card>
@@ -588,16 +677,10 @@ const ListaInscripcionesPage = () => {
                           <span>{formatearFecha(detalleInscripcionSeleccionada.fechaFin)}</span>
                         </div>
                         {detalleInscripcionSeleccionada.recepcionistaNombre && (
-                          <>
-                            <div className="flex">
-                              <span className="font-medium w-20">Recepcionista:</span>
-                              <span>{detalleInscripcionSeleccionada.recepcionistaNombre} {detalleInscripcionSeleccionada.recepcionistaApellido}</span>
-                            </div>
-                            <div className="flex">
-                              <span className="font-medium w-20">DNI Recep.:</span>
-                              <span>{detalleInscripcionSeleccionada.recepcionistaDni}</span>
-                            </div>
-                          </>
+                          <div className="flex">
+                            <span className="font-medium w-20">Vendedor:</span>
+                            <span>{detalleInscripcionSeleccionada.recepcionistaNombre} {detalleInscripcionSeleccionada.recepcionistaApellido}</span>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -730,8 +813,7 @@ const ListaInscripcionesPage = () => {
                   <div className="flex justify-between pt-4 no-print">
                     {/* Botón de cancelar - solo si no está cancelada o finalizada */}
                     <div>
-                      {detalleInscripcionSeleccionada.estado?.toUpperCase() !== 'CANCELADA' && 
-                       detalleInscripcionSeleccionada.estado?.toUpperCase() !== 'FINALIZADO' && (
+                      {(detalleInscripcionSeleccionada.estado?.toUpperCase() === 'ACTIVA' || detalleInscripcionSeleccionada.estado?.toUpperCase() === 'ACTIVO') && (
                         <Button
                           size="md"
                           variant="secondary"
@@ -758,16 +840,16 @@ const ListaInscripcionesPage = () => {
                         size="md"
                         variant="secondary"
                         onClick={cerrarModal}
-                        className="px-6"
+                        className="px-6 border border-gray-400 text-gray-700 bg-transparent hover:bg-gray-100 hover:text-gray-900"
                       >
                         Cerrar
                       </Button>
                       <Button
                         size="md"
-                        variant="primary"
+                        variant="secondary"
                         icon={Printer}
                         onClick={imprimirComprobante}
-                        className="px-6"
+                        className="px-6 border border-gray-400 text-gray-700 bg-transparent hover:bg-gray-100 hover:text-gray-900"
                       >
                         Imprimir
                       </Button>

@@ -66,7 +66,8 @@ const AdminLayout = () => {
     {
       title: 'Gestión de Usuarios',
       icon: <Users size={20} />,
-      submenu: true,      submenuItems: [
+      submenu: true,
+      submenuItems: [
         { title: 'Lista de Usuarios', path: '/admin/usuarios' },
         { title: 'Lista de Empleados', path: '/admin/empleados' },
         { title: 'Lista de Clientes', path: '/admin/clientes' },
@@ -80,7 +81,6 @@ const AdminLayout = () => {
         { title: 'Horarios', path: '/admin/horarios' },
         { title: 'Asistencia Personal', path: '/admin/asistencia' },
         { title: 'Lista de Asistencias', path: '/admin/lista-asistencia' },
-        { title: 'Evaluación Desempeño', path: '/admin/evaluacion' },
       ],
     },
     {
@@ -98,9 +98,8 @@ const AdminLayout = () => {
       icon: <Clock size={20} />,
       submenu: true,
       submenuItems: [
-        { title: 'Asistencia Clientes', path: '/admin/asistencia/clientes' },
-        { title: 'Seguimiento Inscripciones', path: '/admin/inscripciones' },
-        { title: 'Desempeño Entrenadores', path: '/admin/entrenadores/desempeno' },
+        { title: 'Asistencia Clientes', path: '/admin/verificar' },
+        { title: 'Lista de Asistencias', path: '/admin/lista-clientes' },
       ],
     },
     {
@@ -108,19 +107,9 @@ const AdminLayout = () => {
       icon: <BarChart2 size={20} />,
       submenu: true,
       submenuItems: [
-        { title: 'Estadísticas Generales', path: '/admin/reportes/general' },
-        { title: 'Reporte de Ventas', path: '/admin/reportes/ventas' },
-        { title: 'Métricas de Asistencia', path: '/admin/reportes/asistencia' },
-      ],
-    },
-    {
-      title: 'Configuración',
-      icon: <Settings size={20} />,
-      submenu: true,
-      submenuItems: [
-        { title: 'Configuración General', path: '/admin/configuracion' },
-        { title: 'Horarios del Gimnasio', path: '/admin/configuracion/horarios' },
-        { title: 'Parámetros del Sistema', path: '/admin/configuracion/sistema' },
+        { title: 'Reportes de Ventas y Finanzas', path: '/admin/reportes/ventas-finanzas' },
+        { title: 'Reportes de Alquileres', path: '/admin/reportes/alquileres' },
+
       ],
     },
   ];

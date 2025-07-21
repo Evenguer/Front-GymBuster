@@ -113,7 +113,12 @@ const CategoriaPage = () => {
           <h1 className="text-2xl font-bold text-gray-900">Categorías</h1>
           <p className="text-gray-500">Lista de categorías</p>
         </div>
-        <Button icon={Download} variant="secondary" onClick={() => handleExportPDF(categorias)} className="flex items-center gap-2">
+        <Button 
+          icon={Download} 
+          variant="secondary" 
+          onClick={() => handleExportPDF(categorias)} 
+          className="flex items-center gap-2 border-2 border-red-600 text-red-600 bg-white hover:bg-red-50 hover:border-red-700 hover:text-red-700 transition-colors"
+        >
           Exportar PDF
         </Button>
       </div>

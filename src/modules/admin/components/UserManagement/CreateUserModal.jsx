@@ -407,11 +407,16 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                   name="fechaNacimiento"
                   value={formData.fechaNacimiento}
                   onChange={handleInputChange}
+                  max={(() => {
+                    const today = new Date();
+                    today.setFullYear(today.getFullYear() - 13);
+                    return today.toISOString().split('T')[0];
+                  })()}
                 />
                 {formErrors.fechaNacimiento && (
                   <p className="text-red-500 text-xs mt-1">{formErrors.fechaNacimiento}</p>
                 )}
-                <p className="text-gray-500 text-xs mt-1">{getHelpMessage('fechaNacimiento')}</p>
+                <p className="text-gray-500 text-xs mt-1">Debe ser mayor de 13 años para registrarse.</p>
               </div>
             </div>
 
@@ -587,12 +592,21 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
             )}
 
             <div className="flex justify-end space-x-2 mt-6">
-              <Button onClick={onClose} variant="secondary">
+              <button
+                type="button"
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+                onClick={onClose}
+                disabled={false}
+              >
                 Cancelar
-              </Button>
-              <Button type="submit" variant="primary">
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                disabled={false}
+              >
                 Crear Usuario
-              </Button>
+              </button>
             </div>
           </form>
         </div>

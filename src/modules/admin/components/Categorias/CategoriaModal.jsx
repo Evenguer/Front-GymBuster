@@ -23,12 +23,6 @@ const CategoriaModal = ({
         <Card>
           <div className="flex justify-between items-center mb-4">
             <Title>{formData.id ? 'Editar Categoría' : 'Nueva Categoría'}</Title>
-            <button 
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <X size={20} />
-            </button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -67,12 +61,21 @@ const CategoriaModal = ({
             </div>
             
             <div className="flex gap-2 justify-end mt-6">
-              <Button type="button" variant="secondary" onClick={onClose}>
+              <button
+                type="button"
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+                onClick={onClose}
+                disabled={formData.loading}
+              >
                 Cancelar
-              </Button>
-              <Button type="submit" variant="primary">
-                {formData.id ? 'Actualizar' : 'Guardar'}
-              </Button>
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                disabled={formData.loading}
+              >
+                {formData.loading ? 'Guardando...' : (formData.id ? 'Actualizar' : 'Guardar')}
+              </button>
             </div>
           </form>
         </Card>

@@ -125,8 +125,6 @@ const ProductoModal = ({
         ? await productosAPI.actualizarProducto(productoData)
         : await productosAPI.guardarProducto(productoData);
           if (response) {
-        // Mostrar mensaje de éxito
-        alert(formData.id ? '¡Producto actualizado correctamente!' : '¡Producto guardado correctamente!');
         // Notificar al componente padre
         onSuccess(response);
         // Luego cerrar el modal
@@ -177,12 +175,6 @@ const ProductoModal = ({
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <Title>{formData.id ? 'Editar Producto' : 'Nuevo Producto'}</Title>
-            <button 
-              onClick={handleClose}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <X size={20} />
-            </button>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -323,22 +315,21 @@ const ProductoModal = ({
               )}
             </div>
             <div className="flex justify-end space-x-2 mt-6">
-              <Button
+              <button
                 type="button"
-                variant="secondary"
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
                 onClick={handleClose}
                 disabled={loading}
               >
                 Cancelar
-              </Button>
-              <Button
+              </button>
+              <button
                 type="submit"
-                variant="primary"
-                loading={loading}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                 disabled={loading}
               >
-                {formData.id ? 'Actualizar' : 'Guardar'}
-              </Button>
+                {loading ? 'Guardando...' : (formData.id ? 'Actualizar' : 'Guardar')}
+              </button>
             </div>
           </form>
         </div>
