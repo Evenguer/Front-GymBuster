@@ -539,7 +539,7 @@ const ListaPage = () => {
                     />
                     <Text className="font-bold text-xl">BUSTER GYM S.A.C</Text>
                     <Text className="text-gray-600">R.U.C. 20100100100</Text>
-                    <Text className="text-gray-600">Jr. Las Palmeras 123 - Lima</Text>
+                    <Text className="text-gray-600">Nuevo Chimbote, Los cipreces O-25</Text>
                     <Text className="text-gray-600">Telf: (01) 123-4567</Text>
                   </div>
 

@@ -59,67 +59,64 @@ const RoleSelectionPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
-        <div className="flex flex-col items-center">
-          <img className="h-20 w-auto mb-4" src={Logo} alt="GymBuster Logo" />
-          <h2 className="text-center text-2xl font-bold text-gray-900">
-            Selecciona tu tipo de acceso
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Elige cómo quieres acceder al sistema
-          </p>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#090909' }}>
+      <div className="max-w-md w-full bg-[#18191A] p-8 rounded-2xl shadow-xl flex flex-col items-center" style={{ boxShadow: '0 4px 32px 0 rgba(0,0,0,0.25)' }}>
+        {/* Logo y título */}
+        <img className="h-20 w-auto mb-4" src={Logo} alt="GymBuster Logo" />
+        <h1 className="text-center text-3xl font-extrabold mb-2">
+          <span className="text-red-600">BUSTER</span>
+          <span className="text-white ml-1">GYM</span>
+        </h1>
+
+        {/* Botones de selección de rol */}
+        <div className="w-full space-y-4">
+          <button
+            type="button"
+            onClick={() => handleRoleSelection('empleado')}
+            className={`w-full flex items-center px-4 py-4 border ${
+              selectedRole === 'empleado'
+                ? 'border-red-600 bg-[#232325]'
+                : 'border-gray-700 bg-[#18191A] hover:bg-[#232325]'
+            } rounded-lg shadow-sm text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-red-600 transition-all duration-150`}
+          >
+            <Shield className="h-6 w-6 text-red-600 mr-3" />
+            <span className="flex flex-col items-start">
+              <span className="font-bold text-lg">Acceder como Empleado</span>
+              <span className="text-gray-400 text-sm">Para Recepcionistas, Entrenadores y Administradores</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleRoleSelection('cliente')}
+            className={`w-full flex items-center px-4 py-4 border ${
+              selectedRole === 'cliente'
+                ? 'border-red-600 bg-[#232325]'
+                : 'border-gray-700 bg-[#18191A] hover:bg-[#232325]'
+            } rounded-lg shadow-sm text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-red-600 transition-all duration-150`}
+          >
+            <User className="h-6 w-6 text-red-600 mr-3" />
+            <span className="flex flex-col items-start">
+              <span className="font-bold text-lg">Acceder como Cliente</span>
+              <span className="text-gray-400 text-sm">Para acceder a servicios y planes del gimnasio</span>
+            </span>
+          </button>
         </div>
-        
-        <div className="mt-6">
-          <div className="space-y-4">
-            <button
-              type="button"
-              onClick={() => handleRoleSelection('empleado')}
-              className={`w-full flex items-center justify-center px-4 py-4 border ${
-                selectedRole === 'empleado'
-                  ? 'border-red-500 bg-red-50'
-                  : 'border-gray-300 bg-white hover:bg-gray-50'
-              } rounded-md shadow-sm text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500`}
-            >
-              <Shield className="h-6 w-6 text-red-600 mr-3" />
-              <span>
-                <span className="font-bold block text-left text-lg">Acceder como Empleado</span>
-                <span className="text-gray-500 block text-left text-sm">
-                  Para Recepcionistas, Entrenadores y Administradores
-                </span>
-              </span>
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => handleRoleSelection('cliente')}
-              className={`w-full flex items-center justify-center px-4 py-4 border ${
-                selectedRole === 'cliente'
-                  ? 'border-red-500 bg-red-50'
-                  : 'border-gray-300 bg-white hover:bg-gray-50'
-              } rounded-md shadow-sm text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500`}
-            >
-              <User className="h-6 w-6 text-red-600 mr-3" />
-              <span>
-                <span className="font-bold block text-left text-lg">Acceder como Cliente</span>
-                <span className="text-gray-500 block text-left text-sm">
-                  Para acceder a servicios y planes del gimnasio
-                </span>
-              </span>
-            </button>
-          </div>
-        </div>
-        
-        <div className="mt-6">
+
+        {/* Botón volver */}
+        <div className="w-full mt-6">
           <button
             type="button"
             onClick={goBack}
-            className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full flex items-center justify-center px-4 py-2 border border-gray-700 rounded-lg shadow-sm text-sm font-medium text-gray-300 bg-[#18191A] hover:bg-[#232325] focus:outline-none focus:ring-2 focus:ring-red-600 transition-all duration-150"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4 mr-2 text-gray-400" />
             Volver
           </button>
+        </div>
+
+        {/* Pie de página */}
+        <div className="w-full mt-8">
+          <p className="text-center text-xs text-gray-400">© 2025 Buster GYM. Todos los derechos reservados.</p>
         </div>
       </div>
     </div>

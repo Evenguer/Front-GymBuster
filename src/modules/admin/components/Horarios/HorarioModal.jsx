@@ -17,6 +17,13 @@ const DIAS_SEMANA = [
 const TURNOS = ['Mañana', 'Tarde', 'Noche'];
 
 const HorarioModal = ({ isOpen, onClose, horario, empleados, onSuccess, isLoading }) => {
+    // Función para obtener min y max según turno
+    const getHoraMinMax = (turno) => {
+        if (turno === 'Mañana') return { min: '05:00', max: '12:00' };
+        if (turno === 'Tarde') return { min: '12:00', max: '18:00' };
+        if (turno === 'Noche') return { min: '18:00', max: '23:00' };
+        return { min: '05:00', max: '23:00' };
+    };
     useAuth();
     const [formData, setFormData] = useState({
         empleadoId: '',
@@ -88,6 +95,47 @@ const HorarioModal = ({ isOpen, onClose, horario, empleados, onSuccess, isLoadin
         }
         if (!formData.turno || !TURNOS.includes(formData.turno)) {
             errors.turno = 'Debe seleccionar un turno válido';
+        }
+
+        // Validar rango general de horas (5:00 a 23:00)
+        const minHora = 5;
+        const maxHora = 23;
+        const getHour = (str) => {
+            if (!str) return null;
+            const [h, m] = str.split(':');
+            return parseInt(h, 10);
+        };
+        const inicioHora = getHour(formData.horaInicio);
+        const finHora = getHour(formData.horaFin);
+        if (inicioHora !== null && (inicioHora < minHora || inicioHora > maxHora)) {
+            errors.horaInicio = 'La hora de inicio debe estar entre 05:00 y 23:00';
+        }
+        if (finHora !== null && (finHora < minHora || finHora > maxHora)) {
+            errors.horaFin = 'La hora de fin debe estar entre 05:00 y 23:00';
+        }
+
+        // Validar rango por turno
+        if (formData.turno === 'Mañana') {
+            if (inicioHora !== null && (inicioHora < 5 || inicioHora > 12)) {
+                errors.horaInicio = 'En turno Mañana, la hora de inicio debe estar entre 05:00 y 12:00';
+            }
+            if (finHora !== null && (finHora < 5 || finHora > 12)) {
+                errors.horaFin = 'En turno Mañana, la hora de fin debe estar entre 05:00 y 12:00';
+            }
+        } else if (formData.turno === 'Tarde') {
+            if (inicioHora !== null && (inicioHora < 12 || inicioHora > 18)) {
+                errors.horaInicio = 'En turno Tarde, la hora de inicio debe estar entre 12:00 y 18:00';
+            }
+            if (finHora !== null && (finHora < 12 || finHora > 18)) {
+                errors.horaFin = 'En turno Tarde, la hora de fin debe estar entre 12:00 y 18:00';
+            }
+        } else if (formData.turno === 'Noche') {
+            if (inicioHora !== null && (inicioHora < 18 || inicioHora > 23)) {
+                errors.horaInicio = 'En turno Noche, la hora de inicio debe estar entre 18:00 y 23:00';
+            }
+            if (finHora !== null && (finHora < 18 || finHora > 23)) {
+                errors.horaFin = 'En turno Noche, la hora de fin debe estar entre 18:00 y 23:00';
+            }
         }
 
         // Validar que la hora de fin sea mayor que la hora de inicio
@@ -245,6 +293,8 @@ const HorarioModal = ({ isOpen, onClose, horario, empleados, onSuccess, isLoadin
                                     value={formData.horaInicio}
                                     onChange={(e) => handleInputChange('horaInicio', e.target.value)}
                                     placeholder="Hora inicio"
+                                    min={getHoraMinMax(formData.turno).min}
+                                    max={getHoraMinMax(formData.turno).max}
                                 />
                                 {formErrors.horaInicio && (
                                     <p className="text-red-500 text-xs mt-1">{formErrors.horaInicio}</p>
@@ -259,6 +309,8 @@ const HorarioModal = ({ isOpen, onClose, horario, empleados, onSuccess, isLoadin
                                     value={formData.horaFin}
                                     onChange={(e) => handleInputChange('horaFin', e.target.value)}
                                     placeholder="Hora fin"
+                                    min={getHoraMinMax(formData.turno).min}
+                                    max={getHoraMinMax(formData.turno).max}
                                 />
                                 {formErrors.horaFin && (
                                     <p className="text-red-500 text-xs mt-1">{formErrors.horaFin}</p>

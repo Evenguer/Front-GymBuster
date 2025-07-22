@@ -201,12 +201,12 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
 
     // Validaciones para empleados (entrenadores y recepcionistas)
     if (formData.rol === 'ENTRENADOR' || formData.rol === 'RECEPCIONISTA') {
-      if (!formData.ruc) {
-        errors.ruc = 'El RUC es requerido para empleados';
-      } else if (!isValidRUC(formData.ruc)) {
-        errors.ruc = ERROR_MESSAGES.ruc;
+      if (formData.ruc) {
+        if (!isValidRUC(formData.ruc)) {
+          errors.ruc = ERROR_MESSAGES.ruc;
+        }
       }
-
+      // El campo RUC puede estar vacío, no es obligatorio
       if (!formData.salario) {
         errors.salario = 'El salario es requerido para empleados';
       } else if (!isValidSalary(formData.salario)) {
@@ -516,6 +516,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
                     value={formData.fechaContratacion}
                     onChange={handleInputChange}
                     error={formErrors.fechaContratacion}
+                    max={new Date().toISOString().split('T')[0]}
                   />
                   {formErrors.fechaContratacion && (
                     <p className="text-red-500 text-xs mt-1">{formErrors.fechaContratacion}</p>

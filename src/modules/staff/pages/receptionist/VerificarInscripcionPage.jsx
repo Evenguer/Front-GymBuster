@@ -166,28 +166,27 @@ const VerificarInscripcionPage = () => {
         try {
             // Registrar asistencia usando directamente el API
             const result = await asistenciaClienteAPI.registrarAsistenciaPorQR(idInscripcionQR);
-            
             if (result.success) {
-                // Mostrar alerta de éxito
-                alert(`¡Asistencia registrada con éxito!\n\nID Inscripción: ${idInscripcionQR}\nFecha: ${new Date().toLocaleDateString('es-ES')}\nHora: ${new Date().toLocaleTimeString('es-ES')}`);
-                
-                // Opcionalmente, buscar los detalles de la inscripción para mostrar
-                try {
-                    await buscarInscripcion(idInscripcionQR.toString());
-                } catch (detailError) {
-                    console.log('No se pudo obtener detalles, pero la asistencia se registró correctamente');
-                    // Limpiar después de registrar asistencia
-                    setIdInscripcion('');
-                    setInscripcionEncontrada(null);
-                }
+                // Mostrar notificación visual en vez de alert
+                setInscripcionEncontrada({
+                    clienteNombre: result.clienteNombre || '',
+                    clienteApellido: result.clienteApellido || '',
+                    estado: 'ACTIVO',
+                    idInscripcion: idInscripcionQR,
+                    clienteDni: result.clienteDni || '',
+                    nombrePlan: result.nombrePlan || '',
+                    fechaInicio: result.fechaInicio || null,
+                    fechaFin: result.fechaFin || null,
+                    duracionPlan: result.duracionPlan || 0,
+                    asistenciaRegistrada: true,
+                    fechaAsistencia: new Date(),
+                });
             } else {
                 toast.error(result.message || 'No se pudo registrar la asistencia');
             }
         } catch (error) {
             console.error('Error al registrar asistencia:', error);
-            
             // Mostrar mensaje de error directo sin buscar inscripción
-            // Crear un objeto simulado para mostrar el mensaje de error
             const inscripcionError = {
                 clienteNombre: 'Usuario',
                 clienteApellido: 'No Autorizado',
@@ -199,14 +198,16 @@ const VerificarInscripcionPage = () => {
                 fechaFin: null,
                 duracionPlan: 0
             };
-            
             setInscripcionEncontrada(inscripcionError);
-            
             const errorMessage = error.message || 'Error inesperado al registrar asistencia';
-            
             if (errorMessage.includes('❌')) {
-                // El mensaje ya viene formateado del servidor
-                alert(errorMessage);
+                toast.error(errorMessage, {
+                    duration: 4000,
+                    style: {
+                        background: '#EF4444',
+                        color: 'white',
+                    }
+                });
             } else {
                 toast.error('No tienes permiso para usar las instalaciones del gimnasio', {
                     duration: 4000,
@@ -497,25 +498,24 @@ const VerificarInscripcionPage = () => {
 
                         {/* Resultado de asistencia condicional */}
                         {inscripcionEncontrada.estado?.toLowerCase() === 'activo' || inscripcionEncontrada.estado?.toLowerCase() === 'activa' ? (
-                            /* Mensaje de éxito para inscripciones activas */
+                            /* Notificación visual de asistencia registrada (verde) */
                             <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-                                <Title className="text-green-800 mb-2">✓ Asistencia marcada con éxito</Title>
+                                <Title className="text-green-800 mb-2">✓ Asistencia registrada con éxito</Title>
                                 <Text className="text-green-700 text-lg font-medium">
                                     {inscripcionEncontrada.clienteNombre} {inscripcionEncontrada.clienteApellido}
                                 </Text>
                                 <Text className="text-green-600 text-sm mt-2">
-                                    Fecha: {new Date().toLocaleDateString('es-ES')} - Hora: {new Date().toLocaleTimeString('es-ES')}
+                                    ID Inscripción: {inscripcionEncontrada.idInscripcion}<br />
+                                    Fecha: {inscripcionEncontrada.fechaAsistencia ? inscripcionEncontrada.fechaAsistencia.toLocaleDateString('es-ES') : new Date().toLocaleDateString('es-ES')}<br />
+                                    Hora: {inscripcionEncontrada.fechaAsistencia ? inscripcionEncontrada.fechaAsistencia.toLocaleTimeString('es-ES') : new Date().toLocaleTimeString('es-ES')}
                                 </Text>
-                                
                                 {/* Botón oculto pero manteniendo el espacio */}
                                 <button
                                     type="button"
-                                    onClick={registrarAsistencia}
-                                    disabled={isLoading}
-                                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-lg font-medium"
                                     style={{ visibility: 'hidden' }}
+                                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-lg font-medium"
                                 >
-                                    ✓ Registrar Asistencia
+                                    Botón oculto
                                 </button>
                             </div>
                         ) : (

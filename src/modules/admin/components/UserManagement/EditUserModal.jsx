@@ -20,7 +20,6 @@ const EditUserModal = ({ user, isOpen, onClose, onSave }) => {
     rol: ''
   });
     const [rolesDisponibles] = useState([
-    { id: 'ADMIN', nombre: 'Administrador' },
     { id: 'RECEPCIONISTA', nombre: 'Recepcionista' },
     { id: 'ENTRENADOR', nombre: 'Entrenador' },
     { id: 'CLIENTE', nombre: 'Cliente' }

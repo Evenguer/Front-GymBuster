@@ -76,6 +76,14 @@ const InscripcionPage = () => {
   const [montoPagado, setMontoPagado] = useState('');
   const [metodoPago, setMetodoPago] = useState('EFECTIVO');
   const [mostrarPago, setMostrarPago] = useState(false);
+  // Efecto para auto-completar y deshabilitar montoPagado según método de pago
+  useEffect(() => {
+    if (["TARJETA", "BILLETERAS"].includes(metodoPago)) {
+      setMontoPagado(formData.monto ? formData.monto.toFixed(2) : '');
+    } else {
+      setMontoPagado('');
+    }
+  }, [metodoPago, formData.monto]);
   
   // Estados de notificación
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -862,16 +870,19 @@ const InscripcionPage = () => {
               >
                 <SearchSelectItem value="EFECTIVO">Efectivo</SearchSelectItem>
                 <SearchSelectItem value="TARJETA">Tarjeta</SearchSelectItem>
-                <SearchSelectItem value="YAPE">Yape</SearchSelectItem>
-                <SearchSelectItem value="PLIN">Plin</SearchSelectItem>
+                <SearchSelectItem value="BILLETERAS">Billeteras Digitales</SearchSelectItem>
               </SearchSelect>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg">
               <Text className="mb-2 font-medium">Monto recibido (S/)</Text>
               <TextInput
                 value={montoPagado}
-                onChange={(e) => setMontoPagado(e.target.value)}
-                disabled={loading}
+                onChange={(e) => {
+                  if (!["TARJETA", "BILLETERAS"].includes(metodoPago)) {
+                    setMontoPagado(e.target.value);
+                  }
+                }}
+                disabled={loading || ["TARJETA", "BILLETERAS"].includes(metodoPago)}
                 type="number"
                 step="0.01"
                 min={formData.monto}

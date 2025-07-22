@@ -144,7 +144,11 @@ const LoginForm = () => {
       </div>
       {/* Error de login */}
       {error && (
-        <div className="text-center text-sm text-red-500 mb-2">{error}</div>
+        <div className="text-center text-sm text-red-500 mb-2">
+          {error.toLowerCase().includes('usuario') || error.toLowerCase().includes('credencial')
+            ? 'Usuario incorrecto'
+            : error}
+        </div>
       )}
       {/* Botón */}
         <button

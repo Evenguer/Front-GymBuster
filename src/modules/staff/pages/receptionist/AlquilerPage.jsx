@@ -1146,7 +1146,14 @@ const AlquilerPage = () => {
                 <Text className="mb-2 font-medium">Método de pago</Text>
                 <SearchSelect
                   value={metodoPago}
-                  onValueChange={setMetodoPago}
+                  onValueChange={(value) => {
+                    setMetodoPago(value);
+                    if (value === 'TARJETA' || value === 'BILLETERAS') {
+                      setMontoPagado(totalAlquiler.toFixed(2));
+                    } else {
+                      setMontoPagado('');
+                    }
+                  }}
                   disabled={loading}
                   icon={CreditCard}
                   className="bg-white"
@@ -1161,7 +1168,7 @@ const AlquilerPage = () => {
                 <TextInput
                   value={montoPagado}
                   onChange={(e) => setMontoPagado(e.target.value)}
-                  disabled={loading}
+                  disabled={loading || metodoPago === 'TARJETA' || metodoPago === 'BILLETERAS'}
                   type="number"
                   step="0.01"
                   min={totalAlquiler}

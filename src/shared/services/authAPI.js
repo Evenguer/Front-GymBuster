@@ -93,6 +93,7 @@ export const register = async (userData) => {
       throw new Error('Sesión no válida. Por favor, inicia sesión nuevamente.');
     }
 
+
     console.log('Iniciando registro de usuario:', {
       rol: userData.rol,
       nombreUsuario: userData.nombreUsuario

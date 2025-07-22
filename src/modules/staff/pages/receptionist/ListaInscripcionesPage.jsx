@@ -624,7 +624,7 @@ const ListaInscripcionesPage = () => {
                       className="h-12 mx-auto mb-1"
                     />
                     <Text className="font-bold text-lg">BUSTER GYM S.A.C</Text>
-                    <Text className="text-gray-600 text-xs">R.U.C. 20100100100 | Jr. Las Palmeras 123 - Lima | Telf: (01) 123-4567</Text>
+                    <Text className="text-gray-600 text-xs">R.U.C. 20100100100 | Nuevo Chimbote, Los cipreces O-25 | Telf: (01) 123-4567</Text>
                   </div>
 
                   {/* Título y Número de Comprobante */}

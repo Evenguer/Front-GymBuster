@@ -888,7 +888,14 @@ return (
               <Text className="mb-2">Método de Pago</Text>
               <select
                 value={metodoPago}
-                onChange={(e) => setMetodoPago(e.target.value)}
+                onChange={(e) => {
+                  setMetodoPago(e.target.value);
+                  if (e.target.value === 'TARJETA' || e.target.value === 'BILLETERAS') {
+                    setMontoPagado(totalVenta.toFixed(2));
+                  } else {
+                    setMontoPagado('');
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
                 <option value="EFECTIVO">Efectivo</option>
@@ -905,6 +912,7 @@ return (
                 min={0}
                 step={0.01}
                 enableStepper={false}
+                disabled={metodoPago === 'TARJETA' || metodoPago === 'BILLETERAS'}
               />
             </div>
           </div>
