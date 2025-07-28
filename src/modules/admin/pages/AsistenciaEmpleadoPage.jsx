@@ -19,6 +19,7 @@ import { Search, Clock } from 'react-feather';
 import { getEmployees } from '../services/personaAPI';
 import { asistenciaEmpleadoAPI } from '../services/asistenciaEmpleadoAPI';
 import toast from 'react-hot-toast';
+import { useNotification } from '../../../shared/hooks/useNotification';
 
 const DIAS_SEMANA = [
     { value: 'LUNES', label: 'Lunes' },
@@ -37,6 +38,7 @@ const AsistenciaEmpleadoPage = () => {
     const [horariosDia, setHorariosDia] = useState([]);
     const [diaSeleccionado, setDiaSeleccionado] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const notify = useNotification();
 
     useEffect(() => {
         fetchEmpleados();
@@ -58,20 +60,19 @@ const AsistenciaEmpleadoPage = () => {
             setEmpleados(data);
         } catch (error) {
             console.error('Error al cargar empleados:', error);
-            toast.error('Error al cargar la lista de empleados');
+            notify.error('Error al cargar la lista de empleados');
         }
     };
 
     const fetchHorariosPorDia = async (idEmpleado, dia) => {
         if (!idEmpleado) {
             console.error('ID de empleado no proporcionado');
-            // Se elimina el toast de error para ID de empleado no válido
             return;
         }
 
         if (!dia) {
             console.error('Día no proporcionado');
-            toast.error('Error: Debe seleccionar un día');
+            notify.error('Error: Debe seleccionar un día');
             return;
         }
 
@@ -92,7 +93,7 @@ const AsistenciaEmpleadoPage = () => {
             }
         } catch (error) {
             console.error('Error al cargar horarios del día:', error);
-            toast.error('Error al cargar los horarios: ' + (error.message || 'Error desconocido'));
+            notify.error('Error al cargar los horarios: ' + (error.message || 'Error desconocido'));
             setHorariosDia([]);
         } finally {
             setIsLoading(false);
@@ -101,7 +102,7 @@ const AsistenciaEmpleadoPage = () => {
 
     const buscarEmpleadoPorDNI = async () => {
         if (!dni.trim()) {
-            toast.error('Por favor, ingrese un DNI válido');
+            notify.error('Por favor, ingrese un DNI válido');
             return;
         }
 
@@ -112,7 +113,7 @@ const AsistenciaEmpleadoPage = () => {
             if (!empleado) {
                 setEmpleadoEncontrado(null);
                 setHorariosDia([]);
-                toast.error('No se encontró ningún empleado con ese DNI');
+                notify.error('No se encontró ningún empleado con ese DNI');
                 return;
             }
 
@@ -127,11 +128,11 @@ const AsistenciaEmpleadoPage = () => {
                 });
                 await fetchHorariosPorDia(empleado.idPersona, diaSeleccionado);
             } else {
-                toast.error('Por favor, seleccione un día de la semana');
+                notify.error('Por favor, seleccione un día de la semana');
             }
         } catch (error) {
             console.error('Error en la búsqueda:', error);
-            toast.error('Error al buscar el empleado: ' + (error.message || 'Error desconocido'));
+            notify.error('Error al buscar el empleado: ' + (error.message || 'Error desconocido'));
             setEmpleadoEncontrado(null);
             setHorariosDia([]);
         } finally {
@@ -155,11 +156,24 @@ const AsistenciaEmpleadoPage = () => {
         }
 
         setIsLoading(true);
-        try {            const result = await asistenciaEmpleadoAPI.marcarAsistencia(empleadoEncontrado.idEmpleado);
+        try {
+            const result = await asistenciaEmpleadoAPI.marcarAsistencia(empleadoEncontrado.idEmpleado);
             if (result.success) {
-                // Mostrar alerta de éxito
-                alert(`¡Asistencia registrada con éxito!\n\nEmpleado: ${empleadoEncontrado.nombre} ${empleadoEncontrado.apellidos}\nFecha: ${new Date().toLocaleDateString('es-ES')}\nHora: ${new Date().toLocaleTimeString('es-ES')}`);
-                
+                toast.success(
+                    <div className="space-y-2">
+                        <p className="font-semibold">¡Asistencia registrada con éxito!</p>
+                        <p>Empleado: {empleadoEncontrado.nombre} {empleadoEncontrado.apellidos}</p>
+                        <p>Fecha: {new Date().toLocaleDateString('es-ES')}</p>
+                        <p>Hora: {new Date().toLocaleTimeString('es-ES')}</p>
+                    </div>,
+                    {
+                        duration: 5000,
+                        style: {
+                            background: '#22c55e',
+                            color: 'white',
+                        }
+                    }
+                );
                 // Limpiar después de marcar asistencia
                 setDni('');
                 setEmpleadoEncontrado(null);
@@ -167,7 +181,13 @@ const AsistenciaEmpleadoPage = () => {
             } else {
                 // Mostrar alerta de error
                 if (result.message?.includes('Ya has marcado asistencia')) {
-                    alert(result.message);
+                    toast.error(result.message, {
+                        duration: 5000,
+                        style: {
+                            background: '#EF4444',
+                            color: 'white',
+                        }
+                    });
                 } else {
                     toast.error(
                         <div className="space-y-2">
@@ -226,8 +246,21 @@ const AsistenciaEmpleadoPage = () => {
                             icon={Search}
                             placeholder="Ingrese DNI del empleado"
                             value={dni}
-                            onChange={(e) => setDni(e.target.value)}
-                            onKeyPress={handleKeyPress}
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            onChange={(e) => {
+                                // Permitir solo números
+                                const value = e.target.value.replace(/[^0-9]/g, '');
+                                setDni(value);
+                            }}
+                            onKeyPress={(e) => {
+                                // Bloquear letras en el input
+                                if (!/[0-9]/.test(e.key)) {
+                                    e.preventDefault();
+                                } else {
+                                    handleKeyPress(e);
+                                }
+                            }}
                             className="max-w-xs"
                         />
                         <Button

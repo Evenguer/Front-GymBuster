@@ -345,7 +345,6 @@ const VerificarInscripcionPage = () => {
     return (
         <div className="p-4 space-y-6">
             <Title>Registrar Asistencia con QR</Title>
-            
             {/* Sección principal de QR */}
             <Card>
                 <div className="space-y-4">
@@ -354,7 +353,6 @@ const VerificarInscripcionPage = () => {
                         <Text className="text-gray-600 mb-4">
                             Use la cámara para escanear el código QR de la inscripción del cliente
                         </Text>
-                        
                         <button
                             type="button"
                             onClick={isScanning ? detenerEscanerQR : iniciarEscanerQR}
@@ -364,7 +362,6 @@ const VerificarInscripcionPage = () => {
                             {isScanning ? 'Detener Escáner' : 'Iniciar Escáner QR'}
                         </button>
                     </div>
-                    
                     {/* Área del escáner QR */}
                     {isScanning && (
                         <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
@@ -427,124 +424,93 @@ const VerificarInscripcionPage = () => {
                             </div>
                         </div>
                     )}
-                    
-                    {/* Opción de búsqueda manual (deshabilitada) */}
-                    {!isScanning && (
-                        <div className="border-t pt-4 opacity-50 pointer-events-none">
-                            <details className="group" disabled>
-                                <summary className="cursor-not-allowed text-sm text-gray-400 flex items-center gap-2">
-                                    <Search size={16} />
-                                    Búsqueda manual por ID (deshabilitada)
-                                </summary>
-                                <div className="mt-3 flex gap-2">
-                                    <TextInput
-                                        icon={Search}
-                                        placeholder="Función deshabilitada - Solo escaneo QR"
-                                        value=""
-                                        disabled={true}
-                                        className="flex-1"
-                                    />
-                                    <Button
-                                        disabled={true}
-                                        className="bg-gray-300 text-gray-500 cursor-not-allowed"
+                    {/* Sección de información de la inscripción */}
+                    {inscripcionEncontrada && inscripcionEncontrada.clienteNombre && inscripcionEncontrada.clienteDni && inscripcionEncontrada.nombrePlan && inscripcionEncontrada.fechaInicio && inscripcionEncontrada.fechaFin && (
+                        <Card>
+                            <div className="space-y-6">
+                                {/* Información básica de la inscripción */}
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <Title className="mb-2">Información de la Inscripción</Title>
+                                        <Text className="text-lg font-medium">
+                                            {inscripcionEncontrada.clienteNombre} {inscripcionEncontrada.clienteApellido}
+                                        </Text>
+                                        <Text>DNI: {inscripcionEncontrada.clienteDni}</Text>
+                                        <Text>Plan: {inscripcionEncontrada.nombrePlan}</Text>
+                                        <Text>ID Inscripción: {inscripcionEncontrada.idInscripcion}</Text>
+                                    </div>
+                                    <Badge 
+                                        size="xl"
+                                        color={getBadgeColor(inscripcionEncontrada.estado)}
                                     >
-                                        Buscar
-                                    </Button>
+                                        {inscripcionEncontrada.estado}
+                                    </Badge>
                                 </div>
-                            </details>
-                        </div>
+                                {/* Fechas de la inscripción */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <Text className="font-medium">Fecha de Inicio</Text>
+                                        <Text>{inscripcionEncontrada.fechaInicio ? new Date(inscripcionEncontrada.fechaInicio).toLocaleDateString('es-ES') : 'N/A'}</Text>
+                                    </div>
+                                    <div>
+                                        <Text className="font-medium">Fecha de Fin</Text>
+                                        <Text>{inscripcionEncontrada.fechaFin ? new Date(inscripcionEncontrada.fechaFin).toLocaleDateString('es-ES') : 'N/A'}</Text>
+                                    </div>
+                                    <div>
+                                        <Text className="font-medium">Duración</Text>
+                                        <Text>{inscripcionEncontrada.duracionPlan === 1 ? '1 día' : `${inscripcionEncontrada.duracionPlan} días`}</Text>
+                                    </div>
+                                </div>
+                                {/* Resultado de asistencia condicional */}
+                                {inscripcionEncontrada.estado?.toLowerCase() === 'activo' || inscripcionEncontrada.estado?.toLowerCase() === 'activa' ? (
+                                    /* Notificación visual de asistencia registrada (verde) */
+                                    <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                                        <Title className="text-green-800 mb-2">✓ Asistencia registrada con éxito</Title>
+                                        <Text className="text-green-700 text-lg font-medium">
+                                            {inscripcionEncontrada.clienteNombre} {inscripcionEncontrada.clienteApellido}
+                                        </Text>
+                                        <Text className="text-green-600 text-sm mt-2">
+                                            ID Inscripción: {inscripcionEncontrada.idInscripcion}<br />
+                                            Fecha: {inscripcionEncontrada.fechaAsistencia ? inscripcionEncontrada.fechaAsistencia.toLocaleDateString('es-ES') : new Date().toLocaleDateString('es-ES')}<br />
+                                            Hora: {inscripcionEncontrada.fechaAsistencia ? inscripcionEncontrada.fechaAsistencia.toLocaleTimeString('es-ES') : new Date().toLocaleTimeString('es-ES')}
+                                        </Text>
+                                        {/* Botón oculto pero manteniendo el espacio */}
+                                        <button
+                                            type="button"
+                                            style={{ visibility: 'hidden' }}
+                                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-lg font-medium"
+                                        >
+                                            Botón oculto
+                                        </button>
+                                    </div>
+                                ) : (
+                                    /* Mensaje de error para inscripciones inválidas/inactivas */
+                                    <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                                        <Title className="text-red-800 mb-2">❌ No tienes permiso para usar las instalaciones del gimnasio</Title>
+                                        <Text className="text-red-700 text-lg font-medium">
+                                            {inscripcionEncontrada.clienteNombre} {inscripcionEncontrada.clienteApellido}
+                                        </Text>
+                                        <Text className="text-red-600 text-sm mt-2">
+                                            {inscripcionEncontrada.estado === 'INVALIDO' ? 
+                                                'Código QR inválido o inscripción no encontrada' : 
+                                                `Estado de inscripción: ${inscripcionEncontrada.estado}`
+                                            }
+                                        </Text>
+                                        {/* Botón oculto pero manteniendo el espacio */}
+                                        <button
+                                            type="button"
+                                            style={{ visibility: 'hidden' }}
+                                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-lg font-medium"
+                                        >
+                                            Botón oculto
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </Card>
                     )}
                 </div>
             </Card>
-
-            {/* Sección de información de la inscripción */}
-            {inscripcionEncontrada && (
-                <Card>
-                    <div className="space-y-6">
-                        {/* Información básica de la inscripción */}
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <Title className="mb-2">Información de la Inscripción</Title>
-                                <Text className="text-lg font-medium">
-                                    {inscripcionEncontrada.clienteNombre} {inscripcionEncontrada.clienteApellido}
-                                </Text>
-                                <Text>DNI: {inscripcionEncontrada.clienteDni}</Text>
-                                <Text>Plan: {inscripcionEncontrada.nombrePlan}</Text>
-                                <Text>ID Inscripción: {inscripcionEncontrada.idInscripcion}</Text>
-                            </div>
-                            <Badge 
-                                size="xl"
-                                color={getBadgeColor(inscripcionEncontrada.estado)}
-                            >
-                                {inscripcionEncontrada.estado}
-                            </Badge>
-                        </div>
-
-                        {/* Fechas de la inscripción */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <Text className="font-medium">Fecha de Inicio</Text>
-                                <Text>{inscripcionEncontrada.fechaInicio ? new Date(inscripcionEncontrada.fechaInicio).toLocaleDateString('es-ES') : 'N/A'}</Text>
-                            </div>
-                            <div>
-                                <Text className="font-medium">Fecha de Fin</Text>
-                                <Text>{inscripcionEncontrada.fechaFin ? new Date(inscripcionEncontrada.fechaFin).toLocaleDateString('es-ES') : 'N/A'}</Text>
-                            </div>
-                            <div>
-                                <Text className="font-medium">Duración</Text>
-                                <Text>{inscripcionEncontrada.duracionPlan === 1 ? '1 día' : `${inscripcionEncontrada.duracionPlan} días`}</Text>
-                            </div>
-                        </div>
-
-                        {/* Resultado de asistencia condicional */}
-                        {inscripcionEncontrada.estado?.toLowerCase() === 'activo' || inscripcionEncontrada.estado?.toLowerCase() === 'activa' ? (
-                            /* Notificación visual de asistencia registrada (verde) */
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-                                <Title className="text-green-800 mb-2">✓ Asistencia registrada con éxito</Title>
-                                <Text className="text-green-700 text-lg font-medium">
-                                    {inscripcionEncontrada.clienteNombre} {inscripcionEncontrada.clienteApellido}
-                                </Text>
-                                <Text className="text-green-600 text-sm mt-2">
-                                    ID Inscripción: {inscripcionEncontrada.idInscripcion}<br />
-                                    Fecha: {inscripcionEncontrada.fechaAsistencia ? inscripcionEncontrada.fechaAsistencia.toLocaleDateString('es-ES') : new Date().toLocaleDateString('es-ES')}<br />
-                                    Hora: {inscripcionEncontrada.fechaAsistencia ? inscripcionEncontrada.fechaAsistencia.toLocaleTimeString('es-ES') : new Date().toLocaleTimeString('es-ES')}
-                                </Text>
-                                {/* Botón oculto pero manteniendo el espacio */}
-                                <button
-                                    type="button"
-                                    style={{ visibility: 'hidden' }}
-                                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-lg font-medium"
-                                >
-                                    Botón oculto
-                                </button>
-                            </div>
-                        ) : (
-                            /* Mensaje de error para inscripciones inválidas/inactivas */
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-                                <Title className="text-red-800 mb-2">❌ No tienes permiso para usar las instalaciones del gimnasio</Title>
-                                <Text className="text-red-700 text-lg font-medium">
-                                    {inscripcionEncontrada.clienteNombre} {inscripcionEncontrada.clienteApellido}
-                                </Text>
-                                <Text className="text-red-600 text-sm mt-2">
-                                    {inscripcionEncontrada.estado === 'INVALIDO' ? 
-                                        'Código QR inválido o inscripción no encontrada' : 
-                                        `Estado de inscripción: ${inscripcionEncontrada.estado}`
-                                    }
-                                </Text>
-                                
-                                {/* Botón oculto pero manteniendo el espacio */}
-                                <button
-                                    type="button"
-                                    style={{ visibility: 'hidden' }}
-                                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-lg font-medium"
-                                >
-                                    Botón oculto
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </Card>
-            )}
         </div>
     );
 };

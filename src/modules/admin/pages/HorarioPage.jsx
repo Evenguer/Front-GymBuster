@@ -215,8 +215,10 @@ const HorarioPage = () => {
     };
 
     const filteredHorarios = horarios.filter(horario => {
+        const rol = horario.empleado?.rol?.toUpperCase() || '';
+        // Ocultar horarios de empleados con rol CLIENTE
+        if (rol === 'CLIENTE') return false;
         if (activeTab !== 'todos') {
-            const rol = horario.empleado?.rol?.toUpperCase() || '';
             if (activeTab === 'administrador' && rol !== 'ADMIN') return false;
             if (activeTab === 'recepcionista' && rol !== 'RECEPCIONISTA') return false;
             if (activeTab === 'entrenador' && rol !== 'ENTRENADOR') return false;
